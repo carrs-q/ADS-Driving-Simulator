@@ -51,7 +51,7 @@ public class CSVScript : MonoBehaviour {
                         obdData[i] = 0;
                         LogText.text += "\n" + "Error: #CSVS-1";
                     }
-                }
+                } 
                 else
                 {
                     LogText.text += "\n" + "Error: #CSVS-2";
