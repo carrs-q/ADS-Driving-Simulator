@@ -79,15 +79,6 @@ public class Player : MonoBehaviour {
 		
 	}
 
-	void Update(){
-		if (!IsPrepared)
-			return;
-		//If I want to build later a jump-point
-		/*
-		 * 
-		 */
-	}
-
 	public void LoadVideo (string path, string name){
 		string temp = path + name;
 		if (video.url == temp)

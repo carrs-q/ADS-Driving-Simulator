@@ -51,7 +51,7 @@ public class CSVScript : MonoBehaviour {
                         obdData[i] = 0;
                         LogText.text += "\n" + "Error: #CSVS-1";
                     }
-                }
+                } 
                 else
                 {
                     LogText.text += "\n" + "Error: #CSVS-2";
@@ -78,29 +78,5 @@ public class CSVScript : MonoBehaviour {
         this.actualFrame = 0;
     }
 
-    void Start()
-    {
-        isLoaded = false;
-        obdRunning = true; // just for testing true
-        initHMD = 0f;
-        actualFrame = 0;
-
-    }
-     
-    // Update is called once per frame
-    void Update()
-    {
-        if (isLoaded && obdRunning)
-        {
-            if (actualFrame < obdDataCount)
-            {
-                arDisplay.transform.position = new Vector3(initHMD + (float)(0.002 * obdData[actualFrame]), 5.5f, 7f);
-                actualFrame++;
-            }
-            else {
-                actualFrame = 0;
-                obdRunning = false;
-            }
-        }
-    }
+    
 }
