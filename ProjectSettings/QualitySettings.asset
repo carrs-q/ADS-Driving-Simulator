@@ -36,6 +36,7 @@ QualitySettings:
     excludedTargetPlatforms:
     - WebGL
     - Android
+    - Standalone
   - serializedVersion: 2
     name: Low
     pixelLightCount: 0
@@ -66,6 +67,7 @@ QualitySettings:
     excludedTargetPlatforms:
     - Android
     - WebGL
+    - Standalone
   - serializedVersion: 2
     name: Medium
     pixelLightCount: 1
@@ -96,6 +98,7 @@ QualitySettings:
     excludedTargetPlatforms:
     - Android
     - WebGL
+    - Standalone
   - serializedVersion: 2
     name: High
     pixelLightCount: 2
@@ -126,6 +129,7 @@ QualitySettings:
     excludedTargetPlatforms:
     - WebGL
     - Android
+    - Standalone
   - serializedVersion: 2
     name: Very High
     pixelLightCount: 3
@@ -156,6 +160,7 @@ QualitySettings:
     excludedTargetPlatforms:
     - Android
     - WebGL
+    - Standalone
   - serializedVersion: 2
     name: Ultra
     pixelLightCount: 4
@@ -164,25 +169,25 @@ QualitySettings:
     shadowProjection: 1
     shadowCascades: 1
     shadowDistance: 0
-    shadowNearPlaneOffset: 3
+    shadowNearPlaneOffset: 0
     shadowCascade2Split: 0.33333334
     shadowCascade4Split: {x: 0.08302182, y: 0.20000002, z: 0.4503115}
     shadowmaskMode: 1
-    blendWeights: 4
+    blendWeights: 1
     textureQuality: 0
-    anisotropicTextures: 2
+    anisotropicTextures: 0
     antiAliasing: 2
-    softParticles: 1
+    softParticles: 0
     softVegetation: 1
-    realtimeReflectionProbes: 1
-    billboardsFaceCameraPosition: 1
-    vSyncCount: 0
+    realtimeReflectionProbes: 0
+    billboardsFaceCameraPosition: 0
+    vSyncCount: 1
     lodBias: 2
     maximumLODLevel: 0
-    particleRaycastBudget: 4096
-    asyncUploadTimeSlice: 4
-    asyncUploadBufferSize: 8
-    resolutionScalingFixedDPIFactor: 1
+    particleRaycastBudget: 0
+    asyncUploadTimeSlice: 20
+    asyncUploadBufferSize: 128
+    resolutionScalingFixedDPIFactor: 5
     excludedTargetPlatforms:
     - WebGL
     - Android

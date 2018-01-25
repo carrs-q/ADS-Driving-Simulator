@@ -17,27 +17,22 @@ public class OBDData {
         this.obdDataTime = obdDataTime;
 
     }
-
     public void setBrakePedal(float[] breakPedal )
     {
         this.brakePedal = breakPedal;
     }
-
     public void setisBreakPedal(bool[] isBreakPedal)
     {
         this.isBrakePedal = isBreakPedal;
     }
-
     public void setGasPedal(float[] gasPedal)
     {
         this.gasPedal = gasPedal;
     }
-
     public void setSpeed(int[] speed)
     {
         this.speed = speed;
     }
-
     public void setSteeringWheelAngle(int[] steeringWheelAngle)
     {
         this.steeringWheelAngle = steeringWheelAngle;
@@ -47,5 +42,4 @@ public class OBDData {
     {
         return obdDataCount;
     }
-
 }

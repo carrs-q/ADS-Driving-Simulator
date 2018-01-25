@@ -1,26 +1,25 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
-
-
 
 public class Controller : MonoBehaviour {
     private static Controller instance = null;
     private WindShield wsd;
     private Simulation simulator;
     private OBDData obdData;
+    private bool videoPlayerAttached;
 
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
     public VideoPlayer mirrorsScreens;         //Player 3
     public VideoPlayer hmdScreen;              //Player 4
-    private bool videoPlayerAttached;
+    public Component windshieldDisplay;
+    public Component wsdDynTint;
+    public Shader chromaShader;
+    public Shader noShader;
     public Text startButtonText;
-
     public Text LogText;
 
     public static Controller getController()
@@ -28,19 +27,18 @@ public class Controller : MonoBehaviour {
         return instance;
     }
 
-
     // Should be before Start
     void Awake () {
         instance = this;
         wsd = new WindShield();
-        wsd.setDefaults();
+        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader);
         obdData = new OBDData();
         simulator = new Simulation();
         simulator.setDefaults();
         simulator.setOBDData(obdData);
         videoPlayerAttached = false;
     }
-    
+
     // Update is called once per frame
     void Update () {
 		
@@ -71,6 +69,22 @@ public class Controller : MonoBehaviour {
         leftWall.Pause();
         rightWall.Pause();
         startButtonText.text = "Play";
+    }
+    public void enableWindshield()
+    {
+        this.wsd.enableWSD();
+    }
+    public void disableWindshield()
+    {
+        this.wsd.disableWSD();
+    }
+    public void setChroma(bool state)
+    {
+        this.wsd.setWSDChroma(state);
+    }
+    public void setTinting(bool state)
+    {
+        this.wsd.setWSDTinting(state);
     }
 
     // Systemcheck for Starting Actual Checksum should be 1
@@ -151,6 +165,10 @@ public class Controller : MonoBehaviour {
     public bool areVideosAttached()
     {
         return this.videoPlayerAttached;
+    }
+    public void setTintState(Single tintPercent)
+    {
+        wsd.setTintingTransparency(tintPercent);
     }
 
     //Operation Overloading for Init OBD Data

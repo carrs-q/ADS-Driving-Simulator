@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System;
-using UnityEngine.Video;
+﻿using System;
 
 
 public class Simulation {
@@ -30,19 +26,16 @@ public class Simulation {
     {
         beginningTime = getCurrentUnixMillis();
     }
-
     public void pauseSimulation()
     {
         isRunning = false;
     }
-
     public void setDefaults()
     {
         beginningTime = getCurrentUnixMillis();
         isRunning = false;
         currentMillis = 0;
     }
-
     public void setOBDData(OBDData obdData)
     {
         this.obdData = obdData;

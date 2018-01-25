@@ -1,17 +1,19 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 
 public class WSDButton : MonoBehaviour {
-    public Button button;
     private Controller controller;
 
-	// Use this for initialization
-	void Start () {
+    public void buttonPressed(bool isActivated)
+    {
         controller = Controller.getController();
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+
+        if (isActivated)
+        {
+            controller.enableWindshield();
+        }
+        else
+        {
+            controller.disableWindshield();
+        }
+    }
 }
