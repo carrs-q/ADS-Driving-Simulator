@@ -9,6 +9,7 @@ public class Controller : MonoBehaviour {
     private Simulation simulator;
     private OBDData obdData;
     private bool videoPlayerAttached;
+    private Int64 timedifference;
 
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
@@ -21,6 +22,8 @@ public class Controller : MonoBehaviour {
     public Shader noShader;
     public Text startButtonText;
     public Text LogText;
+    public Text timeText;
+
 
     public static Controller getController()
     {
@@ -31,9 +34,9 @@ public class Controller : MonoBehaviour {
     void Awake () {
         instance = this;
         wsd = new WindShield();
-        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader);
-        obdData = new OBDData();
         simulator = new Simulation();
+        obdData = new OBDData();
+        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
         videoPlayerAttached = false;
@@ -41,7 +44,24 @@ public class Controller : MonoBehaviour {
 
     // Update is called once per frame
     void Update () {
-		
+
+        if (videoPlayerAttached)
+        {
+            if (this.simulator.isStarted())
+            {
+                timedifference = simulator.getTimeDifference();
+                // Just if an new Dataset in OBD
+                if (!obdData.calcIterrator((int)timedifference))
+                {
+                    timeText.text = obdData.getSpeed().ToString() + " km/h";
+                    if (this.wsd.isHorizontalMovement())
+                    {
+                        this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                    }
+
+                }
+            }
+        }
 	}
 
     // Core Functions for Simulator
@@ -62,6 +82,7 @@ public class Controller : MonoBehaviour {
     public void resetSimulation()
     {
         simulator.setDefaults();
+        obdData.resetCounter();
         Seek(frontWall, 0);
         Seek(leftWall, 0);
         Seek(rightWall, 0);
@@ -69,6 +90,7 @@ public class Controller : MonoBehaviour {
         leftWall.Pause();
         rightWall.Pause();
         startButtonText.text = "Play";
+
     }
     public void enableWindshield()
     {
@@ -86,6 +108,10 @@ public class Controller : MonoBehaviour {
     {
         this.wsd.setWSDTinting(state);
     }
+    public void setWSDMoving(bool state)
+    {
+        wsd.setWSDHorizontalMovement(state);
+    }
 
     // Systemcheck for Starting Actual Checksum should be 1
     public bool isSimulationReady()
@@ -94,6 +120,7 @@ public class Controller : MonoBehaviour {
         if (frontWall.isPrepared && leftWall.isPrepared && rightWall.isPrepared)
         {
             checksum++;
+            this.videoPlayerAttached = true;
         }
         else
         {

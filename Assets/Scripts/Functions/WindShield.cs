@@ -17,6 +17,8 @@ public class WindShield {
     private Renderer wsDisplayRenderer;
     private Renderer wsTintRenderer;
 
+    private float wsdX=0f, wsdY=5.5f, wsdZ=7f;
+
     // Use this for initialization
     void Start () {
 	}
@@ -131,6 +133,10 @@ public class WindShield {
      
             }
         }
+    }
+    public void moveWSD(int steeringWheel)
+    {
+        wsDisplay.transform.position = new Vector3(wsdX + (float)(0.002 * steeringWheel), wsdY, wsdZ);
     }
 
 

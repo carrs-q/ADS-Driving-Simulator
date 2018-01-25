@@ -22,6 +22,7 @@ public class OBD : MonoBehaviour {
         controller = Controller.getController();
         countSet = false;
         AttachList();
+
     }
     private void AttachList()
     {
@@ -159,18 +160,28 @@ public class OBD : MonoBehaviour {
     {
         Int64[] obdData = new Int64[obdDataCount];
         string temp;
+        Int64 beginnTime=0;
         for (int i = 0; i < obdDataCount - 1; ++i)
         {
             temp = lines[i].Trim().Split(";"[0])[0];
-            try
+            if (i == 0)
             {
-                obdData[i] = Int64.Parse(temp);
+                beginnTime = Int64.Parse(temp);
+                obdData[0] = 0;
             }
-            catch
+            else
             {
-                obdData[i] = 0;
-                LogText.text += "\n" + "Error: #CSVS-1";
+                try
+                {
+                    obdData[i] = ((Int64.Parse(temp)) - beginnTime)/1000;
+                }
+                catch
+                {
+                    obdData[i] = 0;
+                    LogText.text += "\n" + "Error: #CSVS-1";
+                }
             }
+            
         }
         return obdData;
     }
