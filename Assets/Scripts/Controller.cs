@@ -1,16 +1,40 @@
 ﻿using System;
+using System.IO;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using System.Collections.Generic;
+using System.Net.Sockets;
+
 
 public class Controller : MonoBehaviour {
+    private const int INIT = 0;
+    private const int START = 1;
+    private const int PAUSE = 2;
+    private const int RESET = 3;
+
+
     private static Controller instance = null;
+    private Config config;
     private WindShield wsd;
     private Simulation simulator;
     private OBDData obdData;
     private bool videoPlayerAttached;
     private Int64 timedifference;
+    private IPAddress serverIP;
+    private int port;
+    private IPAddress irIPAddress;
+    private string path;
+    private string configJson;
+    private bool enabledSensorSync;
 
+    private static TcpListener listener;
+    private Stream stream;
+    private List<Thread> threadList;
+  
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
@@ -23,8 +47,8 @@ public class Controller : MonoBehaviour {
     public Text startButtonText;
     public Text LogText;
     public Text timeText;
-
-
+    private bool threadsAlive;
+    
     public static Controller getController()
     {
         return instance;
@@ -32,10 +56,19 @@ public class Controller : MonoBehaviour {
 
     // Should be before Start
     void Awake () {
+        path = Application.streamingAssetsPath + "/config/config.json";
+        ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+        enabledSensorSync = false;
+        configJson = File.ReadAllText(path);
+        config = JsonUtility.FromJson<Config>(configJson);
+        port = config.port;
+        irIPAddress = IPAddress.Parse(config.irIPAddress);
         instance = this;
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
+        threadList = new List<Thread>();
+        threadsAlive = true;
         wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
@@ -67,6 +100,7 @@ public class Controller : MonoBehaviour {
     // Core Functions for Simulator
     public void startSimulation()
     {
+        sendMarker(START);
         simulator.beginnSimulation();
         frontWall.Play();
         leftWall.Play();
@@ -74,6 +108,7 @@ public class Controller : MonoBehaviour {
     }
     public void stopSimulation()
     {
+        sendMarker(PAUSE);
         simulator.pauseSimulation();
         frontWall.Pause();
         leftWall.Pause();
@@ -81,6 +116,7 @@ public class Controller : MonoBehaviour {
     }
     public void resetSimulation()
     {
+        sendMarker(RESET);
         simulator.setDefaults();
         obdData.resetCounter();
         Seek(frontWall, 0);
@@ -112,6 +148,11 @@ public class Controller : MonoBehaviour {
     {
         wsd.setWSDHorizontalMovement(state);
     }
+    public void setSensorSync(bool state)
+    {
+        this.enabledSensorSync = state;
+    }
+ 
 
     // Systemcheck for Starting Actual Checksum should be 1
     public bool isSimulationReady()
@@ -247,5 +288,159 @@ public class Controller : MonoBehaviour {
                 break;
         }
     }
+    public bool isWebcamAttached()
+    {
+        return wsd.isWebcamAvailable();
+    }
 
+
+
+    // Network Interfaces
+    public void shutdownSimulator()
+    {
+        Application.Quit();
+    }
+    public void sendMarker(int marker)
+    {
+        if (this.enabledSensorSync)
+        {
+            try
+            {
+                string url = "https://" + this.irIPAddress + ":" + this.port + "/?event=" + marker;
+                WebRequest request = WebRequest.Create(url);
+
+                request.Method = "POST";
+                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                /*
+                var encoding = response.CharacterSet == "" ? Encoding.UTF8 : Encoding.GetEncoding(response.CharacterSet);
+                using (var stream = response.GetResponseStream())
+                {
+                    var reader = new StreamReader(stream, encoding);
+                    var responseString = reader.ReadToEnd();
+                    //Debug.Log("Result : " + responseString);
+                }*/
+                
+            }
+            catch (Exception e)
+            {
+
+                Debug.Log("Error: " + e.Message);
+            }
+        }
+    }
+    public Config getConfig()
+    {
+        return this.config;
+    }
 }
+
+
+
+/*
+ * 
+  
+    private static bool TrustCertificate(object sender, X509Certificate x509Certificate, X509Chain x509Chain)
+    {  
+        return true;
+    }
+    private void createSocket()
+    {
+        try
+        {
+            string name = (Dns.GetHostName());
+            IPAddress[] addrs = Dns.GetHostEntry(name).AddressList;
+            foreach (IPAddress addr in addrs)
+            {
+                if (addr.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    this.serverIP = addr;
+                }
+            }
+            listener = new TcpListener(this.serverIP,port);
+            listener.Start();
+            LogText.text += ("\nServer IP: " + this.serverIP.ToString() + ":" + port);
+            for (int i = 0; i<limit; ++i)
+            {
+                Thread t = new Thread(new ThreadStart(netWorkService));
+                t.Start();
+                threadList.Add(t);
+            }
+            //stream = new NetworkStream(socket);
+            //socket = listener.AcceptSocket(); <-- Boese
+        }
+        catch
+        {
+            LogText.text += "\nError: Unable to create Network";
+        }
+    }
+    public void shutdownSimulator()
+    {
+        //stream.Close();
+        //socket.Close();
+        for (int i = 0; i<limit; ++i)
+        {
+            threadList[i].Abort();
+        }
+        threadsAlive = false;
+        Application.Quit();
+
+    }
+     public static void netWorkService()
+    {
+        Controller controller = getController(); ;
+        Debug.Log("Thread started");
+
+       Socket socket = listener.AcceptSocket();
+        //Thread blocked until new Connection
+
+        Debug.Log("Connection Accepted");
+        String data = null;
+        
+        while (controller.areThreadsAlive())
+        {
+
+
+        }
+        socket.Close();
+        Debug.Log("Thread closed");
+        }
+        public bool areThreadsAlive()
+    {
+        return this.threadsAlive;
+    }
+    private void createSocket()
+    {
+        try
+        {
+            string name = (Dns.GetHostName());
+            IPAddress[] addrs = Dns.GetHostEntry(name).AddressList;
+            foreach (IPAddress addr in addrs)
+            {
+                if (addr.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    this.serverIP = addr;
+                }
+            }
+
+            socket.url = "ws://"+this.serverIP+":"+PORT+"/";
+            LogText.text += ("\nSocketListener at: " + this.serverIP.ToString() + ":" + PORT);
+            socket.On("It works", (SocketIOEvent e) =>
+            {
+
+                Debug.Log("It works really");
+            });
+        }
+        catch
+        {
+
+        }
+           
+    }
+
+    //Close Network Connections etc. before shutting down
+    public void shutdownSimulator()
+    {
+        Application.Quit();
+    }
+
+    */

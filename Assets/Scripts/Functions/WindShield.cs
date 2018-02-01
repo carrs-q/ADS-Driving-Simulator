@@ -18,17 +18,14 @@ public class WindShield {
     private Renderer wsTintRenderer;
 
     private float wsdX=0f, wsdY=5.5f, wsdZ=7f;
-
-    // Use this for initialization
-    void Start () {
-	}
-
+    
     // Setters
     public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader) {
         this.wsdIsTinting = false;
         this.wsdXMovement = false;
         this.wsdYMovement = false;
         this.wsdChromaActive = false;
+        this.camAvailable = false;
         this.wsDisplay = wsDisplay;
         this.wsTint = wsTint;
         this.wsDisplayRenderer = wsDisplay.GetComponent<Renderer>();
@@ -37,8 +34,8 @@ public class WindShield {
         this.wsDisplayRenderer.enabled = false;
         this.chromaShader = chromashader;
         this.noShader = noShader;
-        initialHDMIWindshield();
         tintingTransparency = 0;
+        initialHDMIWindshield();
     }
     public void setWSDTinting(bool isActive) {
         this.wsdIsTinting = isActive;
@@ -116,7 +113,6 @@ public class WindShield {
                     Debug.Log("USB Camera Detected");
                     webcamTexture = new WebCamTexture(devices[i].name, Screen.width, Screen.height);
                     camAvailable = true;
-
                     break;
                 }
             }
@@ -137,6 +133,10 @@ public class WindShield {
     public void moveWSD(int steeringWheel)
     {
         wsDisplay.transform.position = new Vector3(wsdX + (float)(0.002 * steeringWheel), wsdY, wsdZ);
+    }
+    public bool isWebcamAvailable()
+    {
+        return this.camAvailable;
     }
 
 
