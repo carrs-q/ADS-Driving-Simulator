@@ -329,13 +329,13 @@ public class Controller : MonoBehaviour {
         {
             try
             {
-                if(controller.getOldStatus()!= controller.getActualStatus())
+                if(controller.getOldStatus() != controller.getActualStatus())
                 {
+                    controller.setOldStatus(controller.getActualStatus());
                     string url = "https://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getActualStatus();
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
                     HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-                    controller.setOldStatus(controller.getActualStatus());
                 }
             }
             catch (Exception e)
