@@ -30,11 +30,13 @@ public class Controller : MonoBehaviour {
     private string path;
     private string configJson;
     private bool enabledSensorSync;
+    private int oldStatus;
+    private int actualStatus;
 
     private static TcpListener listener;
     private Stream stream;
     private List<Thread> threadList;
-  
+
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
@@ -73,6 +75,12 @@ public class Controller : MonoBehaviour {
         simulator.setDefaults();
         simulator.setOBDData(obdData);
         videoPlayerAttached = false;
+        this.oldStatus = INIT;
+        this.actualStatus = INIT;
+        //Thread for Network
+        Thread t = new Thread(new ThreadStart(netWorkService));
+        t.Start();
+        threadList.Add(t);
     }
 
     // Update is called once per frame
@@ -152,7 +160,6 @@ public class Controller : MonoBehaviour {
     {
         this.enabledSensorSync = state;
     }
- 
 
     // Systemcheck for Starting Actual Checksum should be 1       
     public bool isSimulationReady()
@@ -293,44 +300,75 @@ public class Controller : MonoBehaviour {
         return wsd.isWebcamAvailable();
     }
 
-
-
     // Network Interfaces
     public void shutdownSimulator()
     {
+        for(int i = 0; i< threadList.Count; i++)
+        {
+            threadList[i].Abort();   
+        }
+        this.threadsAlive = false;
         Application.Quit();
     }
     public void sendMarker(int marker)
     {
         if (this.enabledSensorSync)
         {
+            this.actualStatus = marker;
+        }
+    }
+    public Config getConfig()
+    {
+        return this.config;
+    }
+
+    public static void netWorkService()
+    {
+        Controller controller = getController(); ;
+        while (controller.areThreadsAlive())
+        {
             try
             {
-                string url = "https://" + this.irIPAddress + ":" + this.port + "/?event=" + marker;
-                WebRequest request = WebRequest.Create(url);
-
-                request.Method = "POST";
-                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-                /*
-                var encoding = response.CharacterSet == "" ? Encoding.UTF8 : Encoding.GetEncoding(response.CharacterSet);
-                using (var stream = response.GetResponseStream())
+                if(controller.getOldStatus()!= controller.getActualStatus())
                 {
-                    var reader = new StreamReader(stream, encoding);
-                    var responseString = reader.ReadToEnd();
-                    //Debug.Log("Result : " + responseString);
-                }*/
-                
+                    string url = "https://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getActualStatus();
+                    WebRequest request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                    controller.setOldStatus(controller.getActualStatus());
+                }
             }
             catch (Exception e)
             {
 
                 Debug.Log("Error: " + e.Message);
             }
+
         }
     }
-    public Config getConfig()
+    public IPAddress getIRIPAddress()
     {
-        return this.config;
+        return this.irIPAddress;
+    }
+    public int getPort()
+    {
+        return this.port;
+    }
+    public int getActualStatus()
+    {
+        return this.actualStatus;
+    }
+    public int getOldStatus()
+    {
+        return this.oldStatus;
+    }
+    public void setOldStatus(int actualStatus)
+    {
+        this.oldStatus = actualStatus;
+    }
+    public bool areThreadsAlive()
+    {
+        return this.threadsAlive;
     }
 }
 
