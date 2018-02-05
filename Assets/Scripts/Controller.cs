@@ -154,7 +154,7 @@ public class Controller : MonoBehaviour {
     }
  
 
-    // Systemcheck for Starting Actual Checksum should be 1
+    // Systemcheck for Starting Actual Checksum should be 1       
     public bool isSimulationReady()
     {
         int checksum = 0;
