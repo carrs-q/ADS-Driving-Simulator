@@ -16,7 +16,6 @@ public class Controller : MonoBehaviour {
     private const int PAUSE = 2;
     private const int RESET = 3;
 
-
     private static Controller instance = null;
     private Config config;
     private WindShield wsd;
@@ -41,7 +40,6 @@ public class Controller : MonoBehaviour {
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
     public VideoPlayer mirrorsScreens;         //Player 3
-    public VideoPlayer hmdScreen;              //Player 4
     public Component windshieldDisplay;
     public Component wsdDynTint;
     public Shader chromaShader;
@@ -77,6 +75,7 @@ public class Controller : MonoBehaviour {
         videoPlayerAttached = false;
         this.oldStatus = INIT;
         this.actualStatus = INIT;
+        AudioListener.volume = 1;
         //Thread for Network
         Thread t = new Thread(new ThreadStart(netWorkService));
         t.Start();
@@ -113,6 +112,7 @@ public class Controller : MonoBehaviour {
         frontWall.Play();
         leftWall.Play();
         rightWall.Play();
+        mirrorsScreens.Play();
     }
     public void stopSimulation()
     {
@@ -121,6 +121,7 @@ public class Controller : MonoBehaviour {
         frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
+        mirrorsScreens.Pause();
     }
     public void resetSimulation()
     {
@@ -133,6 +134,7 @@ public class Controller : MonoBehaviour {
         frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
+        mirrorsScreens.Pause();
         startButtonText.text = "Play";
 
     }
@@ -165,7 +167,7 @@ public class Controller : MonoBehaviour {
     public bool isSimulationReady()
     {
         int checksum = 0;
-        if (frontWall.isPrepared && leftWall.isPrepared && rightWall.isPrepared)
+        if (frontWall.isPrepared && leftWall.isPrepared && rightWall.isPrepared && mirrorsScreens.isPrepared)
         {
             checksum++;
             this.videoPlayerAttached = true;
@@ -176,6 +178,7 @@ public class Controller : MonoBehaviour {
         }
         return (checksum == 1);
     }
+
     //Function Load Video - Called from FileManager
     private void loadVideo(VideoPlayer video, string path)
     {
@@ -212,11 +215,7 @@ public class Controller : MonoBehaviour {
             case 3:
                 {
                     loadVideo(mirrorsScreens, path);
-                }
-                break;
-            case 4:
-                {
-                    loadVideo(hmdScreen, path);
+
                 }
                 break;
             default:
@@ -227,6 +226,7 @@ public class Controller : MonoBehaviour {
 
         }
     }
+
     //Video Controll Helping Method for Seeking
     private void Seek(VideoPlayer p, float nTime)
     {
@@ -371,9 +371,6 @@ public class Controller : MonoBehaviour {
         return this.threadsAlive;
     }
 }
-
-
-
 /*
  * 
   

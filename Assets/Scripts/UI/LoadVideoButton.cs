@@ -22,7 +22,7 @@ public class LoadVideoButton : MonoBehaviour
     }
 
     public void LoadVideo(int index){
-        if(index!=0 && index < 4)
+        if(index!=0 && index < 5)
         {
             var extensions = new[] {
                 new ExtensionFilter("Video Files", "mp4", "avi" ),
@@ -35,7 +35,7 @@ public class LoadVideoButton : MonoBehaviour
                 controller.loadVideotoPlayer(index - 1, newPath);
             }
         }
-        if (index >=4)
+        if (index >=5)
         {
             LogText.text="Display is currently not available";
         }
