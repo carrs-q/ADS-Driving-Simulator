@@ -47,7 +47,9 @@ public class Controller : MonoBehaviour {
     public Text startButtonText;
     public Text LogText;
     public Text timeText;
+    public AudioSource windShieldSound;
     private bool threadsAlive;
+
     
     public static Controller getController()
     {
@@ -69,7 +71,7 @@ public class Controller : MonoBehaviour {
         obdData = new OBDData();
         threadList = new List<Thread>();
         threadsAlive = true;
-        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader);
+        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader, this.windShieldSound);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
         videoPlayerAttached = false;
@@ -77,9 +79,11 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         AudioListener.volume = 1;
         //Thread for Network
+        /*
         Thread t = new Thread(new ThreadStart(netWorkService));
         t.Start();
         threadList.Add(t);
+        */
     }
 
     // Update is called once per frame

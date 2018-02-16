@@ -16,11 +16,12 @@ public class WindShield {
     private Shader noShader;
     private Renderer wsDisplayRenderer;
     private Renderer wsTintRenderer;
+    private AudioSource wsaudioSource;
 
-    private float wsdX=0f, wsdY=5.5f, wsdZ=7f;
+    private float wsdX=-1.54f, wsdY=4.99f, wsdZ=16.96f;
     
     // Setters
-    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader) {
+    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource) {
         this.wsdIsTinting = false;
         this.wsdXMovement = false;
         this.wsdYMovement = false;
@@ -33,6 +34,7 @@ public class WindShield {
         this.wsTintRenderer.enabled = false;
         this.wsDisplayRenderer.enabled = false;
         this.chromaShader = chromashader;
+        this.wsaudioSource = wsAudioSource;
         this.noShader = noShader;
         tintingTransparency = 0;
         initialHDMIWindshield();
@@ -95,6 +97,7 @@ public class WindShield {
     }
     private void initialHDMIWindshield()
     {
+        //TODO HDMI Input AUDIO
         WebCamDevice[] devices = WebCamTexture.devices;
         if (devices.Length == 0)
         {
