@@ -48,9 +48,8 @@ public class Controller : MonoBehaviour {
     public Text LogText;
     public Text timeText;
     public AudioSource windShieldSound;
+    public GameObject steeringWheel;
     private bool threadsAlive;
-
-    
     public static Controller getController()
     {
         return instance;
@@ -78,16 +77,18 @@ public class Controller : MonoBehaviour {
         this.oldStatus = INIT;
         this.actualStatus = INIT;
         AudioListener.volume = 1;
-        //Thread for Network
-        /*
-        Thread t = new Thread(new ThreadStart(netWorkService));
-        t.Start();
-        threadList.Add(t);
-        */
-    }
+        
 
-    // Update is called once per frame
-    void Update () {
+    //Thread for Network
+    /*
+    Thread t = new Thread(new ThreadStart(netWorkService));
+    t.Start();
+    threadList.Add(t);
+    */
+}
+
+// Update is called once per frame
+void Update () {
 
         if (videoPlayerAttached)
         {
@@ -97,7 +98,7 @@ public class Controller : MonoBehaviour {
                 // Just if an new Dataset in OBD
                 if (!obdData.calcIterrator((int)timedifference))
                 {
-                    timeText.text = obdData.getSpeed().ToString() + " km/h";
+                    steeringWheel.transform.localEulerAngles = new Vector3( 0f, this.obdData.getSteeringWheelAngle(), 0f);
                     if (this.wsd.isHorizontalMovement())
                     {
                         this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());

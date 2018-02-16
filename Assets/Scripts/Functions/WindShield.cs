@@ -18,7 +18,7 @@ public class WindShield {
     private Renderer wsTintRenderer;
     private AudioSource wsaudioSource;
 
-    private float wsdX=-1.54f, wsdY=4.99f, wsdZ=16.96f;
+    private float wsdX=0.74f, wsdY=4.53f, wsdZ=4.73f;
     
     // Setters
     public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource) {
