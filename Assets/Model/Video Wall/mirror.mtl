@@ -1,0 +1,12 @@
+# Blender MTL File: 'mirror.blend'
+# Material Count: 1
+
+newmtl chrome5
+Ns 62.745098
+Ka 0.533333 0.533333 0.533333
+Kd 0.533333 0.533333 0.533333
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2

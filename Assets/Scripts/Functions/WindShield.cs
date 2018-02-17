@@ -18,7 +18,7 @@ public class WindShield {
     private Renderer wsTintRenderer;
     private AudioSource wsaudioSource;
 
-    private float wsdX=0.74f, wsdY=4.53f, wsdZ=4.73f;
+    private float wsdX=-3f, wsdY=-0.7f, wsdZ=0.3f;
     
     // Setters
     public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource) {
@@ -135,7 +135,7 @@ public class WindShield {
     }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.position = new Vector3(wsdX + (float)(0.002 * steeringWheel), wsdY, wsdZ);
+        wsDisplay.transform.localPosition = new Vector3(wsdX + (float)(0.02 * steeringWheel), wsdY, wsdZ);
     }
     public bool isWebcamAvailable()
     {

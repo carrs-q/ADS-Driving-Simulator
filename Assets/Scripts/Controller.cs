@@ -36,16 +36,20 @@ public class Controller : MonoBehaviour {
     private Stream stream;
     private List<Thread> threadList;
 
-    public VideoPlayer frontWall;              //Player 0
+    public VideoPlayer videoWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
-    public VideoPlayer mirrorsScreens;         //Player 3
+    public VideoPlayer navigationScreen;       //Player 3
+    public VideoPlayer MirrorStraigt;          //Player 4
+    public VideoPlayer MirrorLeft;             //Player 5
+    public VideoPlayer MirrorRight;            //Player 6
     public Component windshieldDisplay;
     public Component wsdDynTint;
     public Shader chromaShader;
     public Shader noShader;
     public Text startButtonText;
     public Text LogText;
+    public TextMesh digitalSpeedoMeter;
     public Text timeText;
     public AudioSource windShieldSound;
     public GameObject steeringWheel;
@@ -87,8 +91,8 @@ public class Controller : MonoBehaviour {
     */
 }
 
-// Update is called once per frame
-void Update () {
+    // Update is called once per frame
+    void Update () {
 
         if (videoPlayerAttached)
         {
@@ -99,6 +103,8 @@ void Update () {
                 if (!obdData.calcIterrator((int)timedifference))
                 {
                     steeringWheel.transform.localEulerAngles = new Vector3( 0f, this.obdData.getSteeringWheelAngle(), 0f);
+                    digitalSpeedoMeter.text = this.obdData.getSpeed().ToString();
+
                     if (this.wsd.isHorizontalMovement())
                     {
                         this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
@@ -114,32 +120,45 @@ void Update () {
     {
         sendMarker(START);
         simulator.beginnSimulation();
-        frontWall.Play();
+        videoWall.Play();
         leftWall.Play();
         rightWall.Play();
-        mirrorsScreens.Play();
+        MirrorStraigt.Play();
+        MirrorLeft.Play();
+        MirrorRight.Play();
+        navigationScreen.Play();
     }
     public void stopSimulation()
     {
         sendMarker(PAUSE);
         simulator.pauseSimulation();
-        frontWall.Pause();
+        videoWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
-        mirrorsScreens.Pause();
+        navigationScreen.Pause();
+        MirrorStraigt.Pause();
+        MirrorLeft.Pause();
+        MirrorRight.Pause();
     }
     public void resetSimulation()
     {
         sendMarker(RESET);
         simulator.setDefaults();
         obdData.resetCounter();
-        Seek(frontWall, 0);
+        Seek(videoWall, 0);
         Seek(leftWall, 0);
         Seek(rightWall, 0);
-        frontWall.Pause();
+        Seek(navigationScreen, 0);
+        Seek(MirrorStraigt, 0);
+        Seek(MirrorLeft, 0);
+        Seek(MirrorRight, 0);
+        videoWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
-        mirrorsScreens.Pause();
+        navigationScreen.Pause();
+        MirrorStraigt.Pause();
+        MirrorLeft.Pause();
+        MirrorRight.Pause();
         startButtonText.text = "Play";
 
     }
@@ -172,14 +191,14 @@ void Update () {
     public bool isSimulationReady()
     {
         int checksum = 0;
-        if (frontWall.isPrepared && leftWall.isPrepared && rightWall.isPrepared && mirrorsScreens.isPrepared)
+        if (videoWall.isPrepared)
         {
             checksum++;
             this.videoPlayerAttached = true;
         }
         else
         {
-            LogText.text = "Not all Videos loaded";
+            LogText.text += "There must be at least the Front Video Loaded";
         }
         return (checksum == 1);
     }
@@ -204,7 +223,7 @@ void Update () {
         {
             case 0:
                 {
-                    loadVideo(frontWall, path);
+                    loadVideo(videoWall, path);
                 }
                 break;
             case 1:
@@ -219,8 +238,23 @@ void Update () {
                 break;
             case 3:
                 {
-                    loadVideo(mirrorsScreens, path);
+                    loadVideo(navigationScreen, path);
 
+                }
+                break;
+            case 4:
+                {
+                    loadVideo(MirrorStraigt, path);
+                }
+                break;
+            case 5:
+                {
+                    loadVideo(MirrorLeft, path);
+                }
+                break;
+            case 6:
+                {
+                    loadVideo(MirrorRight, path);
                 }
                 break;
             default:

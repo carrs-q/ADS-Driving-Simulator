@@ -13,12 +13,12 @@ TagManager:
   - UI
   - 
   - 
-  - Camera1
-  - Camera2
-  - Camera3
-  - Camera4
-  - Camera5
-  - NoLight
+  - VideoWall
+  - Car
+  - WSD
+  - AmbienLights
+  - 
+  - 
   - 
   - 
   - 
