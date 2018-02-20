@@ -8,7 +8,7 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 using System.Collections.Generic;
 using System.Net.Sockets;
-
+using TMPro;
 
 public class Controller : MonoBehaviour {
     private const int INIT = 0;
@@ -49,7 +49,13 @@ public class Controller : MonoBehaviour {
     public Shader noShader;
     public Text startButtonText;
     public Text LogText;
-    public TextMesh digitalSpeedoMeter;
+    public TextMeshPro digitalSpeedoMeter;
+    public TextMeshPro currTime;
+    public TextMeshPro gear;
+    public TextMeshPro trip1;
+    public TextMeshPro trip2;
+    public TextMeshPro fuelkm;
+    public TextMeshPro temp;
     public Text timeText;
     public AudioSource windShieldSound;
     public GameObject steeringWheel;
@@ -81,19 +87,14 @@ public class Controller : MonoBehaviour {
         this.oldStatus = INIT;
         this.actualStatus = INIT;
         AudioListener.volume = 1;
-        
-
-    //Thread for Network
-    /*
-    Thread t = new Thread(new ThreadStart(netWorkService));
-    t.Start();
-    threadList.Add(t);
-    */
-}
-
+        /*
+        Thread t = new Thread(new ThreadStart(setDriversDisplay));
+        t.Start();
+        threadList.Add(t);
+        */
+    }
     // Update is called once per frame
     void Update () {
-
         if (videoPlayerAttached)
         {
             if (this.simulator.isStarted())
@@ -103,13 +104,18 @@ public class Controller : MonoBehaviour {
                 if (!obdData.calcIterrator((int)timedifference))
                 {
                     steeringWheel.transform.localEulerAngles = new Vector3( 0f, this.obdData.getSteeringWheelAngle(), 0f);
-                    digitalSpeedoMeter.text = this.obdData.getSpeed().ToString();
-
+                    digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
+                    currTime.SetText(simulator.getCurrTime());
+                    temp.SetText(simulator.getCurrTemp());
+                    gear.SetText(simulator.getGear().ToString());
+                    simulator.calcDistance(obdData.getSpeed());
+                    trip2.SetText(simulator.getTrip2km().ToString("F1"));
+                    trip1.SetText(simulator.getTrip1().ToString());
+                    fuelkm.SetText(simulator.getFuelKM().ToString());
                     if (this.wsd.isHorizontalMovement())
                     {
                         this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
                     }
-
                 }
             }
         }
@@ -196,10 +202,6 @@ public class Controller : MonoBehaviour {
             checksum++;
             this.videoPlayerAttached = true;
         }
-        else
-        {
-            LogText.text += "There must be at least the Front Video Loaded";
-        }
         return (checksum == 1);
     }
 
@@ -276,6 +278,7 @@ public class Controller : MonoBehaviour {
         nTime = Mathf.Clamp(nTime, 0, 1);
         p.time = nTime * (ulong)(p.frameCount / p.frameRate);
     }
+    
     public bool areVideosAttached()
     {
         return this.videoPlayerAttached;
@@ -344,7 +347,8 @@ public class Controller : MonoBehaviour {
     {
         for(int i = 0; i< threadList.Count; i++)
         {
-            threadList[i].Abort();   
+            threadList[i].Abort();
+            Debug.Log("Quit Thread");
         }
         this.threadsAlive = false;
         Application.Quit();
@@ -410,6 +414,7 @@ public class Controller : MonoBehaviour {
         return this.threadsAlive;
     }
 }
+
 /*
  * 
   
