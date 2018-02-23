@@ -58,6 +58,7 @@ public class Controller : MonoBehaviour {
     public TextMeshPro temp;
     public Text timeText;
     public AudioSource windShieldSound;
+    public AudioSource rightMirrorSound;
     public GameObject steeringWheel;
     private bool threadsAlive;
     public static Controller getController()
@@ -257,6 +258,11 @@ public class Controller : MonoBehaviour {
             case 6:
                 {
                     loadVideo(MirrorRight, path);
+                    MirrorRight.audioOutputMode = VideoAudioOutputMode.AudioSource;
+                    MirrorRight.controlledAudioTrackCount = 1;
+                    MirrorRight.SetTargetAudioSource(0, rightMirrorSound);
+                    MirrorRight.SetDirectAudioVolume(0,1);
+                    rightMirrorSound.Play();
                 }
                 break;
             default:
@@ -378,7 +384,7 @@ public class Controller : MonoBehaviour {
                     string url = "https://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getActualStatus();
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
-                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                    //HttpWebResponse response = request.GetResponse() as HttpWebResponse;
                 }
             }
             catch (Exception e)
