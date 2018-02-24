@@ -59,6 +59,7 @@ public class Controller : MonoBehaviour {
     public Text timeText;
     public AudioSource windShieldSound;
     public AudioSource rightMirrorSound;
+    public AudioSource leftMirrorSound;
     public GameObject steeringWheel;
     private bool threadsAlive;
     public static Controller getController()
@@ -134,6 +135,9 @@ public class Controller : MonoBehaviour {
         MirrorLeft.Play();
         MirrorRight.Play();
         navigationScreen.Play();
+        rightMirrorSound.Play();
+        leftMirrorSound.Play();
+
     }
     public void stopSimulation()
     {
@@ -146,6 +150,8 @@ public class Controller : MonoBehaviour {
         MirrorStraigt.Pause();
         MirrorLeft.Pause();
         MirrorRight.Pause();
+        rightMirrorSound.Pause();
+        leftMirrorSound.Pause();
     }
     public void resetSimulation()
     {
@@ -159,6 +165,8 @@ public class Controller : MonoBehaviour {
         Seek(MirrorStraigt, 0);
         Seek(MirrorLeft, 0);
         Seek(MirrorRight, 0);
+        rightMirrorSound.time = 0;
+        leftMirrorSound.time = 0;
         videoWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
@@ -258,11 +266,6 @@ public class Controller : MonoBehaviour {
             case 6:
                 {
                     loadVideo(MirrorRight, path);
-                    MirrorRight.audioOutputMode = VideoAudioOutputMode.AudioSource;
-                    MirrorRight.controlledAudioTrackCount = 1;
-                    MirrorRight.SetTargetAudioSource(0, rightMirrorSound);
-                    MirrorRight.SetDirectAudioVolume(0,1);
-                    rightMirrorSound.Play();
                 }
                 break;
             default:
@@ -271,6 +274,27 @@ public class Controller : MonoBehaviour {
                 }
                 break;
 
+        }
+    }
+    public void loadAudioSource (int player, string path)
+    {
+        switch (player)
+        {
+            case 1:
+                { //Right Mirror
+                    WWW linkr = new WWW(path);
+                    AudioClip soundclipR = linkr.GetAudioClip(false, false);
+                    rightMirrorSound.clip = soundclipR;
+                };break;
+            case 2:
+                { //Left Mirror
+                    AudioClip soundLeft = Resources.Load<AudioClip>(path);
+                    leftMirrorSound.clip = soundLeft;
+                }; break;
+            default:
+                {
+
+                };break;
         }
     }
 
