@@ -9,6 +9,7 @@ using UnityEngine.Video;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using TMPro;
+using System.Collections;
 
 public class Controller : MonoBehaviour {
     private const int INIT = 0;
@@ -31,7 +32,6 @@ public class Controller : MonoBehaviour {
     private bool enabledSensorSync;
     private int oldStatus;
     private int actualStatus;
-
     private static TcpListener listener;
     private Stream stream;
     private List<Thread> threadList;
@@ -89,11 +89,7 @@ public class Controller : MonoBehaviour {
         this.oldStatus = INIT;
         this.actualStatus = INIT;
         AudioListener.volume = 1;
-        /*
-        Thread t = new Thread(new ThreadStart(setDriversDisplay));
-        t.Start();
-        threadList.Add(t);
-        */
+        
     }
     // Update is called once per frame
     void Update () {
@@ -126,6 +122,10 @@ public class Controller : MonoBehaviour {
     // Core Functions for Simulator
     public void startSimulation()
     {
+        if (rightMirrorSound.clip)
+            Debug.Log(rightMirrorSound.clip.loadState);
+        if (leftMirrorSound.clip)
+            Debug.Log(leftMirrorSound.clip.loadState);
         sendMarker(START);
         simulator.beginnSimulation();
         videoWall.Play();
@@ -200,6 +200,14 @@ public class Controller : MonoBehaviour {
     public void setSensorSync(bool state)
     {
         this.enabledSensorSync = state;
+        if (enabledSensorSync)
+        {
+            this.runNetworkservice();
+        }
+        else
+        {
+            this.stopNetworkservice();
+        }
     }
 
     // Systemcheck for Starting Actual Checksum should be 1       
@@ -278,24 +286,31 @@ public class Controller : MonoBehaviour {
     }
     public void loadAudioSource (int player, string path)
     {
+        path = "file://" + path.Replace("\\" ,"/");
         switch (player)
         {
             case 1:
                 { //Right Mirror
-                    WWW linkr = new WWW(path);
-                    AudioClip soundclipR = linkr.GetAudioClip(false, false);
-                    rightMirrorSound.clip = soundclipR;
+                    AudioSourceLoader(path, rightMirrorSound);
                 };break;
             case 2:
                 { //Left Mirror
-                    AudioClip soundLeft = Resources.Load<AudioClip>(path);
-                    leftMirrorSound.clip = soundLeft;
+                    AudioSourceLoader(path, leftMirrorSound);
                 }; break;
             default:
                 {
 
                 };break;
         }
+
+    }
+    private void AudioSourceLoader(string path, AudioSource player)
+    {
+        WWW www = new WWW(path);
+        AudioClip clip = www.GetAudioClip(false);
+        clip.name= Path.GetFileName(path);
+        player.clip = clip;
+        
     }
 
     //Video Controll Helping Method for Seeking
@@ -308,7 +323,6 @@ public class Controller : MonoBehaviour {
         nTime = Mathf.Clamp(nTime, 0, 1);
         p.time = nTime * (ulong)(p.frameCount / p.frameRate);
     }
-    
     public bool areVideosAttached()
     {
         return this.videoPlayerAttached;
@@ -394,7 +408,6 @@ public class Controller : MonoBehaviour {
     {
         return this.config;
     }
-
     public static void netWorkService()
     {
         Controller controller = getController(); ;
@@ -408,7 +421,7 @@ public class Controller : MonoBehaviour {
                     string url = "https://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getActualStatus();
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
-                    //HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
                 }
             }
             catch (Exception e)
@@ -442,6 +455,24 @@ public class Controller : MonoBehaviour {
     public bool areThreadsAlive()
     {
         return this.threadsAlive;
+    }
+    public void runNetworkservice()
+    {
+        Debug.Log("Network Service Started");
+        this.threadsAlive = true;
+        Thread t = new Thread(new ThreadStart(netWorkService));
+        t.Start();
+        threadList.Add(t);
+    }
+    public void stopNetworkservice()
+    {
+        for (int i = 0; i < threadList.Count; i++)
+        {
+            threadList[i].Abort();
+            threadList.RemoveAt(i);
+            Debug.Log("Quit Thread " + i);
+        }
+        this.threadsAlive = false;
     }
 }
 
