@@ -474,6 +474,11 @@ public class Controller : MonoBehaviour {
         }
         this.threadsAlive = false;
     }
+
+    public void reCenterOculus()
+    {
+        UnityEngine.XR.InputTracking.Recenter();
+    }
 }
 
 /*
