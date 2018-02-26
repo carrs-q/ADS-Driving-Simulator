@@ -16,11 +16,12 @@ public class WindShield {
     private Shader noShader;
     private Renderer wsDisplayRenderer;
     private Renderer wsTintRenderer;
+    private AudioSource wsaudioSource;
 
-    private float wsdX=0f, wsdY=5.5f, wsdZ=7f;
+    private float wsdX=-3f, wsdY=-0.7f, wsdZ=0.3f;
     
     // Setters
-    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader) {
+    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource) {
         this.wsdIsTinting = false;
         this.wsdXMovement = false;
         this.wsdYMovement = false;
@@ -33,6 +34,7 @@ public class WindShield {
         this.wsTintRenderer.enabled = false;
         this.wsDisplayRenderer.enabled = false;
         this.chromaShader = chromashader;
+        this.wsaudioSource = wsAudioSource;
         this.noShader = noShader;
         tintingTransparency = 0;
         initialHDMIWindshield();
@@ -63,13 +65,24 @@ public class WindShield {
     }
     public void enableWSD()
     {
+        // TODO:
+        // Not working, Devices List doesn't update while running
+        // Camera need to be plugged in before it get started
+        if (!isWebcamAvailable())
+        {
+            //initialHDMIWindshield(); 
+        }
         wsDisplayRenderer.enabled = true;
         webcamTexture.Play();
+        addAudioToImage();
+        this.wsaudioSource.volume = 1;
+
     }
     public void disableWSD()
     {
         wsDisplayRenderer.enabled = false;
         webcamTexture.Stop();
+        this.wsaudioSource.volume = 0;
     }
     public void setTintingTransparency(Single tintPercent)
     {
@@ -95,7 +108,9 @@ public class WindShield {
     }
     private void initialHDMIWindshield()
     {
+        //TODO HDMI Input AUDIO
         WebCamDevice[] devices = WebCamTexture.devices;
+
         if (devices.Length == 0)
         {
             Debug.Log("No Webcam devices are detected");
@@ -110,7 +125,7 @@ public class WindShield {
                 if (devices[i].name == "USB3.0 Capture Video")
                 {
                     //WARNING! Hard Coded Name
-                    Debug.Log("USB Camera Detected");
+                    Debug.Log("Video Input: "+devices[i].name);
                     webcamTexture = new WebCamTexture(devices[i].name, Screen.width, Screen.height);
                     camAvailable = true;
                     break;
@@ -118,7 +133,7 @@ public class WindShield {
             }
             if (webcamTexture == null)
             {
-                Debug.Log("USB Camera not Detected use first other detected");
+                Debug.Log("Video Input: " + devices[0].name);
                 webcamTexture = new WebCamTexture(devices[0].name, Screen.width, Screen.height);
                 camAvailable = true;
             }
@@ -130,9 +145,31 @@ public class WindShield {
             }
         }
     }
+    private void addAudioToImage()
+    {
+        foreach(string device in Microphone.devices)
+        {
+            if(device == "Digital Audio Interface (USB3.0 Capture Audio)")
+            {
+                // Oculus overrides Audio Input
+                // Disable Oculus Mic in Windows Settings
+                if (!Microphone.IsRecording(device))
+                {
+                    Debug.Log(device+" records already");
+                    this.wsaudioSource.clip = Microphone.Start(device, true, 1, 48000);
+                    this.wsaudioSource.loop = true;
+                    while (!(Microphone.GetPosition(device) > 0)) { }; // For Latency
+                    this.wsaudioSource.Play();
+                    Debug.Log("Audio Input: " + device);
+                }
+                
+            }
+        }
+
+    }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.position = new Vector3(wsdX + (float)(0.002 * steeringWheel), wsdY, wsdZ);
+        wsDisplay.transform.localPosition = new Vector3(wsdX + (float)(0.02 * steeringWheel), wsdY, wsdZ);
     }
     public bool isWebcamAvailable()
     {

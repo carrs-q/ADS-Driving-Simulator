@@ -9,7 +9,7 @@ public class LoadVideoButton : MonoBehaviour
     public Text LogText;
     private Controller controller;
 
-    private List<string> names = new List<string>() { "Load Video", "Front", "Left", "Right", "Mirrors", "HMD" };
+    private List<string> names = new List<string>() { "Load Video", "Front", "Left", "Right", "HMD/Nav", "Mirror Back", "Mirror Left", "Mirror Right" };
 
     public void Start()
     {
@@ -22,10 +22,10 @@ public class LoadVideoButton : MonoBehaviour
     }
 
     public void LoadVideo(int index){
-        if(index!=0 && index < 5)
+        if(index!=0 && index < 8)
         {
             var extensions = new[] {
-                new ExtensionFilter("Video Files", "mp4", "avi" ),
+                new ExtensionFilter("Video Files", "mp4" ),
                 new ExtensionFilter("All Files", "*" ),
             };
             var path = StandaloneFileBrowser.OpenFilePanel("Open Video", "", extensions, true);

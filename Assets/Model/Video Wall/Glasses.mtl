@@ -1,0 +1,12 @@
+# Blender MTL File: 'Glasses.blend'
+# Material Count: 1
+
+newmtl window_glass5
+Ns 15.686275
+Ka 0.143791 0.143791 0.143791
+Kd 0.047059 0.180392 0.203922
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.380000
+illum 2

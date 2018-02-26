@@ -54,6 +54,8 @@ public class OBDData {
         this.isSteeringWheelAngle = true;
     }
 
+
+
     //Synchronize to Simulation
     public int getCount()
     {
@@ -127,7 +129,16 @@ public class OBDData {
         {
             return 0;
         }
-        
-
+    }
+    public Int64 getMillisTimeDifference()
+    {
+        if (lastIterator < 2)
+        {
+            return 0;
+        }
+        else
+        {
+            return obdDataTime[lastIterator] - obdDataTime[oldIterator];
+        }
     }
 }

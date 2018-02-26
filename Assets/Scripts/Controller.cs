@@ -8,7 +8,8 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 using System.Collections.Generic;
 using System.Net.Sockets;
-
+using TMPro;
+using System.Collections;
 
 public class Controller : MonoBehaviour {
     private const int INIT = 0;
@@ -31,24 +32,39 @@ public class Controller : MonoBehaviour {
     private bool enabledSensorSync;
     private int oldStatus;
     private int actualStatus;
-
     private static TcpListener listener;
     private Stream stream;
     private List<Thread> threadList;
+    private bool manualIP;
+    private string customAddress;
 
-    public VideoPlayer frontWall;              //Player 0
+    public VideoPlayer videoWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
-    public VideoPlayer mirrorsScreens;         //Player 3
+    public VideoPlayer navigationScreen;       //Player 3
+    public VideoPlayer MirrorStraigt;          //Player 4
+    public VideoPlayer MirrorLeft;             //Player 5
+    public VideoPlayer MirrorRight;            //Player 6
     public Component windshieldDisplay;
     public Component wsdDynTint;
     public Shader chromaShader;
     public Shader noShader;
     public Text startButtonText;
     public Text LogText;
+    public TextMeshPro digitalSpeedoMeter;
+    public TextMeshPro currTime;
+    public TextMeshPro gear;
+    public TextMeshPro trip1;
+    public TextMeshPro trip2;
+    public TextMeshPro fuelkm;
+    public TextMeshPro temp;
     public Text timeText;
+    public AudioSource windShieldSound;
+    public AudioSource rightMirrorSound;
+    public AudioSource leftMirrorSound;
+    public GameObject steeringWheel;
+    public InputField ipInputField;
     private bool threadsAlive;
-    
     public static Controller getController()
     {
         return instance;
@@ -69,22 +85,18 @@ public class Controller : MonoBehaviour {
         obdData = new OBDData();
         threadList = new List<Thread>();
         threadsAlive = true;
-        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader);
+        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader, this.windShieldSound);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
         videoPlayerAttached = false;
         this.oldStatus = INIT;
         this.actualStatus = INIT;
         AudioListener.volume = 1;
-        //Thread for Network
-        Thread t = new Thread(new ThreadStart(netWorkService));
-        t.Start();
-        threadList.Add(t);
+        manualIP = false;
+        
     }
-
     // Update is called once per frame
     void Update () {
-
         if (videoPlayerAttached)
         {
             if (this.simulator.isStarted())
@@ -93,12 +105,19 @@ public class Controller : MonoBehaviour {
                 // Just if an new Dataset in OBD
                 if (!obdData.calcIterrator((int)timedifference))
                 {
-                    timeText.text = obdData.getSpeed().ToString() + " km/h";
+                    steeringWheel.transform.localEulerAngles = new Vector3( 0f, this.obdData.getSteeringWheelAngle(), 0f);
+                    digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
+                    currTime.SetText(simulator.getCurrTime());
+                    temp.SetText(simulator.getCurrTemp());
+                    gear.SetText(simulator.getGear().ToString());
+                    simulator.calcDistance(obdData.getSpeed());
+                    trip2.SetText(simulator.getTrip2km().ToString("F1"));
+                    trip1.SetText(simulator.getTrip1().ToString());
+                    fuelkm.SetText(simulator.getFuelKM().ToString());
                     if (this.wsd.isHorizontalMovement())
                     {
                         this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
                     }
-
                 }
             }
         }
@@ -107,34 +126,58 @@ public class Controller : MonoBehaviour {
     // Core Functions for Simulator
     public void startSimulation()
     {
+        if (rightMirrorSound.clip)
+            Debug.Log(rightMirrorSound.clip.loadState);
+        if (leftMirrorSound.clip)
+            Debug.Log(leftMirrorSound.clip.loadState);
         sendMarker(START);
         simulator.beginnSimulation();
-        frontWall.Play();
+        videoWall.Play();
         leftWall.Play();
         rightWall.Play();
-        mirrorsScreens.Play();
+        MirrorStraigt.Play();
+        MirrorLeft.Play();
+        MirrorRight.Play();
+        navigationScreen.Play();
+        rightMirrorSound.Play();
+        leftMirrorSound.Play();
+
     }
     public void stopSimulation()
     {
         sendMarker(PAUSE);
         simulator.pauseSimulation();
-        frontWall.Pause();
+        videoWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
-        mirrorsScreens.Pause();
+        navigationScreen.Pause();
+        MirrorStraigt.Pause();
+        MirrorLeft.Pause();
+        MirrorRight.Pause();
+        rightMirrorSound.Pause();
+        leftMirrorSound.Pause();
     }
     public void resetSimulation()
     {
         sendMarker(RESET);
         simulator.setDefaults();
         obdData.resetCounter();
-        Seek(frontWall, 0);
+        Seek(videoWall, 0);
         Seek(leftWall, 0);
         Seek(rightWall, 0);
-        frontWall.Pause();
+        Seek(navigationScreen, 0);
+        Seek(MirrorStraigt, 0);
+        Seek(MirrorLeft, 0);
+        Seek(MirrorRight, 0);
+        rightMirrorSound.time = 0;
+        leftMirrorSound.time = 0;
+        videoWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
-        mirrorsScreens.Pause();
+        navigationScreen.Pause();
+        MirrorStraigt.Pause();
+        MirrorLeft.Pause();
+        MirrorRight.Pause();
         startButtonText.text = "Play";
 
     }
@@ -161,20 +204,24 @@ public class Controller : MonoBehaviour {
     public void setSensorSync(bool state)
     {
         this.enabledSensorSync = state;
+        if (enabledSensorSync)
+        {
+            this.runNetworkservice();
+        }
+        else
+        {
+            this.stopNetworkservice();
+        }
     }
 
     // Systemcheck for Starting Actual Checksum should be 1       
     public bool isSimulationReady()
     {
         int checksum = 0;
-        if (frontWall.isPrepared && leftWall.isPrepared && rightWall.isPrepared && mirrorsScreens.isPrepared)
+        if (videoWall.isPrepared)
         {
             checksum++;
             this.videoPlayerAttached = true;
-        }
-        else
-        {
-            LogText.text = "Not all Videos loaded";
         }
         return (checksum == 1);
     }
@@ -199,7 +246,7 @@ public class Controller : MonoBehaviour {
         {
             case 0:
                 {
-                    loadVideo(frontWall, path);
+                    loadVideo(videoWall, path);
                 }
                 break;
             case 1:
@@ -214,8 +261,23 @@ public class Controller : MonoBehaviour {
                 break;
             case 3:
                 {
-                    loadVideo(mirrorsScreens, path);
+                    loadVideo(navigationScreen, path);
 
+                }
+                break;
+            case 4:
+                {
+                    loadVideo(MirrorStraigt, path);
+                }
+                break;
+            case 5:
+                {
+                    loadVideo(MirrorLeft, path);
+                }
+                break;
+            case 6:
+                {
+                    loadVideo(MirrorRight, path);
                 }
                 break;
             default:
@@ -225,6 +287,34 @@ public class Controller : MonoBehaviour {
                 break;
 
         }
+    }
+    public void loadAudioSource (int player, string path)
+    {
+        path = "file://" + path.Replace("\\" ,"/");
+        switch (player)
+        {
+            case 1:
+                { //Right Mirror
+                    AudioSourceLoader(path, rightMirrorSound);
+                };break;
+            case 2:
+                { //Left Mirror
+                    AudioSourceLoader(path, leftMirrorSound);
+                }; break;
+            default:
+                {
+
+                };break;
+        }
+
+    }
+    private void AudioSourceLoader(string path, AudioSource player)
+    {
+        WWW www = new WWW(path);
+        AudioClip clip = www.GetAudioClip(false);
+        clip.name= Path.GetFileName(path);
+        player.clip = clip;
+        
     }
 
     //Video Controll Helping Method for Seeking
@@ -305,7 +395,8 @@ public class Controller : MonoBehaviour {
     {
         for(int i = 0; i< threadList.Count; i++)
         {
-            threadList[i].Abort();   
+            threadList[i].Abort();
+            Debug.Log("Quit Thread");
         }
         this.threadsAlive = false;
         Application.Quit();
@@ -321,10 +412,11 @@ public class Controller : MonoBehaviour {
     {
         return this.config;
     }
-
     public static void netWorkService()
     {
-        Controller controller = getController(); ;
+        Controller controller = getController();
+
+
         while (controller.areThreadsAlive())
         {
             try
@@ -332,7 +424,17 @@ public class Controller : MonoBehaviour {
                 if(controller.getOldStatus() != controller.getActualStatus())
                 {
                     controller.setOldStatus(controller.getActualStatus());
-                    string url = "https://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getActualStatus();
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "https://" + controller.customAddress + "/?event=" + controller.getActualStatus();
+                    }
+                    else
+                    {
+                        url = "https://" + controller.getIRIPAddress()+":"+controller.getPort() + "/?event=" + controller.getActualStatus();
+                    }
+                     
+                    Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
                     HttpWebResponse response = request.GetResponse() as HttpWebResponse;
@@ -370,7 +472,40 @@ public class Controller : MonoBehaviour {
     {
         return this.threadsAlive;
     }
+    public void runNetworkservice()
+    {
+        if (ipInputField.text != "")
+        {
+            customAddress = ipInputField.text;
+            manualIP = true;
+        }
+        else
+        {
+            manualIP = false;
+        }
+       
+        Debug.Log("Network Service Started");
+        this.threadsAlive = true;
+        Thread t = new Thread(new ThreadStart(netWorkService));
+        t.Start();
+        threadList.Add(t);
+    }
+    public void stopNetworkservice()
+    {
+        for (int i = 0; i < threadList.Count; i++)
+        {
+            threadList[i].Abort();
+            threadList.RemoveAt(i);
+            Debug.Log("Quit Thread " + i);
+        }
+        this.threadsAlive = false;
+    }
+    public void reCenterOculus()
+    {
+        UnityEngine.XR.InputTracking.Recenter();
+    }
 }
+
 /*
  * 
   
