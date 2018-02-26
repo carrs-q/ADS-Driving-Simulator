@@ -35,6 +35,8 @@ public class Controller : MonoBehaviour {
     private static TcpListener listener;
     private Stream stream;
     private List<Thread> threadList;
+    private bool manualIP;
+    private string customAddress;
 
     public VideoPlayer videoWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
@@ -61,6 +63,7 @@ public class Controller : MonoBehaviour {
     public AudioSource rightMirrorSound;
     public AudioSource leftMirrorSound;
     public GameObject steeringWheel;
+    public InputField ipInputField;
     private bool threadsAlive;
     public static Controller getController()
     {
@@ -89,6 +92,7 @@ public class Controller : MonoBehaviour {
         this.oldStatus = INIT;
         this.actualStatus = INIT;
         AudioListener.volume = 1;
+        manualIP = false;
         
     }
     // Update is called once per frame
@@ -410,7 +414,9 @@ public class Controller : MonoBehaviour {
     }
     public static void netWorkService()
     {
-        Controller controller = getController(); ;
+        Controller controller = getController();
+
+
         while (controller.areThreadsAlive())
         {
             try
@@ -418,7 +424,17 @@ public class Controller : MonoBehaviour {
                 if(controller.getOldStatus() != controller.getActualStatus())
                 {
                     controller.setOldStatus(controller.getActualStatus());
-                    string url = "https://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getActualStatus();
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "https://" + controller.customAddress + "/?event=" + controller.getActualStatus();
+                    }
+                    else
+                    {
+                        url = "https://" + controller.getIRIPAddress()+":"+controller.getPort() + "/?event=" + controller.getActualStatus();
+                    }
+                     
+                    Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
                     HttpWebResponse response = request.GetResponse() as HttpWebResponse;
@@ -458,6 +474,17 @@ public class Controller : MonoBehaviour {
     }
     public void runNetworkservice()
     {
+        if (ipInputField.text != "")
+        {
+            Debug.Log(ipInputField.text);
+            customAddress = ipInputField.text;
+            manualIP = true;
+        }
+        else
+        {
+            manualIP = false;
+        }
+       
         Debug.Log("Network Service Started");
         this.threadsAlive = true;
         Thread t = new Thread(new ThreadStart(netWorkService));
@@ -474,7 +501,6 @@ public class Controller : MonoBehaviour {
         }
         this.threadsAlive = false;
     }
-
     public void reCenterOculus()
     {
         UnityEngine.XR.InputTracking.Recenter();
