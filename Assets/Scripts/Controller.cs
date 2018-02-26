@@ -476,7 +476,6 @@ public class Controller : MonoBehaviour {
     {
         if (ipInputField.text != "")
         {
-            Debug.Log(ipInputField.text);
             customAddress = ipInputField.text;
             manualIP = true;
         }

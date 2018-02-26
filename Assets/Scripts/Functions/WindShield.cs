@@ -75,12 +75,14 @@ public class WindShield {
         wsDisplayRenderer.enabled = true;
         webcamTexture.Play();
         addAudioToImage();
+        this.wsaudioSource.volume = 1;
 
     }
     public void disableWSD()
     {
         wsDisplayRenderer.enabled = false;
         webcamTexture.Stop();
+        this.wsaudioSource.volume = 0;
     }
     public void setTintingTransparency(Single tintPercent)
     {

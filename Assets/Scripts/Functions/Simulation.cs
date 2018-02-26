@@ -5,13 +5,6 @@ using UnityEngine;
 
 public class Simulation {
 
-    /*
-     * TODO:
-     *          -   Check Timeshift between UTC and AETZ
-     *          
-     * 
-     */
-
     private Controller controller;
 
     private bool isRunning;
