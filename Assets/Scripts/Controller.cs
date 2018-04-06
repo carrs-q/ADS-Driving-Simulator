@@ -10,12 +10,31 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using TMPro;
 using System.Collections;
+using UnityClusterPackage;
+using UnityEngine.Networking;
 
 public class Controller : MonoBehaviour {
+
+    //VideoStates
     private const int INIT = 0;
     private const int START = 1;
     private const int PAUSE = 2;
     private const int RESET = 3;
+
+    //RenderMode
+    private const int CAVEMODE  = 1;
+    private const int VRMODE    = 2;
+    private const int ARMODE    = 3;
+    private const int MAXDISPLAY = 5; //Change back
+    private const string MASTERNODE = "master";
+    private const string SLAVENODE = "slave";
+
+    //RenderScreen
+    private const int MASTER = 0;
+    private const int FRONT = 1;
+    private const int LEFT = 2;
+    private const int RIGHT = 3;
+    private const int MIRRORS = 4;
 
     private static Controller instance = null;
     private Config config;
@@ -37,8 +56,11 @@ public class Controller : MonoBehaviour {
     private List<Thread> threadList;
     private bool manualIP;
     private string customAddress;
+    private int actualMode;
+    private int actualRenderScreen;
+    private Vector3 videoWallDefault;
 
-    public VideoPlayer videoWall;              //Player 0
+    public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
     public VideoPlayer navigationScreen;       //Player 3
@@ -63,6 +85,13 @@ public class Controller : MonoBehaviour {
     public AudioSource rightMirrorSound;
     public AudioSource leftMirrorSound;
     public GameObject steeringWheel;
+    public GameObject Oculus;
+    public GameObject FrontCamera;
+    public GameObject LeftCamera;
+    public GameObject RightCamera;
+    public GameObject MirrorCamera;
+    //public GameObject MultiProjectionCamera;
+    public GameObject videoWalls;
     public InputField ipInputField;
     private bool threadsAlive;
     public static Controller getController()
@@ -72,8 +101,16 @@ public class Controller : MonoBehaviour {
 
     // Should be before Start
     void Awake () {
+        actualMode = INIT; //default
+        if (NodeInformation.type.Equals(SLAVENODE))
+        {
+            //if slaveconfig is there, switch directly to cavemode
+            actualMode = CAVEMODE;
+            changeMode(actualMode);
+        }
         path = Application.streamingAssetsPath + "/config/config.json";
         ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+        videoWallDefault = videoWalls.transform.position;
         enabledSensorSync = false;
         configJson = File.ReadAllText(path);
         config = JsonUtility.FromJson<Config>(configJson);
@@ -93,7 +130,6 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         AudioListener.volume = 1;
         manualIP = false;
-        
     }
     // Update is called once per frame
     void Update () {
@@ -123,6 +159,130 @@ public class Controller : MonoBehaviour {
         }
 	}
 
+    //Simulator Mode
+
+    public void changeMode(int mode)
+    {
+        initSettings();
+        switch (mode)
+        {
+            case CAVEMODE:
+                {
+                    actualMode = CAVEMODE;
+                    loadCaveSettings();
+
+                }
+                break;
+            case VRMODE:
+                {
+                    actualMode = VRMODE;
+                    loadVRSettings();
+
+
+                }
+                break;
+            case ARMODE:
+                {
+                    actualMode = ARMODE;
+                    loadARSettings();
+
+                }
+                break;
+            default:
+                {
+                    actualMode = INIT;
+                }
+                break;
+        }
+    }
+    private void initSettings()
+    {
+        if (NodeInformation.type.Equals(SLAVENODE))
+        {
+            Destroy(Oculus);
+            FrontCamera.SetActive(false);
+            LeftCamera.SetActive(false);
+            RightCamera.SetActive(false);
+            FrontCamera.SetActive(false);
+            MirrorCamera.SetActive(false);
+        }
+        else
+        {
+            Oculus.SetActive(false);
+            if (Oculus != null)
+            {
+                if (Oculus.GetComponent(typeof(AudioListener)) != null)
+                {
+                    Destroy(Oculus.GetComponent(typeof(AudioListener)));
+                }
+            }
+            for (int i = 1; i < MAXDISPLAY; i++)
+            {
+                if (Display.displays.Length > i)
+                {
+                    Display.displays[i].Activate();
+                }
+
+            }
+        }
+        shutdownNodes();
+      
+    }
+    private void loadVRSettings()
+    {
+        Oculus.SetActive(true);
+        videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
+
+        Oculus.AddComponent(typeof(AudioListener));
+        for (int i=0; i<Display.displays.Length; i++)
+        {
+            Debug.Log(Display.displays[i].ToString());
+        }
+    }
+    private void loadARSettings()
+    {
+        LogText.text += "\nAR is not supported at the moment, please change mode";
+    }
+    private void loadCaveSettings()
+    {
+        if (NodeInformation.type.Equals(SLAVENODE))
+        {
+            this.GetComponent<Camera>().targetDisplay = 1;
+            switch (NodeInformation.screen)
+            {
+                case FRONT:{ FrontCamera.SetActive(true); }break;
+                case LEFT: { LeftCamera.SetActive(true); } break;
+                case RIGHT: { RightCamera.SetActive(true); } break;
+                case MIRRORS: { MirrorCamera.SetActive(true); } break;
+                default: { this.GetComponent<Camera>().targetDisplay = 0; }break;
+            }
+            createClientNode();
+        }
+        if(NodeInformation.type.Equals(MASTERNODE))
+        {
+            this.GetComponent<Camera>().targetDisplay = 0;
+            createMasterServer();
+        }
+        
+        videoWalls.transform.localPosition = videoWallDefault;
+
+    }
+
+    private void createMasterServer()
+    {
+
+    }
+
+    private void createClientNode()
+    {
+
+    }
+    private void shutdownNodes()
+    {
+
+    }
+
+
     // Core Functions for Simulator
     public void startSimulation()
     {
@@ -132,7 +292,7 @@ public class Controller : MonoBehaviour {
             Debug.Log(leftMirrorSound.clip.loadState);
         sendMarker(START);
         simulator.beginnSimulation();
-        videoWall.Play();
+        frontWall.Play();
         leftWall.Play();
         rightWall.Play();
         MirrorStraigt.Play();
@@ -147,7 +307,7 @@ public class Controller : MonoBehaviour {
     {
         sendMarker(PAUSE);
         simulator.pauseSimulation();
-        videoWall.Pause();
+        frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
         navigationScreen.Pause();
@@ -162,7 +322,7 @@ public class Controller : MonoBehaviour {
         sendMarker(RESET);
         simulator.setDefaults();
         obdData.resetCounter();
-        Seek(videoWall, 0);
+        Seek(frontWall, 0);
         Seek(leftWall, 0);
         Seek(rightWall, 0);
         Seek(navigationScreen, 0);
@@ -171,7 +331,7 @@ public class Controller : MonoBehaviour {
         Seek(MirrorRight, 0);
         rightMirrorSound.time = 0;
         leftMirrorSound.time = 0;
-        videoWall.Pause();
+        frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
         navigationScreen.Pause();
@@ -180,7 +340,18 @@ public class Controller : MonoBehaviour {
         MirrorRight.Pause();
         startButtonText.text = "Play";
 
+        if (NodeInformation.type.Equals("master") && actualMode == CAVEMODE)
+        {
+            networkState message = new networkState();
+            message.obdData = obdData;
+            LogText.text+=("\nConnected Clients: "+NetworkServer.connections.Count);
+            NetworkServer.SendToAll(1, message);
+            LogText.text += "\nData send to Clients";
+        }
+
     }
+   
+
     public void enableWindshield()
     {
         this.wsd.enableWSD();
@@ -218,7 +389,7 @@ public class Controller : MonoBehaviour {
     public bool isSimulationReady()
     {
         int checksum = 0;
-        if (videoWall.isPrepared)
+        if (frontWall.isPrepared)
         {
             checksum++;
             this.videoPlayerAttached = true;
@@ -246,7 +417,7 @@ public class Controller : MonoBehaviour {
         {
             case 0:
                 {
-                    loadVideo(videoWall, path);
+                    loadVideo(frontWall, path);
                 }
                 break;
             case 1:
@@ -500,10 +671,18 @@ public class Controller : MonoBehaviour {
         }
         this.threadsAlive = false;
     }
+
+
+    //Oculus Specific
+    public void loadOculusCamera()
+    {
+
+    }
     public void reCenterOculus()
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
+
 }
 
 /*

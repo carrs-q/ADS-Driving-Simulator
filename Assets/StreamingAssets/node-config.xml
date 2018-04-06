@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node type="master" screen="1">
+    <server ip="131.181.139.141" port="25000"/>
+</node>

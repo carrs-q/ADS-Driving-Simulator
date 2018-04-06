@@ -32,6 +32,8 @@ public class LoadVideoButton : MonoBehaviour
             if (path.Length > 0)
             {
                 string newPath = WWW.UnEscapeURL(path[0].Replace("file://", ""));
+               
+
                 controller.loadVideotoPlayer(index - 1, newPath);
             }
         }
