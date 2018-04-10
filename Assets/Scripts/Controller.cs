@@ -12,37 +12,53 @@ using TMPro;
 using System.Collections;
 using UnityClusterPackage;
 using UnityEngine.Networking;
+using System.Text;
 
 public class Controller : MonoBehaviour {
 
     //VideoStates
-    private const int INIT = 0;
-    private const int START = 1;
-    private const int PAUSE = 2;
-    private const int RESET = 3;
-
+    public const int INIT = 0;
+    public const int START = 1;
+    public const int PAUSE = 2;
+    public const int RESET = 3;
+    public const int OVERTAKE = 4;
     //RenderMode
-    private const int CAVEMODE  = 1;
-    private const int VRMODE    = 2;
-    private const int ARMODE    = 3;
-    private const int MAXDISPLAY = 5; //Change back
-    private const string MASTERNODE = "master";
-    private const string SLAVENODE = "slave";
+    public const int CAVEMODE  = 1;
+    public const int VRMODE    = 2;
+    public const int ARMODE    = 3;
+    public const int MAXDISPLAY = 5; //TODO Change back
+
+
+    public const int MAX_CONNECTION = 10;
+    public const string MASTERNODE = "master";
+    public const string SLAVENODE = "slave";
 
     //RenderScreen
-    private const int MASTER = 0;
-    private const int FRONT = 1;
-    private const int LEFT = 2;
-    private const int RIGHT = 3;
-    private const int MIRRORS = 4;
+    public const int MASTER = 0;
+    public const int FRONT = 1;
+    public const int LEFT = 2;
+    public const int RIGHT = 3;
+    public const int MIRRORS = 4;
 
+    //MessageCodes
+
+    public const string REQDISPLAY = "RQD";
+    public const string RESDISPLAY = "RSD";
+
+
+    private int hostID, connectionID, clientID;
+    private int relChannel, unrelChannel;
+    private bool serverStarted = false, isConnected = false, isStarted=false;
+    private byte error;
+    private float connectionTime;
+    private List<ClientNode> clients;
+
+    
     private static Controller instance = null;
+
+    private int renderMode = MASTER;
     private Config config;
-    private WindShield wsd;
-    private Simulation simulator;
-    private OBDData obdData;
     private bool videoPlayerAttached;
-    private Int64 timedifference;
     private IPAddress serverIP;
     private int port;
     private IPAddress irIPAddress;
@@ -58,7 +74,13 @@ public class Controller : MonoBehaviour {
     private string customAddress;
     private int actualMode;
     private int actualRenderScreen;
+    //private SyncData syncData;
+    public OBDData obdData;
+    private Simulation simulator;
+    private WindShield wsd;
+    private Int64 timedifference;
     private Vector3 videoWallDefault;
+    private NetworkClient networkClient;
 
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
@@ -98,69 +120,127 @@ public class Controller : MonoBehaviour {
     {
         return instance;
     }
+    private SyncData syncData;
+    public GameObject dataCube;
+
+   
+    //TODO Delete
+    private bool spawned = false;
 
     // Should be before Start
     void Awake () {
-        actualMode = INIT; //default
-        if (NodeInformation.type.Equals(SLAVENODE))
-        {
-            //if slaveconfig is there, switch directly to cavemode
-            actualMode = CAVEMODE;
-            changeMode(actualMode);
-        }
-        path = Application.streamingAssetsPath + "/config/config.json";
-        ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-        videoWallDefault = videoWalls.transform.position;
-        enabledSensorSync = false;
-        configJson = File.ReadAllText(path);
-        config = JsonUtility.FromJson<Config>(configJson);
-        port = config.port;
-        irIPAddress = IPAddress.Parse(config.irIPAddress);
-        instance = this;
+        this.gameObject.SetActive(true);
+        Network.sendRate = 50;
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
-        threadList = new List<Thread>();
-        threadsAlive = true;
         wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader, this.windShieldSound);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
+
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            renderMode = MASTER;
+            actualMode = INIT; //default
+            clients = new List<ClientNode>();
+            path = Application.streamingAssetsPath + "/config/config.json";
+            configJson = File.ReadAllText(path);
+            config = JsonUtility.FromJson<Config>(configJson);
+            irIPAddress = IPAddress.Parse(config.irIPAddress);
+            port = config.port;
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            videoWallDefault = videoWalls.transform.position;
+            threadList = new List<Thread>();
+            threadsAlive = true;
+        }
+
+        if (NodeInformation.type.Equals(SLAVENODE))
+        {
+            actualMode = CAVEMODE;
+            renderMode = NodeInformation.screen;
+            syncData = dataCube.GetComponent<SyncData>();
+        }
+        changeMode(actualMode);
+        enabledSensorSync = false;
+        instance = this;
         videoPlayerAttached = false;
         this.oldStatus = INIT;
         this.actualStatus = INIT;
         AudioListener.volume = 1;
         manualIP = false;
     }
+    private void Start()
+    {
+      
+        if (Network.isClient)
+        {
+            if (networkClient.isConnected)
+            {
+                Debug.Log("Client");
+            }
+        }
+
+    }
     // Update is called once per frame
     void Update () {
-        if (videoPlayerAttached)
+        if(serverStarted)
         {
-            if (this.simulator.isStarted())
+            serverRecieve();
+        }
+        else if(isConnected)
+        {
+            nodeRecieve();
+        }
+        //TODO Divide if Master or Slave
+        if (renderMode == MASTER)
+        {
+            if (!spawned)
             {
-                timedifference = simulator.getTimeDifference();
-                // Just if an new Dataset in OBD
-                if (!obdData.calcIterrator((int)timedifference))
+                if (NetworkServer.active)
                 {
-                    steeringWheel.transform.localEulerAngles = new Vector3( 0f, this.obdData.getSteeringWheelAngle(), 0f);
-                    digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
-                    currTime.SetText(simulator.getCurrTime());
-                    temp.SetText(simulator.getCurrTemp());
-                    gear.SetText(simulator.getGear().ToString());
-                    simulator.calcDistance(obdData.getSpeed());
-                    trip2.SetText(simulator.getTrip2km().ToString("F1"));
-                    trip1.SetText(simulator.getTrip1().ToString());
-                    fuelkm.SetText(simulator.getFuelKM().ToString());
-                    if (this.wsd.isHorizontalMovement())
+                    Debug.Log("Spawend");
+                    NetworkServer.Spawn(dataCube);
+                    syncData = dataCube.GetComponent<SyncData>();
+                    dataCube.SetActive(true);
+                    spawned = true;
+                    if (syncData.isActiveAndEnabled)
                     {
-                        this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                        Debug.Log("Active");
+                    }
+                    else
+                    {
+                        Debug.Log("Not Active");
+                    }
+                }
+            }
+            if (videoPlayerAttached)
+            {
+                if (this.simulator.isStarted())
+                {
+                    timedifference = simulator.getTimeDifference();
+                    // Just if an new Dataset in OBD
+                    if (!obdData.calcIterrator((int)timedifference))
+                    {
+                        steeringWheel.transform.localEulerAngles = new Vector3(0f, this.obdData.getSteeringWheelAngle(), 0f);
+                        digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
+                        currTime.SetText(simulator.getCurrTime());
+                        temp.SetText(simulator.getCurrTemp());
+                        gear.SetText(simulator.getGear().ToString());
+                        simulator.calcDistance(obdData.getSpeed());
+                        trip2.SetText(simulator.getTrip2km().ToString("F1"));
+                        trip1.SetText(simulator.getTrip1().ToString());
+                        fuelkm.SetText(simulator.getFuelKM().ToString());
+                        if (this.wsd.isHorizontalMovement())
+                        {
+                            this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                        }
                     }
                 }
             }
         }
-	}
+    }
 
     //Simulator Mode
-
     public void changeMode(int mode)
     {
         initSettings();
@@ -168,9 +248,7 @@ public class Controller : MonoBehaviour {
         {
             case CAVEMODE:
                 {
-                    actualMode = CAVEMODE;
                     loadCaveSettings();
-
                 }
                 break;
             case VRMODE:
@@ -197,14 +275,14 @@ public class Controller : MonoBehaviour {
     }
     private void initSettings()
     {
+        FrontCamera.SetActive(false);
+        LeftCamera.SetActive(false);
+        RightCamera.SetActive(false);
+        FrontCamera.SetActive(false);
+        MirrorCamera.SetActive(false);
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             Destroy(Oculus);
-            FrontCamera.SetActive(false);
-            LeftCamera.SetActive(false);
-            RightCamera.SetActive(false);
-            FrontCamera.SetActive(false);
-            MirrorCamera.SetActive(false);
         }
         else
         {
@@ -226,7 +304,6 @@ public class Controller : MonoBehaviour {
             }
         }
         shutdownNodes();
-      
     }
     private void loadVRSettings()
     {
@@ -234,7 +311,7 @@ public class Controller : MonoBehaviour {
         videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
 
         Oculus.AddComponent(typeof(AudioListener));
-        for (int i=0; i<Display.displays.Length; i++)
+        for (int i = 0; i < Display.displays.Length; i++)
         {
             Debug.Log(Display.displays[i].ToString());
         }
@@ -250,38 +327,261 @@ public class Controller : MonoBehaviour {
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
             {
-                case FRONT:{ FrontCamera.SetActive(true); }break;
+                case FRONT: { FrontCamera.SetActive(true); } break;
                 case LEFT: { LeftCamera.SetActive(true); } break;
                 case RIGHT: { RightCamera.SetActive(true); } break;
                 case MIRRORS: { MirrorCamera.SetActive(true); } break;
-                default: { this.GetComponent<Camera>().targetDisplay = 0; }break;
+                default: { this.GetComponent<Camera>().targetDisplay = 0; } break;
             }
-            createClientNode();
+            StartCoroutine(AttemptRecconnect());
         }
-        if(NodeInformation.type.Equals(MASTERNODE))
+        if (NodeInformation.type.Equals(MASTERNODE))
         {
             this.GetComponent<Camera>().targetDisplay = 0;
             createMasterServer();
         }
-        
+
         videoWalls.transform.localPosition = videoWallDefault;
 
     }
 
+
+    //Network Init
     private void createMasterServer()
     {
+        if (!serverStarted)
+        {
+            //IP Configurations
+            NetworkTransport.Init();
+
+            Network.proxyIP = NodeInformation.serverIp;
+            bool useNat = Network.HavePublicAddress();
+
+            //Channel
+            ConnectionConfig cc = new ConnectionConfig();
+            relChannel = cc.AddChannel(QosType.Reliable);
+            unrelChannel = cc.AddChannel(QosType.Unreliable);
+
+            //Start
+            HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
+            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort, null);
+
+            
+            if (error != (byte)NetworkError.Ok)
+            {
+                NetworkError nerror = (NetworkError)error;
+                Debug.Log(nerror);
+            }
+            else
+            {
+                serverStarted = true;
+                Debug.Log("Network Master started");
+            }
+
+
+            //Network.InitializeServer(NodeInformation.maxnodes, NodeInformation.serverPort, useNat);
+            //Network.maxConnections = NodeInformation.maxnodes;
+            //NetworkServer.Listen(NodeInformation.serverPort);
+        }
+    }
+         // Sub Init TODO Reconnecter
+    private IEnumerator AttemptRecconnect()
+    {
+       
+        while (!isConnected) //TODO - Check how connect correct
+        {
+            createClientNode();
+            yield return new WaitForSeconds(10.0f);
+        }
 
     }
-
     private void createClientNode()
     {
+        NetworkTransport.Init();
+        ConnectionConfig cc = new ConnectionConfig();
+        relChannel = cc.AddChannel(QosType.Reliable);
+        unrelChannel = cc.AddChannel(QosType.Unreliable);
+        HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
+        hostID = NetworkTransport.AddHost(topo, (NodeInformation.serverPort+1));
+        connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
+        connectionTime = Time.time;
+
+        if(error != (byte)NetworkError.Ok)
+        {
+            NetworkError nerror = (NetworkError)error;
+            Debug.Log(nerror);
+        }
+        else
+        { // TODO: IS OK even without Server... Figure out why
+            isConnected = true;
+            Debug.Log("Node Successfull connected");
+        }
+
+        //TODO Catch ErrorMessage from not Connect
+        //Network.Connect(NodeInformation.serverIp, NodeInformation.serverPort);
+    }
+
+    //Network Recieve
+    private void serverRecieve()
+    {
+        int recHostId;
+        int connectionId;
+        int channelId;
+        byte[] recBuffer = new byte[1024];
+        int bufferSize = 1024;
+        int dataSize;
+        byte error;
+        NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
+        switch (recData)
+        {
+            case NetworkEventType.Nothing:         //1
+                break;
+            case NetworkEventType.ConnectEvent:    //2
+                LogText.text += "\nNode " + connectionID + " has connected";
+                Debug.Log("Node " + connectionID + " has connected on channelId: " + channelId);
+                serverConnect(connectionID);
+                break;
+            case NetworkEventType.DataEvent:       //3 
+                string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
+                Debug.Log("Message" + msg);
+                break;
+            case NetworkEventType.DisconnectEvent: //4
+                LogText.text += "\nNode " + connectionID + " has disconnected";
+                Debug.Log("Node " + connectionID + " has disconnected");
+                break;
+        }
+    }
+    private void nodeRecieve()
+    {
+        int recHostId;
+        int connectionId;
+        int channelId;
+        byte[] recBuffer = new byte[1024];
+        int bufferSize = 1024;
+        int dataSize;
+        byte error;
+        NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
+        switch (recData)
+        {
+            case NetworkEventType.DataEvent:       //3
+                Debug.Log("Da ist was");
+                string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
+                Debug.Log("Message" + msg);
+                string[] splitData = msg.Split('|');
+                switch (splitData[0])
+                {
+                    case REQDISPLAY:
+                        nodeRequestDisplay(splitData[1]);
+                        break;
+
+                    default:
+                        Debug.Log("Unkown Message" + msg); break;
+                }
+                break;
+            case NetworkEventType.DisconnectEvent:
+                shutdownSimulator(); //Close Programm after closing Master
+                break;
+        }
+    }
+
+    //Network Function Server-Side
+    private void serverConnect(int conID)
+    { //On Server
+        ClientNode cN = new ClientNode(conID, -1);
+        clients.Add(cN);
+        string msg = REQDISPLAY + "|" + conID;
+        Send(msg, this.relChannel, conID);
+    }
+
+    //Network function Client-Side
+    private void nodeRequestDisplay(string clientID)
+    {
+        //Store client ID
+        this.clientID = int.Parse(clientID);
+
+        //Send Displaynr back  NodeInformation.screen
+        clientToServerSend(RESDISPLAY + "|" + NodeInformation.screen, relChannel);
+
 
     }
+
+
+
+    //Send to specific client
+    private void Send(string message, int channelID, int conID)
+    {
+        List<ClientNode> c = new List<ClientNode>();
+        c.Add(clients.Find(x => x.getConnectionID() == conID));
+        Send(message, channelID, c);
+    }
+    //Send to all clients
+    private void Send(string message, int channelID, List<ClientNode> c)
+    {
+        byte[] msg = Encoding.Unicode.GetBytes(message);
+        foreach(ClientNode cN in c)
+        {
+            if(NetworkTransport.Send(hostID, cN.getConnectionID(), channelID, msg, (message.Length * sizeof(char)), out error)){
+                Debug.Log("Sended to Client "+cN.getConnectionID()+": " + message);
+            }
+            else
+            {
+                NetworkError nerror = (NetworkError)error;
+                Debug.Log("Message not Sended because: " + nerror);
+            }
+            
+        }
+
+    }
+
+    private void clientToServerSend(string message, int channelID)
+    {
+        byte[] msg = Encoding.Unicode.GetBytes(message);
+
+        if (NetworkTransport.Send(hostID, connectionID, channelID, msg, (message.Length * sizeof(char)), out error))
+        {
+            Debug.Log("Sended to Server: " + message);
+        }
+        else
+        {
+            NetworkError nerror = (NetworkError)error;
+            Debug.Log("Message not Sended because: " + nerror);
+        }
+    }
+    
+
+    //Wait after Start for Server Connection
+    
+    private void OnConnectedToServer()
+    {
+        Debug.Log("Node connected successfull Server");
+        dataCube.SetActive(true);
+
+    }
+    private void OnNetworkInstantiate(NetworkMessageInfo info)
+    {
+        Debug.Log(info);
+    }
+
     private void shutdownNodes()
     {
 
     }
-
+    private void OnDestroy()
+    {
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            Network.Disconnect();
+        }
+        else if(NodeInformation.type.Equals(SLAVENODE))
+        {
+            //TODO Shutdown node or Reconnect
+            shutdownSimulator();
+        }
+    }
+    private void OnFailedToConnect(NetworkConnectionError error)
+    {
+        Debug.Log("Marco ");
+    }
 
     // Core Functions for Simulator
     public void startSimulation()
@@ -340,6 +640,7 @@ public class Controller : MonoBehaviour {
         MirrorRight.Pause();
         startButtonText.text = "Play";
 
+        //TODO Delete
         if (NodeInformation.type.Equals("master") && actualMode == CAVEMODE)
         {
             networkState message = new networkState();
@@ -351,7 +652,6 @@ public class Controller : MonoBehaviour {
 
     }
    
-
     public void enableWindshield()
     {
         this.wsd.enableWSD();
@@ -564,19 +864,30 @@ public class Controller : MonoBehaviour {
     // Network Interfaces
     public void shutdownSimulator()
     {
-        for(int i = 0; i< threadList.Count; i++)
+        if (NodeInformation.type.Equals(MASTERNODE))
         {
-            threadList[i].Abort();
-            Debug.Log("Quit Thread");
+            for (int i = 0; i < threadList.Count; i++)
+            {
+                threadList[i].Abort();
+                Debug.Log("Quit Thread");
+            }
+            this.threadsAlive = false;
         }
-        this.threadsAlive = false;
+        Debug.Log("Bye Bye");
         Application.Quit();
     }
     public void sendMarker(int marker)
     {
-        if (this.enabledSensorSync)
+        if (NodeInformation.type.Equals(MASTERNODE))
         {
-            this.actualStatus = marker;
+            if (Network.isServer)
+            {
+                syncData.simulationState = marker;
+                if (this.enabledSensorSync)
+                {
+                    this.actualStatus = marker;
+                }
+            }
         }
     }
     public Config getConfig()
@@ -645,21 +956,24 @@ public class Controller : MonoBehaviour {
     }
     public void runNetworkservice()
     {
-        if (ipInputField.text != "")
-        {
-            customAddress = ipInputField.text;
-            manualIP = true;
-        }
-        else
-        {
-            manualIP = false;
+        if (NodeInformation.type.Equals(MASTERNODE)){
+            if (ipInputField.text != "")
+            {
+                customAddress = ipInputField.text;
+                manualIP = true;
+            }
+            else
+            {
+                manualIP = false;
+            }
+
+            Debug.Log("Network Service Started");
+            this.threadsAlive = true;
+            Thread t = new Thread(new ThreadStart(netWorkService));
+            t.Start();
+            threadList.Add(t);
         }
        
-        Debug.Log("Network Service Started");
-        this.threadsAlive = true;
-        Thread t = new Thread(new ThreadStart(netWorkService));
-        t.Start();
-        threadList.Add(t);
     }
     public void stopNetworkservice()
     {
@@ -672,7 +986,6 @@ public class Controller : MonoBehaviour {
         this.threadsAlive = false;
     }
 
-
     //Oculus Specific
     public void loadOculusCamera()
     {
@@ -682,7 +995,7 @@ public class Controller : MonoBehaviour {
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
-
+    
 }
 
 /*
