@@ -8,7 +8,7 @@
         this.displayID = displayID;
     }
 
-    public void setdisplazID(int displayID)
+    public void setdisplayID(int displayID)
     {
         this.displayID = displayID;
     }

@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node type="master" screen="1" maxnodes="10">
+<node type="master" screen="1" debug="1">
     <server ip="131.181.139.225" port="25000"/>
 </node>

@@ -1,95 +1,66 @@
-﻿using UnityEngine;
-using System.Collections;
-using UnityEngine.Networking;
-using System;
-
-public class SyncData : NetworkBehaviour
+﻿public class SyncData
 {
+    //
 
-    private void Start()
+    //currentState
+    private int simulationState;
+
+    //OBD
+    private int speed;
+    private int steeringWheelRotation;
+    private int gasPedal;
+    private int brakePedal;
+    private bool isBrakePedal;
+    private bool isGasPedal;
+
+    SyncData()
     {
-        if (!isServer) // Does Client
-        {
-            //CmdchangeState(0);
-        }
-        else
-        {
-
-        }
+        simulationState = 0;
+        speed = 0;
+        gasPedal = 0;
+        brakePedal = 0;
+        steeringWheelRotation = 0;
+        isBrakePedal = false;
+        isGasPedal = false;
     }
 
-    [SyncVar]
-    public int 
-        simulationState = 0,
-        currentSpeed =0,
-        currentSteeringWheelRotation = 0;
-
-    [Command]
-    void CmdchangeState(int state)
+    public void updateOBD(int speed, int wheel, int gas, int brake, bool isBrake, bool isGas)
     {
-
+        this.speed = speed;
+        this.steeringWheelRotation = wheel;
+        this.gasPedal = gas;
+        this.brakePedal = brake;
+        this.isBrakePedal = isBrake;
+        this.isGasPedal = isGas;
     }
 
-    [ClientRpc]
-    void RpcUpdateSimState(int state)
+    public void setSimState(int state)
     {
         this.simulationState = state;
-        Debug.Log("Client listen");
     }
-
-
-    
-    //On Send
-    public override bool OnSerialize(NetworkWriter writer, bool forceAll)
+    public void setSpeed(int speed)
     {
-        Debug.Log("I Changed something " + simulationState);
-        RpcUpdateSimState(simulationState);
-        /*
-         *   if (forceAll)
-        {
-            writer.WritePackedUInt32((uint)this.simulationState);
-            writer.WritePackedUInt32((uint)this.currentSpeed);
-            writer.WritePackedUInt32((uint)this.currentSteeringWheelRotation);
-            Debug.Log("Initial Data written");
-            return true;
-        }
-        bool wroteSyncVar = false;
-        if((this.get_syncVarDirtyBits & 1u) != 0u){
-            if (!wroteSyncVar)
-            {
-                writer.WritePackedUInt32(value: this.get_syncVarDirtyBits);
-                wroteSyncVar = true;
-            }
-            writer.WritePackedUInt32((uint)this.simulationState);
-        }
-
-        if (!wroteSyncVar)
-        {
-            writer.WritePackedUInt32(0);
-        }
-        else
-        {
-            Debug.Log("Write Data");
-        }
-        */
-
-        return true;
+        this.speed = speed;
     }
-
-    public override void OnDeserialize(NetworkReader reader, bool initialState)
+    public void setSteeringWheelRotation(int steeringWheelRotation)
     {
-
-        //On Recieve
-        /*
-        if (initialState)
-        {
-            this.simulationState = (int)reader.ReadPackedUInt32();
-            this.currentSpeed = (int)reader.ReadPackedUInt32();
-            this.currentSpeed = (int)reader.ReadPackedUInt32();
-            Debug.Log("Read Initial");
-
-        }
-        this.simulationState = (int)reader.ReadPackedUInt32();
-        */
+        this.steeringWheelRotation = steeringWheelRotation;
     }
+    public void setGasPedal(int gasPedal)
+    {
+        this.gasPedal = gasPedal;
+    }
+    public void setBrakePedal(int brakePedal)
+    {
+        this.brakePedal = brakePedal;
+    }
+    public void setIsBrakePedal(bool isBrakePedal)
+    {
+        this.isBrakePedal = isBrakePedal;
+    }
+    public void setIsGasPedal(bool isGasPedal)
+    {
+        this.isGasPedal = isGasPedal;
+    }
+
 }

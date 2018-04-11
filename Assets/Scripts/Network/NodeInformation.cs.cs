@@ -10,7 +10,7 @@ namespace UnityClusterPackage
         private static XmlDocument xmlDocument;
 
         public static string type, serverIp;
-        public static int id, maxnodes, serverPort, screen;
+        public static int id, serverPort, screen, debug;
 
         static NodeInformation()
         {
@@ -57,7 +57,7 @@ namespace UnityClusterPackage
                             case "node":
                                 type = xmlNodeReader.GetAttribute("type");
                                 screen = Convert.ToInt32(xmlNodeReader.GetAttribute("screen"));
-                                maxnodes = Convert.ToInt32(xmlNodeReader.GetAttribute("maxnodes"));
+                                debug = Convert.ToInt32(xmlNodeReader.GetAttribute("debug"));
                                 break;
 
                             case "server":

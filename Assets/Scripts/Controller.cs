@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +14,8 @@ using UnityEngine.Networking;
 using System.Text;
 
 public class Controller : MonoBehaviour {
+    public const string TEMPPATH = "tempassets";
+
 
     //VideoStates
     public const int INIT = 0;
@@ -29,7 +30,7 @@ public class Controller : MonoBehaviour {
     public const int MAXDISPLAY = 5; //TODO Change back
 
 
-    public const int MAX_CONNECTION = 10;
+  
     public const string MASTERNODE = "master";
     public const string SLAVENODE = "slave";
 
@@ -41,13 +42,17 @@ public class Controller : MonoBehaviour {
     public const int MIRRORS = 4;
 
     //MessageCodes
-
+    public const int BUFFERSIZE = 1024;
+    public const int MAX_CONNECTION = 10;
     public const string REQDISPLAY = "RQD";
     public const string RESDISPLAY = "RSD";
 
 
-    private int hostID, connectionID, clientID;
-    private int relChannel, unrelChannel;
+    private int hostID=-1, connectionID, clientID;
+    private byte relChannel;             // For Connections
+    private byte unrelSeqChannel;        // If Streaming is needed
+    private byte allCostDeliChannel;     // For Simulator States
+    private byte relFragSecChannel;     //Content Delivery
     private bool serverStarted = false, isConnected = false, isStarted=false;
     private byte error;
     private float connectionTime;
@@ -55,6 +60,10 @@ public class Controller : MonoBehaviour {
 
     
     private static Controller instance = null;
+    public OBDData obdData;
+    private SimulationContent simulationContent;
+    private Simulation simulator;
+    private WindShield wsd;
 
     private int renderMode = MASTER;
     private Config config;
@@ -75,12 +84,11 @@ public class Controller : MonoBehaviour {
     private int actualMode;
     private int actualRenderScreen;
     //private SyncData syncData;
-    public OBDData obdData;
-    private Simulation simulator;
-    private WindShield wsd;
     private Int64 timedifference;
     private Vector3 videoWallDefault;
     private NetworkClient networkClient;
+
+   
 
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
@@ -112,6 +120,7 @@ public class Controller : MonoBehaviour {
     public GameObject LeftCamera;
     public GameObject RightCamera;
     public GameObject MirrorCamera;
+
     //public GameObject MultiProjectionCamera;
     public GameObject videoWalls;
     public InputField ipInputField;
@@ -121,7 +130,6 @@ public class Controller : MonoBehaviour {
         return instance;
     }
     private SyncData syncData;
-    public GameObject dataCube;
 
    
     //TODO Delete
@@ -130,7 +138,8 @@ public class Controller : MonoBehaviour {
     // Should be before Start
     void Awake () {
         this.gameObject.SetActive(true);
-        Network.sendRate = 50;
+
+        //Network.sendRate = 50;
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
@@ -152,13 +161,13 @@ public class Controller : MonoBehaviour {
             videoWallDefault = videoWalls.transform.position;
             threadList = new List<Thread>();
             threadsAlive = true;
+            simulationContent = new SimulationContent(TEMPPATH);
+            StartCoroutine(simulationContent.addFile("http://131.181.139.225:1605/cdn/overtake1/mb.mp4").downloadFile());
         }
-
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             actualMode = CAVEMODE;
             renderMode = NodeInformation.screen;
-            syncData = dataCube.GetComponent<SyncData>();
         }
         changeMode(actualMode);
         enabledSensorSync = false;
@@ -169,18 +178,7 @@ public class Controller : MonoBehaviour {
         AudioListener.volume = 1;
         manualIP = false;
     }
-    private void Start()
-    {
-      
-        if (Network.isClient)
-        {
-            if (networkClient.isConnected)
-            {
-                Debug.Log("Client");
-            }
-        }
 
-    }
     // Update is called once per frame
     void Update () {
         if(serverStarted)
@@ -194,25 +192,6 @@ public class Controller : MonoBehaviour {
         //TODO Divide if Master or Slave
         if (renderMode == MASTER)
         {
-            if (!spawned)
-            {
-                if (NetworkServer.active)
-                {
-                    Debug.Log("Spawend");
-                    NetworkServer.Spawn(dataCube);
-                    syncData = dataCube.GetComponent<SyncData>();
-                    dataCube.SetActive(true);
-                    spawned = true;
-                    if (syncData.isActiveAndEnabled)
-                    {
-                        Debug.Log("Active");
-                    }
-                    else
-                    {
-                        Debug.Log("Not Active");
-                    }
-                }
-            }
             if (videoPlayerAttached)
             {
                 if (this.simulator.isStarted())
@@ -353,20 +332,27 @@ public class Controller : MonoBehaviour {
         {
             //IP Configurations
             NetworkTransport.Init();
-
             Network.proxyIP = NodeInformation.serverIp;
             bool useNat = Network.HavePublicAddress();
 
             //Channel
             ConnectionConfig cc = new ConnectionConfig();
             relChannel = cc.AddChannel(QosType.Reliable);
-            unrelChannel = cc.AddChannel(QosType.Unreliable);
+            unrelSeqChannel = cc.AddChannel(QosType.UnreliableSequenced);
+            relFragSecChannel = cc.AddChannel(QosType.ReliableFragmentedSequenced);
+            allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
+
 
             //Start
             HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
-            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort, null);
+            NetworkTransport.Init();
 
-            
+            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort, null);
+            if (hostID < 0)
+            {
+                Debug.Log("Server creation failed");
+            }
+
             if (error != (byte)NetworkError.Ok)
             {
                 NetworkError nerror = (NetworkError)error;
@@ -387,22 +373,28 @@ public class Controller : MonoBehaviour {
          // Sub Init TODO Reconnecter
     private IEnumerator AttemptRecconnect()
     {
-       
+        yield return new WaitForSeconds(10.0f);
+
         while (!isConnected) //TODO - Check how connect correct
         {
             createClientNode();
-            yield return new WaitForSeconds(10.0f);
         }
-
     }
     private void createClientNode()
     {
         NetworkTransport.Init();
         ConnectionConfig cc = new ConnectionConfig();
         relChannel = cc.AddChannel(QosType.Reliable);
-        unrelChannel = cc.AddChannel(QosType.Unreliable);
+        unrelSeqChannel = cc.AddChannel(QosType.UnreliableSequenced);
+        relFragSecChannel = cc.AddChannel(QosType.ReliableFragmentedSequenced);
+        allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
+
         HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
         hostID = NetworkTransport.AddHost(topo, (NodeInformation.serverPort+1));
+        if (hostID < 0)
+        {
+            Debug.Log("Client Socket creation failed");
+        }
         connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
         connectionTime = Time.time;
 
@@ -424,49 +416,66 @@ public class Controller : MonoBehaviour {
     //Network Recieve
     private void serverRecieve()
     {
-        int recHostId;
-        int connectionId;
-        int channelId;
-        byte[] recBuffer = new byte[1024];
-        int bufferSize = 1024;
+        int outHostId;
+        int outConnectionId;
+        int outChannelId;
+
+        byte[] recBuffer = new byte[BUFFERSIZE];
         int dataSize;
         byte error;
-        NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
+        NetworkEventType recData = NetworkTransport.Receive(out outHostId, out outConnectionId, out outChannelId, recBuffer, BUFFERSIZE, out dataSize, out error);
+        if((NetworkError)error != NetworkError.Ok)
+        {
+            NetworkError nerror = (NetworkError)error;
+            Debug.Log("Recieve Error: " + nerror);
+        }
         switch (recData)
         {
             case NetworkEventType.Nothing:         //1
                 break;
             case NetworkEventType.ConnectEvent:    //2
-                LogText.text += "\nNode " + connectionID + " has connected";
-                Debug.Log("Node " + connectionID + " has connected on channelId: " + channelId);
-                serverConnect(connectionID);
+                LogText.text += "\nNode " + outConnectionId + " has connected";
+                Debug.Log("Node " + outConnectionId + " has connected on channelId: " + outChannelId);
+                serverReqDisplay(outConnectionId);
                 break;
             case NetworkEventType.DataEvent:       //3 
                 string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
-                Debug.Log("Message" + msg);
+                string[] splitData = msg.Split('|');
+                switch (splitData[0])
+                {
+                    case RESDISPLAY:
+                        serverUpdateDisplay(outConnectionId, int.Parse(splitData[1]));
+                        break;
+
+                    default:
+                        Debug.Log("Unkown Message" + msg); break;
+                }
                 break;
             case NetworkEventType.DisconnectEvent: //4
-                LogText.text += "\nNode " + connectionID + " has disconnected";
-                Debug.Log("Node " + connectionID + " has disconnected");
+                LogText.text += "\nNode " + outConnectionId + " has disconnected";
+                Debug.Log("Node " + outConnectionId + " has disconnected");
                 break;
         }
     }
     private void nodeRecieve()
     {
-        int recHostId;
-        int connectionId;
-        int channelId;
-        byte[] recBuffer = new byte[1024];
-        int bufferSize = 1024;
+        int outHostId;
+        int outConnectionId;
+        int outChannelId;
+
+        byte[] recBuffer = new byte[BUFFERSIZE];
         int dataSize;
         byte error;
-        NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
+        NetworkEventType recData = NetworkTransport.Receive(out outHostId, out outConnectionId, out outChannelId, recBuffer, BUFFERSIZE, out dataSize, out error);
+        if ((NetworkError)error != NetworkError.Ok)
+        {
+            NetworkError nerror = (NetworkError)error;
+            Debug.Log("Recieve Error: " + nerror);
+        }
         switch (recData)
         {
             case NetworkEventType.DataEvent:       //3
-                Debug.Log("Da ist was");
                 string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
-                Debug.Log("Message" + msg);
                 string[] splitData = msg.Split('|');
                 switch (splitData[0])
                 {
@@ -485,13 +494,24 @@ public class Controller : MonoBehaviour {
     }
 
     //Network Function Server-Side
-    private void serverConnect(int conID)
+    private void serverReqDisplay(int conID)
     { //On Server
-        ClientNode cN = new ClientNode(conID, -1);
-        clients.Add(cN);
+        clients.Add(new ClientNode(conID, 0));
         string msg = REQDISPLAY + "|" + conID;
-        Send(msg, this.relChannel, conID);
+        serverToClientSend(msg, relChannel, conID);
     }
+    private void serverUpdateDisplay(int conID, int displayID)
+    {
+        foreach(ClientNode cN in clients)
+        {
+            if (cN.getConnectionID() == conID)
+            {
+                cN.setdisplayID(displayID);
+                Debug.Log("Display updated" + displayID);
+            }
+        }
+    }
+
 
     //Network function Client-Side
     private void nodeRequestDisplay(string clientID)
@@ -508,29 +528,32 @@ public class Controller : MonoBehaviour {
 
 
     //Send to specific client
-    private void Send(string message, int channelID, int conID)
+    private void serverToClientSend(string message, int channelID, int conID)
     {
         List<ClientNode> c = new List<ClientNode>();
         c.Add(clients.Find(x => x.getConnectionID() == conID));
-        Send(message, channelID, c);
+        serverToClientListSend(message, channelID, c);
     }
     //Send to all clients
-    private void Send(string message, int channelID, List<ClientNode> c)
+    private void serverToClientListSend(string message, int channelID, List<ClientNode> c)
     {
         byte[] msg = Encoding.Unicode.GetBytes(message);
         foreach(ClientNode cN in c)
         {
-            if(NetworkTransport.Send(hostID, cN.getConnectionID(), channelID, msg, (message.Length * sizeof(char)), out error)){
-                Debug.Log("Sended to Client "+cN.getConnectionID()+": " + message);
-            }
-            else
-            {
+            if( !NetworkTransport.Send(hostID, cN.getConnectionID(), channelID, msg, message.Length * sizeof(char), out error)){
                 NetworkError nerror = (NetworkError)error;
-                Debug.Log("Message not Sended because: " + nerror);
+                Debug.Log("Message not sended because: " + nerror);
+                if(channelID==relChannel || channelID == relFragSecChannel)
+                    StartCoroutine(tryAgain(message, channelID, c));
             }
-            
         }
-
+    }
+    
+    //If Message is important not sended try again in 5 seconds
+    private IEnumerator tryAgain(string message, int channelID, List<ClientNode> c)
+    {
+        yield return new WaitForSeconds(5.0f);
+        this.serverToClientListSend(message, channelID, c);
     }
 
     private void clientToServerSend(string message, int channelID)
@@ -544,43 +567,13 @@ public class Controller : MonoBehaviour {
         else
         {
             NetworkError nerror = (NetworkError)error;
-            Debug.Log("Message not Sended because: " + nerror);
+            Debug.Log("Message not sended because: " + nerror);
         }
-    }
-    
-
-    //Wait after Start for Server Connection
-    
-    private void OnConnectedToServer()
-    {
-        Debug.Log("Node connected successfull Server");
-        dataCube.SetActive(true);
-
-    }
-    private void OnNetworkInstantiate(NetworkMessageInfo info)
-    {
-        Debug.Log(info);
     }
 
     private void shutdownNodes()
     {
 
-    }
-    private void OnDestroy()
-    {
-        if (NodeInformation.type.Equals(MASTERNODE))
-        {
-            Network.Disconnect();
-        }
-        else if(NodeInformation.type.Equals(SLAVENODE))
-        {
-            //TODO Shutdown node or Reconnect
-            shutdownSimulator();
-        }
-    }
-    private void OnFailedToConnect(NetworkConnectionError error)
-    {
-        Debug.Log("Marco ");
     }
 
     // Core Functions for Simulator
@@ -869,11 +862,9 @@ public class Controller : MonoBehaviour {
             for (int i = 0; i < threadList.Count; i++)
             {
                 threadList[i].Abort();
-                Debug.Log("Quit Thread");
             }
             this.threadsAlive = false;
         }
-        Debug.Log("Bye Bye");
         Application.Quit();
     }
     public void sendMarker(int marker)
@@ -882,7 +873,6 @@ public class Controller : MonoBehaviour {
         {
             if (Network.isServer)
             {
-                syncData.simulationState = marker;
                 if (this.enabledSensorSync)
                 {
                     this.actualStatus = marker;
