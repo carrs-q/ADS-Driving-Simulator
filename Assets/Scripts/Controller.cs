@@ -14,23 +14,32 @@ using UnityEngine.Networking;
 using System.Text;
 
 public class Controller : MonoBehaviour {
-    public const string TEMPPATH = "tempassets";
 
-
+    //CDN FileNames
+    public static string[] filenames ={
+        "wf.mp4",   //Wall Front
+        "wl.mp4",   //Wall Left
+        "wr.mp4",   //Wall Right
+        "nav.mp4",  //Hight Mounted Display
+        "ma.mp4",   //Mirror All
+        "mb.mp4",   //Mirror Back
+        "ml.mp4",   //Mirror Left
+        "mr.mp4"    //Mirror Right
+    };
+    
     //VideoStates
     public const int INIT = 0;
     public const int START = 1;
     public const int PAUSE = 2;
     public const int RESET = 3;
     public const int OVERTAKE = 4;
+
     //RenderMode
     public const int CAVEMODE  = 1;
     public const int VRMODE    = 2;
     public const int ARMODE    = 3;
     public const int MAXDISPLAY = 5; //TODO Change back
-
-
-  
+    
     public const string MASTERNODE = "master";
     public const string SLAVENODE = "slave";
 
@@ -39,7 +48,9 @@ public class Controller : MonoBehaviour {
     public const int FRONT = 1;
     public const int LEFT = 2;
     public const int RIGHT = 3;
-    public const int MIRRORS = 4;
+    public const int NAV = 4;
+    public const int MIRRORS = 5; // OR Mirror back
+    public const int SPEEDOMETER = 6;
 
     //MessageCodes
     public const int BUFFERSIZE = 1024;
@@ -57,6 +68,8 @@ public class Controller : MonoBehaviour {
     private byte error;
     private float connectionTime;
     private List<ClientNode> clients;
+    private string[] projectList;
+    private bool projectListAvailable;
 
     
     private static Controller instance = null;
@@ -87,9 +100,8 @@ public class Controller : MonoBehaviour {
     private Int64 timedifference;
     private Vector3 videoWallDefault;
     private NetworkClient networkClient;
-
-   
-
+    private bool cdnLoaded;
+    
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
@@ -120,6 +132,7 @@ public class Controller : MonoBehaviour {
     public GameObject LeftCamera;
     public GameObject RightCamera;
     public GameObject MirrorCamera;
+    public GameObject LoadProject;
 
     //public GameObject MultiProjectionCamera;
     public GameObject videoWalls;
@@ -130,15 +143,13 @@ public class Controller : MonoBehaviour {
         return instance;
     }
     private SyncData syncData;
-
-   
-    //TODO Delete
-    private bool spawned = false;
-
-    // Should be before Start
+    
+// Should be before Start
     void Awake () {
+        StartCoroutine(getProjectList());
+        projectListAvailable = false;
+        cdnLoaded = false;
         this.gameObject.SetActive(true);
-
         //Network.sendRate = 50;
         wsd = new WindShield();
         simulator = new Simulation();
@@ -146,7 +157,6 @@ public class Controller : MonoBehaviour {
         wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader, this.windShieldSound);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
-
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             renderMode = MASTER;
@@ -161,8 +171,6 @@ public class Controller : MonoBehaviour {
             videoWallDefault = videoWalls.transform.position;
             threadList = new List<Thread>();
             threadsAlive = true;
-            simulationContent = new SimulationContent(TEMPPATH);
-            StartCoroutine(simulationContent.addFile("http://131.181.139.225:1605/cdn/overtake1/mb.mp4").downloadFile());
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -177,10 +185,17 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         AudioListener.volume = 1;
         manualIP = false;
+        //TODO SOURCE for Downloadserver
+        
     }
-
-    // Update is called once per frame
     void Update () {
+        if (cdnLoaded)
+        {
+            if (simulationContent.areFilesReady() && !videoPlayerAttached)
+            {
+                StartCoroutine(prepareSimulator());
+            }
+        }
         if(serverStarted)
         {
             serverRecieve();
@@ -324,6 +339,31 @@ public class Controller : MonoBehaviour {
 
     }
 
+    IEnumerator getProjectList()
+    {
+        UnityWebRequest www = UnityWebRequest.Get("http://131.181.139.225:1605/getprojectlist");
+        yield return www.SendWebRequest();
+
+        if (www.isNetworkError || www.isHttpError)
+        {
+            projectListAvailable = false;
+        }
+        else
+        {
+            projectList = www.downloadHandler.text.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
+            projectListAvailable = true;
+            updateProjectList();
+        }
+    }
+    private void updateProjectList()
+    {
+        projectListAvailable = false;
+        //TODO Load List
+    }
+    public void loadProject(string project)
+    {
+        loadSimulatorSetup("http://131.181.139.225:1605", project);
+    }
 
     //Network Init
     private void createMasterServer()
@@ -511,6 +551,8 @@ public class Controller : MonoBehaviour {
             }
         }
     }
+    //TODO sendClient Project + source
+    //TODO sendClient Status
 
 
     //Network function Client-Side
@@ -524,7 +566,6 @@ public class Controller : MonoBehaviour {
 
 
     }
-
 
 
     //Send to specific client
@@ -555,7 +596,6 @@ public class Controller : MonoBehaviour {
         yield return new WaitForSeconds(5.0f);
         this.serverToClientListSend(message, channelID, c);
     }
-
     private void clientToServerSend(string message, int channelID)
     {
         byte[] msg = Encoding.Unicode.GetBytes(message);
@@ -632,17 +672,6 @@ public class Controller : MonoBehaviour {
         MirrorLeft.Pause();
         MirrorRight.Pause();
         startButtonText.text = "Play";
-
-        //TODO Delete
-        if (NodeInformation.type.Equals("master") && actualMode == CAVEMODE)
-        {
-            networkState message = new networkState();
-            message.obdData = obdData;
-            LogText.text+=("\nConnected Clients: "+NetworkServer.connections.Count);
-            NetworkServer.SendToAll(1, message);
-            LogText.text += "\nData send to Clients";
-        }
-
     }
    
     public void enableWindshield()
@@ -678,6 +707,76 @@ public class Controller : MonoBehaviour {
         }
     }
 
+    //
+    private IEnumerator prepareSimulator()
+    {
+        int temp = 0;
+        string temppath;
+        foreach(string file in filenames)
+        {
+            temppath = simulationContent.getFilePath(file);
+            if (temppath != null)
+            {
+                switch (temp)
+                {
+                    case 0:{ 
+                        loadVideo(frontWall, temppath);
+                    }break;
+                    case 1:{
+                        loadVideo(leftWall, temppath);
+                    }break;
+                    case 2:{
+                        loadVideo(rightWall, temppath);
+                    }break;
+                    case 3:{
+                        if (NodeInformation.type.Equals(MASTERNODE))
+                        {
+                            loadVideo(navigationScreen, temppath);
+                        }
+                    }break;
+                    case 4:{ //Mirror All
+                        if (NodeInformation.type.Equals(SLAVENODE))
+                        {
+                            //TODO 
+                        }
+                    }break;
+                    case 5: { // Mirror Back
+                        if (NodeInformation.type.Equals(MASTERNODE))
+                        {
+                                loadVideo(MirrorStraigt, temppath);
+                        }
+                    }break;
+                    case 6:{ // Mirror Left
+                        if (NodeInformation.type.Equals(MASTERNODE))
+                        {
+                            loadVideo(MirrorLeft, temppath);
+                        }
+                    } break;
+                    case 7:{ // Mirror Right
+                        if (NodeInformation.type.Equals(MASTERNODE))
+                        {
+                            loadVideo(MirrorRight, temppath);
+                        }
+                    }break;
+                    default:{
+
+                    }break;
+                }
+            }
+            ++temp;
+        }
+        yield return new WaitForSeconds(1.0f);
+    }
+    public void loadSimulatorSetup(string cdnAddress, string project)
+    {
+        simulationContent = new SimulationContent(project, Application.persistentDataPath);
+        foreach(string filename in filenames)
+        {
+            StartCoroutine(simulationContent.addFile(cdnAddress+"/cdn/"+project+"/"+filename).downloadFile());
+        }
+        cdnLoaded = true;
+    }
+
     // Systemcheck for Starting Actual Checksum should be 1       
     public bool isSimulationReady()
     {
@@ -702,7 +801,6 @@ public class Controller : MonoBehaviour {
         video.url = temp;
         video.Prepare(); // after Prepairing prepare Completed will be Executed
         video.StepForward();
-        LogText.text = "\nVideo loaded";
     }
     public void loadVideotoPlayer(int player, string path)
     {

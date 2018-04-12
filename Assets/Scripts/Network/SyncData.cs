@@ -1,7 +1,5 @@
 ﻿public class SyncData
 {
-    //
-
     //currentState
     private int simulationState;
 

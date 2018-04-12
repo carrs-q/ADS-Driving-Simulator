@@ -3,25 +3,17 @@ using System.IO;
 using UnityEngine;
 
 
-public class SimulationContent: MonoBehaviour{
-    private static string FRONTWALL = "wf";
-    private static string LEFTWALL = "wl";
-    private static string RIGHTWALL = "wr";
-    private static string MIRRORBACK = "mb";
-    private static string MIRRORLEFT = "ml";
-    private static string MIRRORRIGHT = "mr";
-    private static string NAVIGATION = "nav";
-
+public class SimulationContent{
     private string rootFolder;
     private string assetFolder;
     private string completePath;
     private bool ready;
     private List<MyFile> fileList;
 
-    public SimulationContent(string assetFolder)
+    public SimulationContent(string assetFolder, string rootFolder)
     {
         this.fileList = new List<MyFile>();
-        this.rootFolder = Application.persistentDataPath;
+        this.rootFolder = rootFolder;
         this.assetFolder = assetFolder;
         this.completePath = this.rootFolder+"/"+ this.assetFolder;
         if (!Directory.Exists(completePath))
@@ -31,7 +23,6 @@ public class SimulationContent: MonoBehaviour{
         }
         ready = false;
     }
-
     public MyFile addFile(string resource)
     {
         ready = false;
@@ -39,7 +30,23 @@ public class SimulationContent: MonoBehaviour{
         fileList.Add(newFile);
         return newFile;
     }
+    public string getFilePath(string index)
+    {
+        foreach(MyFile file in fileList)
+        {
+            if (file.doesFileExist())
+            {
+                if (index == file.getFileName())
+                {
+                    return file.getFilePath();
+                }
+            }
+           
+        }
+        return null;
+    }
 
+    //Important ignores 404 files!
     public bool areFilesReady()
     {
         if (!ready)
@@ -50,9 +57,13 @@ public class SimulationContent: MonoBehaviour{
             {
                 ++temp;
                 if (!f.isReady())
-                    allFilesLoaded = true;
+                {
+                    if (f.isCheckPending())
+                        allFilesLoaded = false;
+                    else if (f.doesFileExist())
+                        allFilesLoaded = false;
+                }
             }
-
             if (temp == 0)
                 return false;
             else
@@ -66,5 +77,22 @@ public class SimulationContent: MonoBehaviour{
             return this.ready;
         }
     }
-    
+    public float getProgress()
+    {
+        if (this.areFilesReady())
+        {
+            return 1;
+        }
+        else
+        {
+            float progress = 0;
+            int temp = 0;
+            foreach(MyFile f in fileList)
+            {
+                ++temp;
+                progress += f.getProgress();
+            }
+            return progress / temp;
+        }
+    }
 }
