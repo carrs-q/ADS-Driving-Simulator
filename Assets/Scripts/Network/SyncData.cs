@@ -11,7 +11,7 @@
     private bool isBrakePedal;
     private bool isGasPedal;
 
-    SyncData()
+    public SyncData()
     {
         simulationState = 0;
         speed = 0;
@@ -60,5 +60,20 @@
     {
         this.isGasPedal = isGasPedal;
     }
-
+    public string getStat()
+    {
+        return simulationState + "|" + speed + "|" + steeringWheelRotation + "|" + gasPedal + "|" + brakePedal + "|" + isBrakePedal + "|" + isGasPedal;
+    }
+    public int getStatus()
+    {
+        return simulationState;
+    }
+    public int getSteeringWheelAngle()
+    {
+        return this.steeringWheelRotation;
+    }
+    public int getSpeed()
+    {
+        return this.speed;
+    }
 }

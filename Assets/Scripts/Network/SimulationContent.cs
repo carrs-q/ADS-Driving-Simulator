@@ -18,7 +18,6 @@ public class SimulationContent{
         this.completePath = this.rootFolder+"/"+ this.assetFolder;
         if (!Directory.Exists(completePath))
         {
-            Debug.Log("Directory created");
             Directory.CreateDirectory(completePath);
         }
         ready = false;

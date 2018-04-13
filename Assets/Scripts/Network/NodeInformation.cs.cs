@@ -9,7 +9,7 @@ namespace UnityClusterPackage
     {
         private static XmlDocument xmlDocument;
 
-        public static string type, serverIp;
+        public static string type, serverIp, cdn;
         public static int id, serverPort, screen, debug;
 
         static NodeInformation()
@@ -63,6 +63,9 @@ namespace UnityClusterPackage
                             case "server":
                                 serverIp = xmlNodeReader.GetAttribute("ip");
                                 serverPort = Convert.ToInt32(xmlNodeReader.GetAttribute("port"));
+                                break;
+                            case "cdn":
+                                cdn = xmlNodeReader.GetAttribute("address");
                                 break;
                         }
 

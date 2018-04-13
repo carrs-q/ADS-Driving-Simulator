@@ -68,7 +68,6 @@ public class MyFile{
                 checkPending = false;
                 if (www.error == "404 Not Found")
                     fileNotExist = true;
-                Debug.Log("Download not possible for file: " + filename + "\n" + www.error);
             }
         }
     }
@@ -80,7 +79,6 @@ public class MyFile{
         ready = true;
         fileNotExist = false;
         tempData = null; //clear Cache
-        Debug.Log("File stored " + filename + "");
     }
 
     public float getProgress()

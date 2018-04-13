@@ -23,14 +23,19 @@ public class projectList : MonoBehaviour {
     public void addList(string[] list)
     {
         names.Clear();
+        names.Add("Choose Project");
         names.AddRange(list);
         loadVideoDropDown.ClearOptions();
+#if (!UNITY_EDITOR)
         AttachList();
+#endif
     }
 
     public void changeProject(int index)
     {
-        Debug.Log(names[index]);
-        controller.loadProject(names[index]);
+        if (index != 0)
+        {
+            controller.loadProject(names[index]);
+        }
     }
 }

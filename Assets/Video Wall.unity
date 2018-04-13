@@ -392,14 +392,14 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 68415161}
-  m_LocalRotation: {x: -0, y: -0.98390067, z: 0.17871635, w: -0}
-  m_LocalPosition: {x: -0.38, y: 3.9485369, z: 9.145598}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 472054695}
   m_Father: {fileID: 1330816466}
   m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!124 &68415163
 Behaviour:
   m_ObjectHideFlags: 0
@@ -415,8 +415,8 @@ Camera:
   m_GameObject: {fileID: 68415161}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -807,7 +807,7 @@ GameObject:
   - component: {fileID: 104036406}
   - component: {fileID: 104036405}
   - component: {fileID: 104036407}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Navi
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1082,7 +1082,7 @@ Light:
   m_RenderMode: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294955464
+    m_Bits: 4294922696
   m_Lightmapping: 4
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -1373,7 +1373,7 @@ GameObject:
   - component: {fileID: 165673729}
   - component: {fileID: 165673728}
   - component: {fileID: 165673727}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Gear
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1817,7 +1817,7 @@ GameObject:
   - component: {fileID: 229173929}
   - component: {fileID: 229173928}
   - component: {fileID: 229173930}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: mirrorRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2158,7 +2158,7 @@ GameObject:
   - component: {fileID: 302610621}
   - component: {fileID: 302610620}
   - component: {fileID: 302610619}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Temperature
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2787,7 +2787,7 @@ GameObject:
   - component: {fileID: 350253760}
   - component: {fileID: 350253759}
   - component: {fileID: 350253758}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Capture trip2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3223,7 +3223,7 @@ Light:
   m_RenderMode: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294964424
+    m_Bits: 4294931656
   m_Lightmapping: 4
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -3254,8 +3254,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 412252169}
-  m_LocalRotation: {x: 0.08935817, y: 0.852083, z: -0.15477291, w: -0.49195033}
-  m_LocalPosition: {x: -2.5, y: 0.4079467, z: 1.0859002}
+  m_LocalRotation: {x: 0, y: 0.5, z: 0, w: 0.8660254}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 598290364}
@@ -3277,8 +3277,8 @@ Camera:
   m_GameObject: {fileID: 412252169}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -3286,8 +3286,8 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
+  far clip plane: 50
+  field of view: 46.8
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -3378,7 +3378,7 @@ GameObject:
   - component: {fileID: 423000328}
   - component: {fileID: 423000327}
   - component: {fileID: 423000329}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: mirrorLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3676,7 +3676,7 @@ GameObject:
   - component: {fileID: 472054697}
   - component: {fileID: 472054696}
   m_Layer: 14
-  m_Name: Screen4
+  m_Name: info
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3689,7 +3689,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 472054694}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1.81}
+  m_LocalPosition: {x: 0, y: 0, z: 4.39}
   m_LocalScale: {x: 0.2000003, y: 0.20000002, z: 0.2000003}
   m_Children: []
   m_Father: {fileID: 68415162}
@@ -3697,7 +3697,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.000000059604645}
+  m_AnchoredPosition: {x: -0.45, y: 1.28}
   m_SizeDelta: {x: 20, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &472054696
@@ -3746,14 +3746,14 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 10
+  m_fontSizeBase: 10
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_textAlignment: 514
+  m_textAlignment: 257
   m_isAlignmentEnumConverted: 1
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -4385,6 +4385,10 @@ Prefab:
       propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 41dbccc8f808849f0beba78eb91f3b88, type: 2}
+    - target: {fileID: 100000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 9500000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
   m_ParentPrefab: {fileID: 100100000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
@@ -4800,7 +4804,7 @@ GameObject:
   - component: {fileID: 598290366}
   - component: {fileID: 598290365}
   m_Layer: 14
-  m_Name: Screen3
+  m_Name: info
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4813,7 +4817,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 598290363}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1.95}
+  m_LocalPosition: {x: 0, y: 0, z: 4.39}
   m_LocalScale: {x: 0.2000004, y: 0.2, z: 0.20000039}
   m_Children: []
   m_Father: {fileID: 412252170}
@@ -4821,7 +4825,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0, y: 0}
+  m_AnchoredPosition: {x: -0.45, y: 1.28}
   m_SizeDelta: {x: 20, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &598290365
@@ -4870,14 +4874,14 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 10
+  m_fontSizeBase: 10
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_textAlignment: 514
+  m_textAlignment: 257
   m_isAlignmentEnumConverted: 1
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -5110,6 +5114,10 @@ Prefab:
       propertyPath: m_ViewID.m_Type
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1641588284141966, guid: 8f32d6b5dbe47164f85e657659d66939, type: 2}
+      propertyPath: m_Layer
+      value: 15
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 0}
   m_ParentPrefab: {fileID: 100100000, guid: 8f32d6b5dbe47164f85e657659d66939, type: 2}
@@ -5146,8 +5154,8 @@ Camera:
   m_GameObject: {fileID: 611149620}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -5155,8 +5163,8 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
+  far clip plane: 50
+  field of view: 46.8
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -5180,14 +5188,14 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 611149620}
-  m_LocalRotation: {x: -0, y: 0.98390067, z: -0.17871635, w: 0}
-  m_LocalPosition: {x: 0, y: -0.27, z: -0.73}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1437820469}
   m_Father: {fileID: 1330816466}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &632905488
 GameObject:
   m_ObjectHideFlags: 0
@@ -5825,7 +5833,7 @@ GameObject:
   - component: {fileID: 694907503}
   - component: {fileID: 694907502}
   m_Layer: 14
-  m_Name: Screen2
+  m_Name: info
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5838,7 +5846,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 694907500}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 2.15}
+  m_LocalPosition: {x: 0, y: 0, z: 4.39}
   m_LocalScale: {x: 0.20000002, y: 0.19999999, z: 0.20000002}
   m_Children: []
   m_Father: {fileID: 974718214}
@@ -5846,7 +5854,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0, y: 0}
+  m_AnchoredPosition: {x: -0.45, y: 1.28}
   m_SizeDelta: {x: 20, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &694907502
@@ -5895,14 +5903,14 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 10
+  m_fontSizeBase: 10
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_textAlignment: 514
+  m_textAlignment: 257
   m_isAlignmentEnumConverted: 1
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -6423,7 +6431,7 @@ GameObject:
   - component: {fileID: 726244355}
   - component: {fileID: 726244357}
   - component: {fileID: 726244356}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: mirrorBack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6637,7 +6645,7 @@ GameObject:
   - component: {fileID: 755692309}
   - component: {fileID: 755692308}
   - component: {fileID: 755692307}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Capture Speed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6905,7 +6913,7 @@ GameObject:
   - component: {fileID: 776007181}
   - component: {fileID: 776007180}
   - component: {fileID: 776007178}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: Roof
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6960,7 +6968,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 776007177}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0}
-  m_LocalPosition: {x: 0, y: 5.78, z: 11.7}
+  m_LocalPosition: {x: 0, y: 5.56, z: 11.7}
   m_LocalScale: {x: 20, y: 20, z: 20}
   m_Children: []
   m_Father: {fileID: 0}
@@ -7080,7 +7088,7 @@ GameObject:
   - component: {fileID: 812191097}
   - component: {fileID: 812191096}
   - component: {fileID: 812191095}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: fuelCapture
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7464,7 +7472,7 @@ Light:
   m_RenderMode: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294963912
+    m_Bits: 4294931144
   m_Lightmapping: 4
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 2.2
@@ -7534,6 +7542,14 @@ Prefab:
     - target: {fileID: 400002, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
       propertyPath: m_LocalScale.x
       value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
@@ -7801,7 +7817,7 @@ GameObject:
   - component: {fileID: 920210398}
   - component: {fileID: 920210397}
   - component: {fileID: 920210396}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Trip2KM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8124,12 +8140,14 @@ MonoBehaviour:
   MirrorStraigt: {fileID: 726244357}
   MirrorLeft: {fileID: 423000328}
   MirrorRight: {fileID: 229173929}
-  windshieldDisplay: {fileID: 83500666}
-  wsdDynTint: {fileID: 950375486}
+  windShieldSound: {fileID: 83500667}
+  rightMirrorSound: {fileID: 229173930}
+  leftMirrorSound: {fileID: 423000329}
   chromaShader: {fileID: 4800000, guid: 3e506267d1ae50f4393ec8d78449c09b, type: 3}
   noShader: {fileID: 4800000, guid: 4daa058ac77fde443a6aa0726c53f46e, type: 3}
   startButtonText: {fileID: 2130750005}
   LogText: {fileID: 1301369237}
+  timeText: {fileID: 1548852042}
   digitalSpeedoMeter: {fileID: 1811466939}
   currTime: {fileID: 1785971241}
   gear: {fileID: 165673727}
@@ -8137,10 +8155,9 @@ MonoBehaviour:
   trip2: {fileID: 920210396}
   fuelkm: {fileID: 1184304970}
   temp: {fileID: 302610619}
-  timeText: {fileID: 1548852042}
-  windShieldSound: {fileID: 83500667}
-  rightMirrorSound: {fileID: 229173930}
-  leftMirrorSound: {fileID: 423000329}
+  ipInputField: {fileID: 745143914}
+  windshieldDisplay: {fileID: 83500666}
+  wsdDynTint: {fileID: 950375486}
   steeringWheel: {fileID: 1422167136}
   Oculus: {fileID: 1708103721}
   FrontCamera: {fileID: 611149620}
@@ -8149,7 +8166,6 @@ MonoBehaviour:
   MirrorCamera: {fileID: 68415161}
   LoadProject: {fileID: 1266471198}
   videoWalls: {fileID: 2094020644}
-  ipInputField: {fileID: 745143914}
 --- !u!124 &931374001
 Behaviour:
   m_ObjectHideFlags: 0
@@ -8315,8 +8331,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 974718213}
-  m_LocalRotation: {x: -0.08935817, y: 0.852083, z: -0.15477291, w: 0.49195033}
-  m_LocalPosition: {x: 2.5, y: 0.4079467, z: 1.0859002}
+  m_LocalRotation: {x: 0, y: -0.5, z: 0, w: 0.8660254}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 694907501}
@@ -8338,8 +8354,8 @@ Camera:
   m_GameObject: {fileID: 974718213}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -8347,8 +8363,8 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
+  far clip plane: 50
+  field of view: 46.8
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -8701,7 +8717,7 @@ GameObject:
   - component: {fileID: 987516629}
   - component: {fileID: 987516628}
   - component: {fileID: 987516627}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Trip1KM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10318,7 +10334,7 @@ GameObject:
   - component: {fileID: 1184304972}
   - component: {fileID: 1184304971}
   - component: {fileID: 1184304970}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: fuelKM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10657,7 +10673,7 @@ GameObject:
   - component: {fileID: 1239069190}
   - component: {fileID: 1239069189}
   - component: {fileID: 1239069187}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10948,7 +10964,7 @@ GameObject:
   - component: {fileID: 1284642621}
   - component: {fileID: 1284642620}
   - component: {fileID: 1284642619}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Capture trip1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11684,7 +11700,7 @@ GameObject:
   - component: {fileID: 1325309474}
   - component: {fileID: 1325309473}
   - component: {fileID: 1325309472}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: TMP SubMesh [AUdimat Regular SDF Material + LiberationSans SDF Atlas]
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11865,8 +11881,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1330816465}
-  m_LocalRotation: {x: -0.17871635, y: -0, z: -0, w: -0.98390067}
-  m_LocalPosition: {x: 0.38, y: 2.65, z: 10}
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 2.58, z: 12.81}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 611149624}
@@ -11875,7 +11891,7 @@ Transform:
   - {fileID: 68415162}
   m_Father: {fileID: 0}
   m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
 --- !u!1 &1337207780
 GameObject:
   m_ObjectHideFlags: 0
@@ -12248,7 +12264,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 2094020644}
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.38, y: 0, z: 4.49}
+  m_LocalPosition: {x: 0, y: 0, z: 4.49}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children:
   - {fileID: 1973819358}
@@ -12731,7 +12747,7 @@ GameObject:
   - component: {fileID: 1437820471}
   - component: {fileID: 1437820470}
   m_Layer: 14
-  m_Name: Screen1
+  m_Name: info
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12744,7 +12760,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1437820468}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: -1}
-  m_LocalPosition: {x: 0, y: 0, z: 1.75}
+  m_LocalPosition: {x: 0, y: 0, z: 4.39}
   m_LocalScale: {x: 0.2, y: 0.20000003, z: 0.20000003}
   m_Children: []
   m_Father: {fileID: 611149624}
@@ -12752,7 +12768,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.000000007450581}
+  m_AnchoredPosition: {x: -0.45, y: 1.28}
   m_SizeDelta: {x: 20, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1437820470
@@ -12801,14 +12817,14 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 10
+  m_fontSizeBase: 10
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_textAlignment: 514
+  m_textAlignment: 257
   m_isAlignmentEnumConverted: 1
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -13410,7 +13426,7 @@ GameObject:
   - component: {fileID: 1495036146}
   - component: {fileID: 1495036147}
   - component: {fileID: 1495036145}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Capture Temp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14446,7 +14462,7 @@ GameObject:
   - component: {fileID: 1658815989}
   - component: {fileID: 1658815988}
   - component: {fileID: 1658815987}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Navi
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15307,6 +15323,10 @@ Prefab:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 41dbccc8f808849f0beba78eb91f3b88, type: 2}
+    - target: {fileID: 100000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 9500000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
   m_ParentPrefab: {fileID: 100100000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
@@ -15409,7 +15429,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: ac1fdbca58fc38444a433ff05a8bd3bf, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: ac1fdbca58fc38444a433ff05a8bd3bf, type: 3}
       propertyPath: m_Layer
@@ -15852,7 +15872,7 @@ GameObject:
   - component: {fileID: 1785971243}
   - component: {fileID: 1785971242}
   - component: {fileID: 1785971241}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: CurrTime
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16049,7 +16069,7 @@ GameObject:
   - component: {fileID: 1811466941}
   - component: {fileID: 1811466940}
   - component: {fileID: 1811466939}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: DigitalSpeedometer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16794,7 +16814,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 1943701920}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Driver Display
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17760,6 +17780,10 @@ Prefab:
     - target: {fileID: 400000, guid: 47d041182d2a0fb46ab674af7ff67f24, type: 3}
       propertyPath: m_LocalScale.z
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 47d041182d2a0fb46ab674af7ff67f24, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 9500000, guid: 47d041182d2a0fb46ab674af7ff67f24, type: 3}
