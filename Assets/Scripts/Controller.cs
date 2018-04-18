@@ -13,6 +13,23 @@ using UnityClusterPackage;
 using UnityEngine.Networking;
 using System.Text;
 
+//TODO
+/*
+ *          ✔  Create Mirror All 
+ *          #  Create HDMI networkready or Oculus
+ *              #HDMI Duplicator
+ *          ✔  Request Project after load
+ *          #  Controlls for WSD (V3 Dyn Controll)
+ *          #  Sensors
+ *          #  Network Message for WSD
+ *          #  Limit Network requests
+ *          #  Tinting Network
+ *          #  Remote Client force to Screen Change
+ *          #  Slider in running Programm
+ *          #  Make Programm nice again 
+ *          #  Big File Transfer
+ */
+
 public class Controller : MonoBehaviour {
 
     //CDN FileNames
@@ -58,8 +75,13 @@ public class Controller : MonoBehaviour {
     public const string REQDISPLAY = "RQD";
     public const string RESDISPLAY = "RSD";
     public const string SENDPROJECT = "PRO";
+    public const string REQPROJECT = "RPRO";
     public const string STATUSUPDATE = "STA";
+    public const string EMPTYMESSAGE = "undefined";
 
+    private Vector3 WSDINCAR = new Vector3(0.08f, 0.0f, -0.3f);
+    private Vector3 WSDINFRONT = new Vector3(0.0f, 0.0f, 0.5f); //Nearly Center of Screen
+    public Vector3 WSDDyn = new Vector3(0, 0, 0);
 
     private int hostID=-1, connectionID, clientID;
     private byte relChannel;             // For Connections
@@ -105,10 +127,12 @@ public class Controller : MonoBehaviour {
 
     private Int64 timedifference;
     private Vector3 videoWallDefault;
+    private Vector3 wsdDefault;
     private NetworkClient networkClient;
  
 
     private bool videoPlayerAttached;
+    private string project;
     private bool cdnLoaded = false;
     private bool cdnProject = false;
 
@@ -116,9 +140,10 @@ public class Controller : MonoBehaviour {
     public VideoPlayer leftWall;               //Player 1
     public VideoPlayer rightWall;              //Player 2
     public VideoPlayer navigationScreen;       //Player 3
-    public VideoPlayer MirrorStraigt;          //Player 4
-    public VideoPlayer MirrorLeft;             //Player 5
-    public VideoPlayer MirrorRight;            //Player 6
+    public VideoPlayer MirrorCameraPlayer;     //Player 4
+    public VideoPlayer MirrorStraigt;          //Player 5
+    public VideoPlayer MirrorLeft;             //Player 6
+    public VideoPlayer MirrorRight;            //Player 7
 
     public AudioSource windShieldSound;
     public AudioSource rightMirrorSound;
@@ -152,6 +177,7 @@ public class Controller : MonoBehaviour {
     public GameObject MirrorCamera;
     public GameObject LoadProject;
     public GameObject videoWalls;
+    public GameObject WSDCamera;
 
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
@@ -159,13 +185,16 @@ public class Controller : MonoBehaviour {
 // Should be before Start
     void Awake () {
         syncData = new SyncData();
+        simulationContent = new SimulationContent();
         StartCoroutine(getProjectList());
         this.gameObject.SetActive(true);
         //Network.sendRate = 50;
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
-        wsd.setDefaults(windshieldDisplay, wsdDynTint, this.chromaShader, this.noShader, this.windShieldSound);
+        wsdDefault = WSDINFRONT;
+        windshieldDisplay.transform.localPosition = wsdDefault;
+        wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
         simulator.setDefaults();
         simulator.setOBDData(obdData);
         videoWallDefault = videoWalls.transform.position;
@@ -188,6 +217,8 @@ public class Controller : MonoBehaviour {
         {
             actualMode = CAVEMODE;
             renderMode = NodeInformation.screen;
+            windshieldDisplay.transform.localPosition = WSDINFRONT;
+            
             if (NodeInformation.debug != 1)
             {
                 debugInformations( true);
@@ -300,9 +331,17 @@ public class Controller : MonoBehaviour {
         LeftCamera.SetActive(false);
         RightCamera.SetActive(false);
         MirrorCamera.SetActive(false);
+        WSDCamera.SetActive(false);
+
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             Destroy(Oculus);
+            if (NodeInformation.screen == 1)
+            {
+                //Update Later with outside renderer
+                //WSDCamera.SetActive(true); 
+                windshieldDisplay.transform.localPosition = WSDINFRONT;
+            }
         }
         else
         {
@@ -328,6 +367,9 @@ public class Controller : MonoBehaviour {
     {
         Oculus.SetActive(true);
         videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
+        wsdDefault = WSDINCAR;
+        Camera wsdCam = WSDCamera.GetComponent<Camera>();
+        wsdCam.targetDisplay = 2;
 
         Oculus.AddComponent(typeof(AudioListener));
         for (int i = 0; i < Display.displays.Length; i++)
@@ -341,8 +383,11 @@ public class Controller : MonoBehaviour {
     }
     private void loadCaveSettings()
     {
+        Camera wsdCam = WSDCamera.GetComponent<Camera>();
+        wsdCam.targetDisplay = 1;
         if (NodeInformation.type.Equals(SLAVENODE))
         {
+            wsdDefault = WSDINFRONT;
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
             {
@@ -366,12 +411,13 @@ public class Controller : MonoBehaviour {
         }
         if (NodeInformation.type.Equals(MASTERNODE))
         {
+            wsdDefault = WSDINCAR;
             this.GetComponent<Camera>().targetDisplay = 0;
             createMasterServer();
         }
-
+        windshieldDisplay.transform.localPosition = wsdDefault;
         videoWalls.transform.localPosition = videoWallDefault;
-
+        wsd.updateWSDDefault(new Vector3(wsdDefault.x + WSDDyn.x, wsdDefault.y + WSDDyn.y, wsdDefault.z + WSDDyn.z));
     }
     IEnumerator getProjectList()
     {
@@ -379,7 +425,9 @@ public class Controller : MonoBehaviour {
 
         yield return www.SendWebRequest();
 
-        if (www.isNetworkError || www.isHttpError) { }
+        if (www.isNetworkError || www.isHttpError) {
+            Debug.Log(www.error);
+        }
         else
         {
             projectList = www.downloadHandler.text.Split(new string[] { "," }, StringSplitOptions.None);
@@ -520,7 +568,9 @@ public class Controller : MonoBehaviour {
                     case RESDISPLAY:
                         serverUpdateDisplay(outConnectionId, int.Parse(splitData[1]));
                         break;
-
+                    case REQPROJECT:
+                        serverProjectRequest(outConnectionId);
+                        break;
                     default:
                         Debug.Log("Unkown Message" + msg); break;
                 }
@@ -548,6 +598,9 @@ public class Controller : MonoBehaviour {
         }
         switch (recData)
         {
+            case NetworkEventType.ConnectEvent: 
+                clientRequestProject(outChannelId);
+                break;
             case NetworkEventType.DataEvent:       //3
                 string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
                 string[] splitData = msg.Split('|');
@@ -558,6 +611,13 @@ public class Controller : MonoBehaviour {
                         break;
                     case SENDPROJECT:
                         clientLoadProject(splitData[1], splitData[2]);
+                        break;
+                    case REQPROJECT:
+                        Debug.Log(msg);
+                        if (splitData[1] != EMPTYMESSAGE)
+                        {
+                            clientLoadProject(splitData[1], splitData[2]);
+                        }
                         break;
                     case STATUSUPDATE:
                         clientRecieveUpdate(splitData[1], splitData[2], splitData[3], splitData[4], splitData[5], splitData[6], splitData[7], msg);
@@ -600,6 +660,19 @@ public class Controller : MonoBehaviour {
         string msg = STATUSUPDATE + "|"+syncData.getStat();
         serverToClientListSend(msg, unrelSeqChannel, clients);
     }
+    private void serverProjectRequest(int conID)
+    {
+        string message = REQPROJECT + "|";
+        if (simulationContent.isProjectLoaded())
+        {
+            message += simulationContent.getProjectName() +"|"+ simulationContent.getProjecturl();
+        }
+        else
+        {
+            message += EMPTYMESSAGE;
+        }
+        serverToClientSend(message, relChannel, conID);
+    }
     
     //Network function Client-Side
     private void nodeRequestDisplay(string clientID)
@@ -613,6 +686,7 @@ public class Controller : MonoBehaviour {
     private void clientLoadProject(string project, string address)
     {
         cdnProject = true;
+        this.project = project;
         loadSimulatorSetup(address, project);
     }
     private void clientRecieveUpdate(string status, string speed, string steerRot, string gasPed, string breakPed, string isBrake, string isGas, string msg)
@@ -652,7 +726,10 @@ public class Controller : MonoBehaviour {
         renderMode = screen;
         changeMode(actualMode);
     }
-
+    private void clientRequestProject(int channelId)
+    {
+        clientToServerSend(REQPROJECT, channelId);
+    }
 
     //Send to specific client
     private void serverToClientSend(string message, int channelID, int conID)
@@ -713,6 +790,7 @@ public class Controller : MonoBehaviour {
         MirrorStraigt.Play();
         MirrorLeft.Play();
         MirrorRight.Play();
+        MirrorCameraPlayer.Play();
         navigationScreen.Play();
         rightMirrorSound.Play();
         leftMirrorSound.Play();
@@ -729,6 +807,7 @@ public class Controller : MonoBehaviour {
         MirrorStraigt.Pause();
         MirrorLeft.Pause();
         MirrorRight.Pause();
+        MirrorCameraPlayer.Pause();
         rightMirrorSound.Pause();
         leftMirrorSound.Pause();
     }
@@ -741,6 +820,7 @@ public class Controller : MonoBehaviour {
         Seek(leftWall, 0);
         Seek(rightWall, 0);
         Seek(navigationScreen, 0);
+        Seek(MirrorCameraPlayer, 0);
         Seek(MirrorStraigt, 0);
         Seek(MirrorLeft, 0);
         Seek(MirrorRight, 0);
@@ -749,6 +829,7 @@ public class Controller : MonoBehaviour {
         frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
+        MirrorCameraPlayer.Pause();
         navigationScreen.Pause();
         MirrorStraigt.Pause();
         MirrorLeft.Pause();
@@ -802,14 +883,17 @@ public class Controller : MonoBehaviour {
             {
                 switch (temp)
                 {
-                    case 0:{ 
-                        loadVideo(frontWall, temppath);
+                    case 0:{
+                            if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
+                                loadVideo(frontWall, temppath);
                     }break;
                     case 1:{
-                        loadVideo(leftWall, temppath);
+                            if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
+                                loadVideo(leftWall, temppath);
                     }break;
                     case 2:{
-                        loadVideo(rightWall, temppath);
+                            if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
+                                loadVideo(rightWall, temppath);
                     }break;
                     case 3:{
                         if (NodeInformation.type.Equals(MASTERNODE))
@@ -818,9 +902,9 @@ public class Controller : MonoBehaviour {
                         }
                     }break;
                     case 4:{ //Mirror All
-                        if (NodeInformation.type.Equals(SLAVENODE))
+                        if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen==5)
                         {
-                            //TODO 
+                                loadVideo(MirrorCameraPlayer, temppath);
                         }
                     }break;
                     case 5: { // Mirror Back
@@ -851,11 +935,12 @@ public class Controller : MonoBehaviour {
     }
     public void loadSimulatorSetup(string cdnAddress, string project)
     {
-        simulationContent = new SimulationContent(project, Application.persistentDataPath);
+        simulationContent = new SimulationContent(project, Application.persistentDataPath, cdnAddress);
         foreach(string filename in filenames)
         {
             StartCoroutine(simulationContent.addFile(cdnAddress+"/cdn/"+project+"/"+filename).downloadFile());
         }
+     
         cdnLoaded = true;
     }
 
@@ -883,6 +968,10 @@ public class Controller : MonoBehaviour {
         video.url = temp;
         video.Prepare(); // after Prepairing prepare Completed will be Executed
         video.StepForward();
+        if (NodeInformation.type == SLAVENODE && NodeInformation.screen == 5)
+        {
+            video.targetTexture = MirrorCamera.GetComponent<RenderTexture>();
+        }
     }
     public void loadVideotoPlayer(int player, string path)
     {
@@ -1175,9 +1264,6 @@ public class Controller : MonoBehaviour {
         tmp.text = "";
 
         tmp = RightCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
-
-        tmp = MirrorCamera.GetComponentInChildren<TextMeshPro>();
         tmp.text = "";
     }
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node type="slave" screen="2" debug="0">
+<node type="slave" screen="1" debug="1">
     <server ip="131.181.139.169" port="25000"/>
     <cdn address="http://131.181.139.169:1605"/>
 </node>

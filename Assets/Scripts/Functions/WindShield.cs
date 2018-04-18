@@ -18,10 +18,10 @@ public class WindShield {
     private Renderer wsTintRenderer;
     private AudioSource wsaudioSource;
 
-    private float wsdX=-3f, wsdY=-0.7f, wsdZ=0.3f;
-    
+    private Vector3 wsdDefault;
+
     // Setters
-    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource) {
+    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource, Vector3 wsdDefault) {
         this.wsdIsTinting = false;
         this.wsdXMovement = false;
         this.wsdYMovement = false;
@@ -38,6 +38,7 @@ public class WindShield {
         this.noShader = noShader;
         tintingTransparency = 0;
         initialHDMIWindshield();
+        this.wsdDefault = wsdDefault;
     }
     public void setWSDTinting(bool isActive) {
         this.wsdIsTinting = isActive;
@@ -57,6 +58,10 @@ public class WindShield {
     }
     public void setWSDHorizontalMovement(bool isActive)
     {
+        if (!isActive)
+        {
+            this.reposWSD();
+        }
         this.wsdXMovement = isActive;
     }
     public void setWSDAutoSize(bool isActive)
@@ -87,6 +92,10 @@ public class WindShield {
     public void setTintingTransparency(Single tintPercent)
     {
         wsTintRenderer.material.color= new Color(0,0,0,tintPercent/100);
+    }
+    public void updateWSDDefault(Vector3 wsdDefault)
+    {
+        this.wsdDefault = wsdDefault;
     }
 
     // Getters
@@ -170,7 +179,11 @@ public class WindShield {
     }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.localPosition = new Vector3(wsdX + (float)(0.02 * steeringWheel), wsdY, wsdZ);
+        wsDisplay.transform.localPosition = new Vector3(wsdDefault.x - (float)(0.002 * steeringWheel), wsdDefault.y, wsdDefault.z);
+    }
+    public void reposWSD()
+    {
+        wsDisplay.transform.localPosition = new Vector3(wsdDefault.x, wsdDefault.y, wsdDefault.z);
     }
     public bool isWebcamAvailable()
     {

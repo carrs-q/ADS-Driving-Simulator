@@ -5,17 +5,25 @@ using UnityEngine;
 
 public class SimulationContent{
     private string rootFolder;
-    private string assetFolder;
     private string completePath;
     private bool ready;
     private List<MyFile> fileList;
+    private string projectName;
+    private string url;
+    private bool projectSet=false;
 
-    public SimulationContent(string assetFolder, string rootFolder)
+    public SimulationContent()
+    {
+        this.projectSet = false;
+    }
+    public SimulationContent(string assetFolder, string rootFolder, string url)
     {
         this.fileList = new List<MyFile>();
         this.rootFolder = rootFolder;
-        this.assetFolder = assetFolder;
-        this.completePath = this.rootFolder+"/"+ this.assetFolder;
+        this.projectName = assetFolder;
+        this.completePath = this.rootFolder+"/"+ this.projectName;
+        this.url = url;
+        this.projectSet = true;
         if (!Directory.Exists(completePath))
         {
             Directory.CreateDirectory(completePath);
@@ -43,6 +51,18 @@ public class SimulationContent{
            
         }
         return null;
+    }
+    public string getProjecturl()
+    {
+        return this.url;
+    }
+    public string getProjectName()
+    {
+        return this.projectName;
+    }
+    public bool isProjectLoaded()
+    {
+        return this.projectSet;
     }
 
     //Important ignores 404 files!

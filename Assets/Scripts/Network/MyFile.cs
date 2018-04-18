@@ -2,8 +2,11 @@
 using System.IO;
 using UnityEngine;
 using System.Threading;
+using System.Collections.Generic;
 
-public class MyFile{
+public class MyFile {
+    public static int BUFFERSIZE = 8192;
+
     private string directory;
     private string filesource;
 
@@ -18,8 +21,10 @@ public class MyFile{
     private bool download;
     private bool downloaded;
     private bool checkPending;
-    private byte[] tempData;
-    
+
+    private byte[] data;
+
+
     public MyFile(string filesource, string directory)
     {
         this.filesource = filesource;
@@ -57,17 +62,20 @@ public class MyFile{
                 downloaded = true;
                 download = false;
                 checkPending = false;
-                tempData = www.bytes;
+                data = www.bytes;
                 Thread thread = new Thread(saveData);
                 thread.Start();
                // Debug.Log("Download finished for file " + filename + "");
             }
             else
             {
+                File.WriteAllBytes(getFilePath(), data);
                 download = false;
                 checkPending = false;
                 if (www.error == "404 Not Found")
                     fileNotExist = true;
+                else
+                    Debug.Log(www.error);
             }
         }
     }
@@ -75,10 +83,10 @@ public class MyFile{
     //Non Blocking Storeing
     private void saveData()
     {
-        File.WriteAllBytes(getFilePath(), tempData);
+        //File.WriteAllBytes(getFilePath(), data);
         ready = true;
         fileNotExist = false;
-        tempData = null; //clear Cache
+        data=null;
     }
 
     public float getProgress()
