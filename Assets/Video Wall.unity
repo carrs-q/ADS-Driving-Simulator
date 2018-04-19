@@ -379,7 +379,7 @@ GameObject:
   - component: {fileID: 64685983}
   - component: {fileID: 64685985}
   - component: {fileID: 64685984}
-  m_Layer: 14
+  m_Layer: 10
   m_Name: WSD Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -392,12 +392,12 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 64685982}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.41, y: -0.52, z: 2.11}
+  m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
+  m_LocalPosition: {x: -0.7, y: 2.06, z: 10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 611149624}
-  m_RootOrder: 0
+  m_Father: {fileID: 304151661}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!124 &64685984
 Behaviour:
@@ -748,13 +748,13 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 83500662}
-  m_LocalRotation: {x: 0.83762336, y: 0, z: 0, w: 0.5462482}
-  m_LocalPosition: {x: -2.33, y: -0.69, z: 0.31}
-  m_LocalScale: {x: 0.24, y: 1, z: 0.13500026}
+  m_LocalRotation: {x: 0.80798995, y: 0, z: 0, w: 0.58919626}
+  m_LocalPosition: {x: -0.8, y: 2, z: 10}
+  m_LocalScale: {x: 0.039, y: 0.16, z: 0.021}
   m_Children: []
-  m_Father: {fileID: 1733384620}
-  m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 113.78, y: 0, z: 0}
+  m_Father: {fileID: 0}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 72.2, y: 180, z: 180}
 --- !u!82 &83500667
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1490,7 +1490,7 @@ GameObject:
   - component: {fileID: 165673729}
   - component: {fileID: 165673728}
   - component: {fileID: 165673727}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Gear
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2275,7 +2275,7 @@ GameObject:
   - component: {fileID: 302610621}
   - component: {fileID: 302610620}
   - component: {fileID: 302610619}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Temperature
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2560,6 +2560,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 931374003}
+  - {fileID: 64685983}
   - {fileID: 700458045}
   - {fileID: 1708103725}
   - {fileID: 1658815989}
@@ -2567,7 +2568,7 @@ Transform:
   - {fileID: 1722410253}
   - {fileID: 754616808}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &305775584
 GameObject:
@@ -2904,7 +2905,7 @@ GameObject:
   - component: {fileID: 350253760}
   - component: {fileID: 350253759}
   - component: {fileID: 350253758}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Capture trip2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3200,7 +3201,7 @@ Transform:
   - {fileID: 831782068}
   - {fileID: 394129285}
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &373550526
 GameObject:
@@ -4268,7 +4269,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -5113,7 +5114,6 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 64685983}
   - {fileID: 1437820469}
   m_Father: {fileID: 1330816466}
   m_RootOrder: 0
@@ -5968,7 +5968,7 @@ Transform:
   - {fileID: 1943701920}
   - {fileID: 1733384620}
   m_Father: {fileID: 304151661}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!1 &712162498
 GameObject:
@@ -6353,7 +6353,7 @@ GameObject:
   - component: {fileID: 726244355}
   - component: {fileID: 726244357}
   - component: {fileID: 726244356}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: mirrorBack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6567,7 +6567,7 @@ GameObject:
   - component: {fileID: 755692309}
   - component: {fileID: 755692308}
   - component: {fileID: 755692307}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Capture Speed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6894,7 +6894,7 @@ Transform:
   m_LocalScale: {x: 20, y: 20, z: 20}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 180}
 --- !u!1 &788041275
 GameObject:
@@ -7010,7 +7010,7 @@ GameObject:
   - component: {fileID: 812191097}
   - component: {fileID: 812191096}
   - component: {fileID: 812191095}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: fuelCapture
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7439,7 +7439,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
       propertyPath: m_RootOrder
-      value: 6
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
       propertyPath: m_LocalScale.x
@@ -7467,11 +7467,11 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
       propertyPath: m_Layer
-      value: 10
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
       propertyPath: m_Layer
-      value: 10
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 7a49716cabaab174994cbbbc0f8e3c0c, type: 3}
@@ -7739,7 +7739,7 @@ GameObject:
   - component: {fileID: 920210398}
   - component: {fileID: 920210397}
   - component: {fileID: 920210396}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Trip2KM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8055,7 +8055,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60f4cfb15df2013488efd574be7b60c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  WSDDyn: {x: 0, y: 0, z: 0}
   frontWall: {fileID: 289672592}
   leftWall: {fileID: 570227709}
   rightWall: {fileID: 982457661}
@@ -8114,7 +8113,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.01
   far clip plane: 1000
   field of view: 75
   orthographic: 0
@@ -8141,7 +8140,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 931373999}
   m_LocalRotation: {x: -0, y: -0.9999539, z: -0.009599217, w: 0}
-  m_LocalPosition: {x: 0.2, y: 1.913, z: 11.592}
+  m_LocalPosition: {x: 0.2, y: 1.91, z: 11.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 978308756}
@@ -8642,7 +8641,7 @@ GameObject:
   - component: {fileID: 987516629}
   - component: {fileID: 987516628}
   - component: {fileID: 987516627}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Trip1KM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10259,7 +10258,7 @@ GameObject:
   - component: {fileID: 1184304972}
   - component: {fileID: 1184304971}
   - component: {fileID: 1184304970}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: fuelKM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10660,7 +10659,7 @@ Transform:
   m_LocalScale: {x: 20, y: 20, z: 20}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1261978148
 GameObject:
@@ -10889,7 +10888,7 @@ GameObject:
   - component: {fileID: 1284642621}
   - component: {fileID: 1284642620}
   - component: {fileID: 1284642619}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Capture trip1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11625,7 +11624,7 @@ GameObject:
   - component: {fileID: 1325309474}
   - component: {fileID: 1325309473}
   - component: {fileID: 1325309472}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: TMP SubMesh [AUdimat Regular SDF Material + LiberationSans SDF Atlas]
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11815,7 +11814,7 @@ Transform:
   - {fileID: 412252170}
   - {fileID: 68415162}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
 --- !u!1 &1337207780
 GameObject:
@@ -12689,7 +12688,7 @@ RectTransform:
   m_LocalScale: {x: 0.2, y: 0.20000003, z: 0.20000003}
   m_Children: []
   m_Father: {fileID: 611149624}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -13351,7 +13350,7 @@ GameObject:
   - component: {fileID: 1495036146}
   - component: {fileID: 1495036147}
   - component: {fileID: 1495036145}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Capture Temp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14449,7 +14448,7 @@ Transform:
   m_Children:
   - {fileID: 104036406}
   m_Father: {fileID: 304151661}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: -0.66, y: -6.68, z: 0}
 --- !u!1 &1660943716
 GameObject:
@@ -14887,12 +14886,12 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1708103721}
   m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
-  m_LocalPosition: {x: -0.7, y: 2.06, z: 10.005}
+  m_LocalPosition: {x: -0.7, y: 2.06, z: 10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1055007587}
   m_Father: {fileID: 304151661}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
 --- !u!114 &1708103726
 MonoBehaviour:
@@ -15214,7 +15213,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
       propertyPath: m_RootOrder
-      value: 5
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 722f7668db6bffd439c8ad7118c75966, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -15354,7 +15353,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: ac1fdbca58fc38444a433ff05a8bd3bf, type: 3}
       propertyPath: m_Layer
-      value: 10
+      value: 13
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: ac1fdbca58fc38444a433ff05a8bd3bf, type: 3}
       propertyPath: m_Layer
@@ -15797,7 +15796,7 @@ GameObject:
   - component: {fileID: 1785971243}
   - component: {fileID: 1785971242}
   - component: {fileID: 1785971241}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: CurrTime
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15994,7 +15993,7 @@ GameObject:
   - component: {fileID: 1811466941}
   - component: {fileID: 1811466940}
   - component: {fileID: 1811466939}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: DigitalSpeedometer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16739,7 +16738,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 1943701920}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Driver Display
   m_TagString: Untagged
   m_Icon: {fileID: 0}

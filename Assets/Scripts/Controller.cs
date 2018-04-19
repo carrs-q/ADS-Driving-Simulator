@@ -79,9 +79,10 @@ public class Controller : MonoBehaviour {
     public const string STATUSUPDATE = "STA";
     public const string EMPTYMESSAGE = "undefined";
 
-    private Vector3 WSDINCAR = new Vector3(0.08f, 0.0f, -0.3f);
-    private Vector3 WSDINFRONT = new Vector3(0.0f, 0.0f, 0.5f); //Nearly Center of Screen
-    public Vector3 WSDDyn = new Vector3(0, 0, 0);
+    private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
+    private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
+    private Vector3 WSDDyn = new Vector3(0, 0, 0);
+    private const float keypressScale = 0.1f;
 
     private int hostID=-1, connectionID, clientID;
     private byte relChannel;             // For Connections
@@ -128,6 +129,8 @@ public class Controller : MonoBehaviour {
     private Int64 timedifference;
     private Vector3 videoWallDefault;
     private Vector3 wsdDefault;
+    private Vector3 wsdRotationDefault;
+    private Vector3 wsdRotationDyn;
     private NetworkClient networkClient;
  
 
@@ -135,6 +138,7 @@ public class Controller : MonoBehaviour {
     private string project;
     private bool cdnLoaded = false;
     private bool cdnProject = false;
+    private bool wsdMovingLocked = false;
 
     public VideoPlayer frontWall;              //Player 0
     public VideoPlayer leftWall;               //Player 1
@@ -181,7 +185,7 @@ public class Controller : MonoBehaviour {
 
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
-    
+
 // Should be before Start
     void Awake () {
         syncData = new SyncData();
@@ -193,6 +197,8 @@ public class Controller : MonoBehaviour {
         simulator = new Simulation();
         obdData = new OBDData();
         wsdDefault = WSDINFRONT;
+        wsdRotationDefault = windshieldDisplay.transform.localEulerAngles;
+        wsdRotationDyn = wsdRotationDefault;
         windshieldDisplay.transform.localPosition = wsdDefault;
         wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
         simulator.setDefaults();
@@ -236,6 +242,8 @@ public class Controller : MonoBehaviour {
         
     }
     void Update () {
+        
+
         if (cdnLoaded && cdnProject)
         {
             if (simulationContent.areFilesReady())
@@ -289,6 +297,78 @@ public class Controller : MonoBehaviour {
             doesStatusChanged(syncData.getStatus());
             steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
             digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
+        }
+        if ((Input.anyKeyDown || Input.anyKey) && ( 
+            !Input.GetMouseButton(0) &&
+            !Input.GetMouseButtonDown(0) &&
+            !Input.GetMouseButtonUp(0))) //Key down or hold Key
+        {
+            if (!wsdMovingLocked)
+            {
+                if (Input.GetKeyUp(KeyCode.Keypad4)
+             || Input.GetKey(KeyCode.Keypad4))
+                {
+                    WSDDyn.x += keypressScale;
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad6)
+                    || Input.GetKey(KeyCode.Keypad6))
+                {
+                    WSDDyn.x -= keypressScale;
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad8)
+                    || Input.GetKey(KeyCode.Keypad8))
+                {
+                    WSDDyn.y += keypressScale;
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad2)
+                    || Input.GetKey(KeyCode.Keypad2))
+                {
+                    WSDDyn.y -= keypressScale;
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad7)
+                  || Input.GetKey(KeyCode.Keypad7))
+                {
+                    WSDDyn.z -= keypressScale;
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad1)
+                    || Input.GetKey(KeyCode.Keypad1))
+                {
+                    WSDDyn.z += keypressScale;
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad9)
+                 || Input.GetKey(KeyCode.Keypad9))
+                {
+                    wsdRotationDyn.x -= keypressScale;
+                    wsd.rotateWSD(wsdRotationDyn);
+                }
+                if (Input.GetKeyUp(KeyCode.Keypad3)
+                    || Input.GetKey(KeyCode.Keypad3))
+                {
+                    wsdRotationDyn.x += keypressScale;
+                    wsd.rotateWSD(wsdRotationDyn);
+                }
+                if (Input.GetKeyUp(KeyCode.KeypadPlus))
+                {
+                    //Bigger
+                }
+                if (Input.GetKeyUp(KeyCode.KeypadPlus))
+                {
+                    //Smaller
+                }
+                if (Input.GetKeyUp(KeyCode.KeypadEnter))
+                {
+                    WSDDyn = wsdDefault;
+                    wsdRotationDyn = wsdRotationDefault;
+                    wsd.rotateWSD(wsdRotationDyn);
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.Numlock))
+            {
+                wsdMovingLocked = !wsdMovingLocked;
+                Debug.Log("Keypress");
+            }
+         
+            wsd.updateWSDDefault(wsdDefault + WSDDyn);
         }
     }
 

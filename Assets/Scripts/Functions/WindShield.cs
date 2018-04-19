@@ -17,7 +17,6 @@ public class WindShield {
     private Renderer wsDisplayRenderer;
     private Renderer wsTintRenderer;
     private AudioSource wsaudioSource;
-
     private Vector3 wsdDefault;
 
     // Setters
@@ -96,7 +95,12 @@ public class WindShield {
     public void updateWSDDefault(Vector3 wsdDefault)
     {
         this.wsdDefault = wsdDefault;
+        if (!wsdXMovement)
+        {
+            this.reposWSD();
+        }
     }
+
 
     // Getters
     public bool isTiningActive()
@@ -184,6 +188,10 @@ public class WindShield {
     public void reposWSD()
     {
         wsDisplay.transform.localPosition = new Vector3(wsdDefault.x, wsdDefault.y, wsdDefault.z);
+    }
+    public void rotateWSD(Vector3 rot)
+    {
+        wsDisplay.transform.localEulerAngles = rot;
     }
     public bool isWebcamAvailable()
     {
