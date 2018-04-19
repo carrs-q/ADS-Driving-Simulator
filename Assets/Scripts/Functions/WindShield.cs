@@ -183,7 +183,7 @@ public class WindShield {
     }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.localPosition = new Vector3(wsdDefault.x - (float)(0.002 * steeringWheel), wsdDefault.y, wsdDefault.z);
+        wsDisplay.transform.localPosition = new Vector3(wsdDefault.x + (float)(0.02 * steeringWheel), wsdDefault.y, wsdDefault.z);
     }
     public void reposWSD()
     {
@@ -192,6 +192,10 @@ public class WindShield {
     public void rotateWSD(Vector3 rot)
     {
         wsDisplay.transform.localEulerAngles = rot;
+    }
+    public void sizeWSD(Vector3 size)
+    {
+        wsDisplay.transform.localScale=size;
     }
     public bool isWebcamAvailable()
     {

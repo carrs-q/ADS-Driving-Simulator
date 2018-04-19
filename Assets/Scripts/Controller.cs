@@ -131,6 +131,8 @@ public class Controller : MonoBehaviour {
     private Vector3 wsdDefault;
     private Vector3 wsdRotationDefault;
     private Vector3 wsdRotationDyn;
+    private Vector3 wsdSizeDefault;
+    private Vector3 wsdSizeDyn;
     private NetworkClient networkClient;
  
 
@@ -199,6 +201,8 @@ public class Controller : MonoBehaviour {
         wsdDefault = WSDINFRONT;
         wsdRotationDefault = windshieldDisplay.transform.localEulerAngles;
         wsdRotationDyn = wsdRotationDefault;
+        wsdSizeDefault = windshieldDisplay.transform.localScale;
+        wsdSizeDyn = wsdSizeDefault;
         windshieldDisplay.transform.localPosition = wsdDefault;
         wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
         simulator.setDefaults();
@@ -305,64 +309,75 @@ public class Controller : MonoBehaviour {
         {
             if (!wsdMovingLocked)
             {
-                if (Input.GetKeyUp(KeyCode.Keypad4)
+                if (Input.GetKeyDown(KeyCode.Keypad4)
              || Input.GetKey(KeyCode.Keypad4))
                 {
                     WSDDyn.x += keypressScale;
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad6)
+                if (Input.GetKeyDown(KeyCode.Keypad6)
                     || Input.GetKey(KeyCode.Keypad6))
                 {
                     WSDDyn.x -= keypressScale;
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad8)
+                if (Input.GetKeyDown(KeyCode.Keypad8)
                     || Input.GetKey(KeyCode.Keypad8))
                 {
                     WSDDyn.y += keypressScale;
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad2)
+                if (Input.GetKeyDown(KeyCode.Keypad2)
                     || Input.GetKey(KeyCode.Keypad2))
                 {
                     WSDDyn.y -= keypressScale;
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad7)
+                if (Input.GetKeyDown(KeyCode.Keypad7)
                   || Input.GetKey(KeyCode.Keypad7))
                 {
                     WSDDyn.z -= keypressScale;
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad1)
+                if (Input.GetKeyDown(KeyCode.Keypad1)
                     || Input.GetKey(KeyCode.Keypad1))
                 {
                     WSDDyn.z += keypressScale;
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad9)
+                if (Input.GetKeyDown(KeyCode.Keypad9)
                  || Input.GetKey(KeyCode.Keypad9))
                 {
-                    wsdRotationDyn.x -= keypressScale;
+                    wsdRotationDyn.x -= keypressScale * 10;
                     wsd.rotateWSD(wsdRotationDyn);
                 }
-                if (Input.GetKeyUp(KeyCode.Keypad3)
+                if (Input.GetKeyDown(KeyCode.Keypad3)
                     || Input.GetKey(KeyCode.Keypad3))
                 {
-                    wsdRotationDyn.x += keypressScale;
+                    wsdRotationDyn.x += keypressScale*10;
                     wsd.rotateWSD(wsdRotationDyn);
                 }
-                if (Input.GetKeyUp(KeyCode.KeypadPlus))
+                if (Input.GetKeyDown(KeyCode.KeypadPlus) || 
+                    Input.GetKey(KeyCode.KeypadPlus))
                 {
-                    //Bigger
+                    
+                    wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 + keypressScale),
+                        wsdSizeDyn.y * (1 + keypressScale),
+                        wsdSizeDyn.z * (1 + keypressScale));
+                    wsd.sizeWSD(wsdSizeDyn);
                 }
-                if (Input.GetKeyUp(KeyCode.KeypadPlus))
+                if (Input.GetKeyDown(KeyCode.KeypadMinus)||
+                    Input.GetKey(KeyCode.KeypadMinus))
                 {
-                    //Smaller
+                    wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
+                     wsdSizeDyn.y * (1 -keypressScale),
+                     wsdSizeDyn.z * (1 - keypressScale));
+                    wsd.sizeWSD(wsdSizeDyn);
                 }
-                if (Input.GetKeyUp(KeyCode.KeypadEnter))
+                if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
                     WSDDyn = wsdDefault;
+                    wsdSizeDyn = wsdSizeDefault;
                     wsdRotationDyn = wsdRotationDefault;
                     wsd.rotateWSD(wsdRotationDyn);
+                    wsd.sizeWSD(wsdSizeDyn);
                 }
             }
-            if (Input.GetKeyDown(KeyCode.Numlock))
+            if (Input.GetKeyUp(KeyCode.Numlock))
             {
                 wsdMovingLocked = !wsdMovingLocked;
                 Debug.Log("Keypress");

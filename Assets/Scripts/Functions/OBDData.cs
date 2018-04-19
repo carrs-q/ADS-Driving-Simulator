@@ -18,7 +18,7 @@ public class OBDData {
     private bool isSpeed=false;
     private bool isSteeringWheelAngle=false;
 
-    private int obdDataCount;
+    private int? obdDataCount;
     private int lastIterator;
     private int oldIterator;
     //Setter
@@ -59,7 +59,12 @@ public class OBDData {
     //Synchronize to Simulation
     public int getCount()
     {
-        return obdDataCount;
+        if (obdDataCount.HasValue)
+        {
+            return (int)obdDataCount;
+        }
+        return 0;
+       
     }
     public void resetCounter()
     {
