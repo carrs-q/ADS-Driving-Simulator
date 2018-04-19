@@ -19,10 +19,10 @@ using System.Text;
  *          #  Create HDMI networkready or Oculus
  *              #HDMI Duplicator
  *          ✔  Request Project after load
- *          #  Controlls for WSD (V3 Dyn Controll)
+ *          ✔  Controlls for WSD (V3 Dyn Controll)
  *          #  Sensors
  *          #  Network Message for WSD
- *          #  Limit Network requests
+ *          ✔  Limit Network requests
  *          #  Tinting Network
  *          #  Remote Client force to Screen Change
  *          #  Slider in running Programm
@@ -185,6 +185,8 @@ public class Controller : MonoBehaviour {
     public GameObject videoWalls;
     public GameObject WSDCamera;
 
+    private int noteachState = 0;
+    private static int nthMessage = 5; //Every n.th message get send to all clients
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
 
@@ -258,13 +260,27 @@ public class Controller : MonoBehaviour {
         }
         if(serverStarted)
         {
-            serverRecieve();
+            if(noteachState == 0)
+            {
+                serverRecieve();
+                Debug.Log("Message send");
+                noteachState++;
+            }
+            else
+            {
+                noteachState++;
+                if (noteachState >= nthMessage)
+                {
+                    noteachState = 0;
+                }
+            }
+            
         }
         else if(isConnected)
         {
             nodeRecieve();
         }
-        //TODO Divide if Master or Slave
+        //TODO distinguish if Master or Slave
         if (renderMode == MASTER)
         {
             syncData.setSpeed(obdData.getSpeed());
@@ -752,8 +768,18 @@ public class Controller : MonoBehaviour {
     }
     private void sendStatusToClient()
     {
-        string msg = STATUSUPDATE + "|"+syncData.getStat();
-        serverToClientListSend(msg, unrelSeqChannel, clients);
+        string msg = STATUSUPDATE + "|" + syncData.getStat();
+        if (actualStatus != getOldStatus())
+        {
+            setOldStatus(actualStatus);
+            serverToClientListSend(msg, relChannel, clients);
+        }
+        else
+        {
+            serverToClientListSend(msg, unrelSeqChannel, clients);
+        }
+        
+        
     }
     private void serverProjectRequest(int conID)
     {
@@ -786,6 +812,7 @@ public class Controller : MonoBehaviour {
     }
     private void clientRecieveUpdate(string status, string speed, string steerRot, string gasPed, string breakPed, string isBrake, string isGas, string msg)
     {
+        Debug.Log("UpdateMessage");
         syncData.setSimState(int.Parse(status));
         syncData.updateOBD(int.Parse(speed), int.Parse(steerRot), int.Parse(gasPed), int.Parse(breakPed), bool.Parse(isBrake), bool.Parse(isGas));
         Debug.Log(msg);
@@ -1243,6 +1270,7 @@ public class Controller : MonoBehaviour {
                 }
             }
         }
+        noteachState = 0;
     }
     public Config getConfig()
     {
