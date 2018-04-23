@@ -263,7 +263,6 @@ public class Controller : MonoBehaviour {
             if(noteachState == 0)
             {
                 serverRecieve();
-                Debug.Log("Message send");
                 noteachState++;
             }
             else

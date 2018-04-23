@@ -83,7 +83,7 @@ public class MyFile {
     //Non Blocking Storeing
     private void saveData()
     {
-        //File.WriteAllBytes(getFilePath(), data);
+        File.WriteAllBytes(getFilePath(), data);
         ready = true;
         fileNotExist = false;
         data=null;

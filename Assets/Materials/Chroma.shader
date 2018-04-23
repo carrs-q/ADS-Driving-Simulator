@@ -2,9 +2,9 @@
 // actual key is pink 
 Shader "Custom/transparent_col" {
     Properties {
-        _Color ("Color", Color) = (0.8,0.8,0.8,0.7)
+        _Color ("Color", Color) = (0.8,0.8,0.8,0.8)
         _TransparentColor ("Transparent Color", Color) = (1,0,1,1)
-        _Threshold ("Threshhold", Float) = 0.01
+        _Threshold ("Threshhold", Float) = 0.6
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
     }
     SubShader {
