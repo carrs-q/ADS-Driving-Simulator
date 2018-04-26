@@ -6,12 +6,16 @@ using SFB;
 
 
 public class OBD : MonoBehaviour {
+    private List<string> names = new List<string>(){
+        "Load OBD Data",
+        "Break Pedal",
+        "Is Break Pedal",
+        "Is Gas Pedal",
+        "Speed",
+        "Steering Wheel"};
 
-
-    private List<string> names = new List<string>() { "Load OBD Data", "Break Pedal", "Break Boolean", "Gas", "Speed", "Steering Wheel" };
     private Controller controller;
     public Dropdown loadOBDDropdown;
-    public Text LogText;
 
     private int obdDataCount;
     private bool countSet;
@@ -22,7 +26,6 @@ public class OBD : MonoBehaviour {
         controller = Controller.getController();
         countSet = false;
         AttachList();
-
     }
     private void AttachList()
     {
@@ -69,7 +72,7 @@ public class OBD : MonoBehaviour {
                         }
                         break;
                     default:{
-                            LogText.text = "Index out of bound";
+                            controller.writeError("Index out of bound at OBD");
                         }
                         break;
                 }
@@ -94,7 +97,7 @@ public class OBD : MonoBehaviour {
             catch
             {
                 obdData[i] = 0;
-                LogText.text += "\n" + "Error: #CSVS-1";
+                controller.writeError("Error: #CSVS-1");
             }
             
             //LogText.text += "\n" + string.Format("{0:N0}", obdData[i]);
@@ -118,12 +121,12 @@ public class OBD : MonoBehaviour {
                 catch
                 {
                     obdData[i] = 0;
-                    LogText.text += "\n" + "Error: #CSVS-1";
+                    controller.writeError("Error: #CSVS-1");
                 }
             }
             else
             {
-                LogText.text += "\n" + "Error: #CSVS-2";
+                controller.writeError("Error: #CSVS-2");
             }
             //LogText.text += "\n" + string.Format("{0:N0}", obdData[i]);
         }
@@ -151,7 +154,7 @@ public class OBD : MonoBehaviour {
             catch
             {
                 obdData[i] = false;
-                LogText.text += "\n" + "Error: #CSVS-1";
+                controller.writeError("Error: #CSVS-2");
             }
         }
         return obdData;
@@ -178,7 +181,7 @@ public class OBD : MonoBehaviour {
                 catch
                 {
                     obdData[i] = 0;
-                    LogText.text += "\n" + "Error: #CSVS-1";
+                    controller.writeError("Error: #CSVS-1");
                 }
             }
             

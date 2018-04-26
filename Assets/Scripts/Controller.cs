@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using TMPro;
 using System.Collections;
-using UnityClusterPackage;
+using MyNetwork;
 using UnityEngine.Networking;
 using System.Text;
 
@@ -102,6 +102,7 @@ public class Controller : MonoBehaviour {
     private Simulation simulator;
     private WindShield wsd;
     private SyncData syncData;
+    private Log log;
     private int oldStatus;
 
     public static Controller getController()
@@ -186,7 +187,7 @@ public class Controller : MonoBehaviour {
     public GameObject WSDCamera;
 
     private int noteachState = 0;
-    private static int nthMessage = 5; //Every n.th message get send to all clients
+    private static int nthMessage = 10; //Every n.th message get send to all clients
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
 
@@ -200,6 +201,8 @@ public class Controller : MonoBehaviour {
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
+        log = new Log(LogText);
+        log.write("SCC started");
         wsdDefault = WSDINFRONT;
         wsdRotationDefault = windshieldDisplay.transform.localEulerAngles;
         wsdRotationDyn = wsdRotationDefault;
@@ -248,8 +251,6 @@ public class Controller : MonoBehaviour {
         
     }
     void Update () {
-        
-
         if (cdnLoaded && cdnProject)
         {
             if (simulationContent.areFilesReady())
@@ -260,20 +261,7 @@ public class Controller : MonoBehaviour {
         }
         if(serverStarted)
         {
-            if(noteachState == 0)
-            {
-                serverRecieve();
-                noteachState++;
-            }
-            else
-            {
-                noteachState++;
-                if (noteachState >= nthMessage)
-                {
-                    noteachState = 0;
-                }
-            }
-            
+            serverRecieve();
         }
         else if(isConnected)
         {
@@ -282,9 +270,13 @@ public class Controller : MonoBehaviour {
         //TODO distinguish if Master or Slave
         if (renderMode == MASTER)
         {
+            sendStatusToClient();
+        }
+        if (renderMode == MASTER && syncData.getStatus()==START)
+        {
+            UpdateTime();
             syncData.setSpeed(obdData.getSpeed());
             syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
-            sendStatusToClient();
 
             if (videoPlayerAttached)
             {
@@ -313,7 +305,10 @@ public class Controller : MonoBehaviour {
         }
         else
         {
-            doesStatusChanged(syncData.getStatus());
+            if (syncData.doesStatusChanged())
+            {
+                this.doesStatusChanged(syncData.getStatus());
+            }
             steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
             digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
         }
@@ -410,6 +405,10 @@ public class Controller : MonoBehaviour {
         {
             case CAVEMODE:
                 {
+                    if (NodeInformation.type.Equals(MASTERNODE))
+                    {
+                        actualMode = CAVEMODE;
+                    }
                     loadCaveSettings();
                 }
                 break;
@@ -469,7 +468,6 @@ public class Controller : MonoBehaviour {
                 {
                     Display.displays[i].Activate();
                 }
-
             }
         }
     }
@@ -489,7 +487,7 @@ public class Controller : MonoBehaviour {
     }
     private void loadARSettings()
     {
-        LogText.text += "\nAR is not supported at the moment, please change mode";
+        log.write("AR is not supported at the moment, please change mode");
     }
     private void loadCaveSettings()
     {
@@ -501,10 +499,8 @@ public class Controller : MonoBehaviour {
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
             {
-                case FRONT: {
-                        FrontCamera.SetActive(true);
+                case FRONT: { FrontCamera.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-
                     } break;
                 case LEFT: { LeftCamera.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
@@ -515,7 +511,8 @@ public class Controller : MonoBehaviour {
                 case MIRRORS: { MirrorCamera.SetActive(true);
                         Screen.SetResolution(2400, 600, true, 60);
                     } break;
-                default: { this.GetComponent<Camera>().targetDisplay = 0; } break;
+                default: { this.GetComponent<Camera>().targetDisplay = 0;
+                    } break;
             }
             StartCoroutine(AttemptRecconnect());
         }
@@ -551,7 +548,7 @@ public class Controller : MonoBehaviour {
     }
     public void loadProject(string project)
     {
-        LogText.text += ("\nProject " + project + " start loading");
+        log.write("Project " + project + " loaded");
         cdnProject = true;
         sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
@@ -573,8 +570,7 @@ public class Controller : MonoBehaviour {
             unrelSeqChannel = cc.AddChannel(QosType.UnreliableSequenced);
             relFragSecChannel = cc.AddChannel(QosType.ReliableFragmentedSequenced);
             allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
-
-
+            
             //Start
             HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
             NetworkTransport.Init();
@@ -595,11 +591,6 @@ public class Controller : MonoBehaviour {
                 serverStarted = true;
                 Debug.Log("Network Master started");
             }
-
-
-            //Network.InitializeServer(NodeInformation.maxnodes, NodeInformation.serverPort, useNat);
-            //Network.maxConnections = NodeInformation.maxnodes;
-            //NetworkServer.Listen(NodeInformation.serverPort);
         }
     }
          // Sub Init TODO Reconnecter
@@ -640,9 +631,6 @@ public class Controller : MonoBehaviour {
             isConnected = true;
             Debug.Log("Node Successfull connected");
         }
-
-        //TODO Catch ErrorMessage from not Connect
-        //Network.Connect(NodeInformation.serverIp, NodeInformation.serverPort);
     }
 
     //Network Recieve
@@ -666,8 +654,7 @@ public class Controller : MonoBehaviour {
             case NetworkEventType.Nothing:         //1
                 break;
             case NetworkEventType.ConnectEvent:    //2
-                LogText.text += "\nNode " + outConnectionId + " has connected";
-                Debug.Log("Node " + outConnectionId + " has connected on channelId: " + outChannelId);
+                log.write("Node " + outConnectionId + " has connected");
                 serverReqDisplay(outConnectionId);
                 break;
             case NetworkEventType.DataEvent:       //3 
@@ -686,8 +673,7 @@ public class Controller : MonoBehaviour {
                 }
                 break;
             case NetworkEventType.DisconnectEvent: //4
-                LogText.text += "\nNode " + outConnectionId + " has disconnected";
-                Debug.Log("Node " + outConnectionId + " has disconnected");
+                log.write("Node " + outConnectionId + " has disconnected");
                 break;
         }
     }
@@ -768,17 +754,27 @@ public class Controller : MonoBehaviour {
     private void sendStatusToClient()
     {
         string msg = STATUSUPDATE + "|" + syncData.getStat();
-        if (actualStatus != getOldStatus())
+        if (syncData.doesStatusChanged())
         {
-            setOldStatus(actualStatus);
             serverToClientListSend(msg, relChannel, clients);
         }
-        else
+        else if(syncData.getStatus() == START)
         {
-            serverToClientListSend(msg, unrelSeqChannel, clients);
+            if (noteachState == 0)
+            {
+                serverToClientListSend(msg, unrelSeqChannel, clients);
+                noteachState++;
+            }
+            else
+            {
+                noteachState++;
+                if (noteachState >= nthMessage)
+                {
+                    noteachState = 0;
+                }
+            }
+           
         }
-        
-        
     }
     private void serverProjectRequest(int conID)
     {
@@ -811,35 +807,29 @@ public class Controller : MonoBehaviour {
     }
     private void clientRecieveUpdate(string status, string speed, string steerRot, string gasPed, string breakPed, string isBrake, string isGas, string msg)
     {
-        Debug.Log("UpdateMessage");
         syncData.setSimState(int.Parse(status));
         syncData.updateOBD(int.Parse(speed), int.Parse(steerRot), int.Parse(gasPed), int.Parse(breakPed), bool.Parse(isBrake), bool.Parse(isGas));
-        Debug.Log(msg);
     }
     private void doesStatusChanged(int status)
     {
-        if (actualStatus != status)
+        switch (status)
         {
-            switch (status)
-            {
-                case START:
-                    {
-                        startSimulation();
-                    }
-                    break;
-                case PAUSE:
-                    {
-                        stopSimulation();
-                    }
-                    break;
-                case RESET:
-                    {
-                        resetSimulation();
-                    }
-                    break;
-            }
+            case START:
+                {
+                    startSimulation();
+                }
+                break;
+            case PAUSE:
+                {
+                    stopSimulation();
+                }
+                break;
+            case RESET:
+                {
+                    resetSimulation();
+                }
+                break;
         }
-
     }
     private void changeScreen(int screen)
     {
@@ -899,11 +889,19 @@ public class Controller : MonoBehaviour {
     public void startSimulation()
     {
         sendMarker(START);
+        if (simulator.getDifferenceInSecs() == 0)
+        {
+            log.writeWarning("Simualtion started from beginning");
+        }
+        else
+        {
+            log.writeWarning("Simualtion continued at " + getSimTime());
+        }
+       
         if (rightMirrorSound.clip)
             Debug.Log(rightMirrorSound.clip.loadState);
         if (leftMirrorSound.clip)
             Debug.Log(leftMirrorSound.clip.loadState);
-        sendMarker(START);
         simulator.beginnSimulation();
         frontWall.Play();
         leftWall.Play();
@@ -920,6 +918,7 @@ public class Controller : MonoBehaviour {
     public void stopSimulation()
     {
         sendMarker(PAUSE);
+        log.write("Simualtion paused");
         simulator.pauseSimulation();
         frontWall.Pause();
         leftWall.Pause();
@@ -935,6 +934,7 @@ public class Controller : MonoBehaviour {
     public void resetSimulation()
     {
         sendMarker(RESET);
+        log.write("Simualtion reseted");
         simulator.setDefaults();
         obdData.resetCounter();
         Seek(frontWall, 0);
@@ -956,6 +956,7 @@ public class Controller : MonoBehaviour {
         MirrorLeft.Pause();
         MirrorRight.Pause();
         startButtonText.text = "Play";
+        UpdateTime();
     }
    
     public void enableWindshield()
@@ -990,6 +991,11 @@ public class Controller : MonoBehaviour {
             this.stopNetworkservice();
         }
     }
+    public bool isMasterAndCave()
+    {
+        return (renderMode == MASTER && actualMode == CAVEMODE);
+    }
+
 
     //
     private void prepareSimulator()
@@ -1083,7 +1089,7 @@ public class Controller : MonoBehaviour {
         string temp = path;
         if (video.url == temp || temp == null)
         {
-            LogText.text = "Video error";
+            log.write("Video error");
             return;
         }
         video.url = temp;
@@ -1136,7 +1142,7 @@ public class Controller : MonoBehaviour {
                 break;
             default:
                 {
-                    LogText.text = "Error while Video Loading - Playercount not found";
+                    log.write("Error while Video Loading - Playercount not found");
                 }
                 break;
 
@@ -1209,7 +1215,7 @@ public class Controller : MonoBehaviour {
                 }break;
             default:
                 {
-                    LogText.text = "Problem in operationoverloading by Float";
+                    log.write("Problem in operationoverloading by Float");
                 }break;
         }
     }
@@ -1233,13 +1239,14 @@ public class Controller : MonoBehaviour {
                 break;
             default:
                 {
-                    LogText.text = "Problem in operationoverloading by Int";
+                    log.write("Problem in operationoverloading by Int");
                 }
                 break;
         }
     }
     public bool isWebcamAttached()
     {
+        wsd.initialHDMIWindshield();
         return wsd.isWebcamAvailable();
     }
 
@@ -1278,8 +1285,6 @@ public class Controller : MonoBehaviour {
     public static void netWorkService()
     {
         Controller controller = getController();
-
-
         while (controller.areThreadsAlive())
         {
             try
@@ -1290,13 +1295,12 @@ public class Controller : MonoBehaviour {
                     string url;
                     if (controller.manualIP)
                     {
-                        url = "https://" + controller.customAddress + "/?event=" + controller.getActualStatus();
+                        url = "http://" + controller.customAddress + "/?event=" + controller.getActualStatus();
                     }
                     else
                     {
-                        url = "https://" + controller.getIRIPAddress()+":"+controller.getPort() + "/?event=" + controller.getActualStatus();
+                        url = "http://" + controller.getIRIPAddress()+":"+controller.getPort() + "/?event=" + controller.getActualStatus();
                     }
-                     
                     Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
@@ -1347,7 +1351,6 @@ public class Controller : MonoBehaviour {
             {
                 manualIP = false;
             }
-
             Debug.Log("Network Service Started");
             this.threadsAlive = true;
             Thread t = new Thread(new ThreadStart(netWorkService));
@@ -1376,7 +1379,6 @@ public class Controller : MonoBehaviour {
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
-
     private void debugInformations(bool activated)
     {
         TextMeshPro tmp = FrontCamera.GetComponentInChildren<TextMeshPro>();
@@ -1387,6 +1389,54 @@ public class Controller : MonoBehaviour {
 
         tmp = RightCamera.GetComponentInChildren<TextMeshPro>();
         tmp.text = "";
+    }
+
+
+    public void changeWSDDefault(int wsdPos)
+    {
+        //TODO
+    }
+    public void writeLog(string logMessage)
+    {
+        log.write(logMessage);
+    }
+    public void writeWarning(string logMessage)
+    {
+        log.writeWarning(logMessage);
+    }
+    public void writeError(string logMessage)
+    {
+        log.writeError(logMessage);
+    }
+
+    private void UpdateTime()
+    {
+        timeText.text = getSimTime();
+    }
+    public string getSimTime()
+    {
+        int curMin = simulator.getDifferenceInSecs() / 60;
+        int curSec = simulator.getDifferenceInSecs() % 60;
+        string min, sec;
+        if (curMin < 10)
+        {
+            min = "0" + curMin;
+        }
+        else
+        {
+            min = curMin.ToString();
+        }
+
+        if (curSec < 10)
+        {
+            sec = "0" + curSec;
+        }
+        else
+        {
+            sec = curSec.ToString();
+        }
+        return min + ":" + sec;
+
     }
 
 }

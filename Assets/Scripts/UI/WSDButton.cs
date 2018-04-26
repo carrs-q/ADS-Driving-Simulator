@@ -4,7 +4,6 @@ using UnityEngine.UI;
 public class WSDButton : MonoBehaviour {
     private Controller controller;
     public Toggle thisButton;
-    public Text LogText;
 
     public void buttonPressed(bool isActivated)
     {
@@ -12,19 +11,19 @@ public class WSDButton : MonoBehaviour {
         
         if (isActivated)
         {
-            if (controller.isWebcamAttached())
+            if (controller.isWebcamAttached() || controller.isMasterAndCave())
             {
                 controller.enableWindshield();
             }
             else
             {
-                LogText.text += "\nNo HDMI Input detected";
+                controller.writeWarning("No HDMI Input detected");
                 thisButton.isOn = false;
             }
         }
         else
         {
-            if (controller.isWebcamAttached())
+            if (controller.isWebcamAttached() || controller.isMasterAndCave())
             {
                 controller.disableWindshield();
             }

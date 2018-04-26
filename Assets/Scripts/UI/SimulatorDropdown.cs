@@ -6,7 +6,6 @@ using UnityEngine.UI;
 public class SimulatorDropdown : MonoBehaviour {
 
     public Dropdown loadVideoDropDown;
-    public Text LogText;
     private Controller controller;
 
     private List<string> modes = new List<string>() { "Choose Destination", "Main Simulator", "Virtual Reality", "Augmented Reality"};
@@ -26,7 +25,7 @@ public class SimulatorDropdown : MonoBehaviour {
         if (index != 0 && index < 4)
         {
             controller.changeMode(index);
-            LogText.text += "\n"+"Destination " + modes[index];
+            controller.writeLog("Destination " + modes[index]);
         }
     }
 }

@@ -2,6 +2,7 @@
 {
     //currentState
     private int simulationState;
+    private int oldSimState=9999;
 
     //OBD
     private int speed;
@@ -34,7 +35,20 @@
 
     public void setSimState(int state)
     {
+        this.oldSimState = this.simulationState;
         this.simulationState = state;
+    }
+    public bool doesStatusChanged()
+    {
+        if (this.simulationState != this.oldSimState)
+        {
+            this.oldSimState = this.simulationState;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
     public void setSpeed(int speed)
     {

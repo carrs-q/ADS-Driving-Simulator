@@ -54,8 +54,6 @@ public class OBDData {
         this.isSteeringWheelAngle = true;
     }
 
-
-
     //Synchronize to Simulation
     public int getCount()
     {
@@ -79,7 +77,6 @@ public class OBDData {
         return (lastIterator == oldIterator);
     }
     
-
     //Getter
     public bool isBrake()
     {
