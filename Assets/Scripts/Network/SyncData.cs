@@ -1,5 +1,4 @@
-﻿public class SyncData
-{
+﻿public class SyncData{
     //currentState
     private int simulationState;
     private int oldSimState=9999;
@@ -76,7 +75,13 @@
     }
     public string getStat()
     {
-        return simulationState + "|" + speed + "|" + steeringWheelRotation + "|" + gasPedal + "|" + brakePedal + "|" + isBrakePedal + "|" + isGasPedal;
+        return simulationState + "|" + 
+            speed + "|" + 
+            steeringWheelRotation + "|" + 
+            gasPedal + "|" + 
+            brakePedal + "|" + 
+            isBrakePedal + "|" + 
+            isGasPedal;
     }
     public int getStatus()
     {

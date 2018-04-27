@@ -70,14 +70,14 @@ public class Controller : MonoBehaviour {
     public const int SPEEDOMETER = 6;
 
     //MessageCodes
-    public const int BUFFERSIZE = 1024;
-    public const int MAX_CONNECTION = 10;
-    public const string REQDISPLAY = "RQD";
-    public const string RESDISPLAY = "RSD";
-    public const string SENDPROJECT = "PRO";
-    public const string REQPROJECT = "RPRO";
-    public const string STATUSUPDATE = "STA";
-    public const string EMPTYMESSAGE = "undefined";
+    public const int BUFFERSIZE         = 1024;
+    public const int MAX_CONNECTION     = 10;
+    public const string REQDISPLAY      = "RQD";
+    public const string RESDISPLAY      = "RSD";
+    public const string SENDPROJECT     = "PRO";
+    public const string REQPROJECT      = "RPRO";
+    public const string STATUSUPDATE    = "STA";
+    public const string EMPTYMESSAGE    = "undefined";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
     private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
@@ -126,6 +126,7 @@ public class Controller : MonoBehaviour {
     private List<Thread> threadList;
     private bool manualIP;
     private string customAddress;
+    private string lastMessage="";
 
     private Int64 timedifference;
     private Vector3 videoWallDefault;
@@ -136,7 +137,6 @@ public class Controller : MonoBehaviour {
     private Vector3 wsdSizeDyn;
     private NetworkClient networkClient;
  
-
     private bool videoPlayerAttached;
     private string project;
     private bool cdnLoaded = false;
@@ -204,14 +204,21 @@ public class Controller : MonoBehaviour {
         log = new Log(LogText);
         log.write("SCC started");
         wsdDefault = WSDINFRONT;
+
+        wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
+        simulator.setOBDData(obdData);
+        simulator.setDefaults();
+
+
         wsdRotationDefault = windshieldDisplay.transform.localEulerAngles;
         wsdRotationDyn = wsdRotationDefault;
+        wsd.rotateWSD(wsdRotationDyn);
+
         wsdSizeDefault = windshieldDisplay.transform.localScale;
         wsdSizeDyn = wsdSizeDefault;
+        wsd.setSizeWSD(wsdSizeDefault);
+
         windshieldDisplay.transform.localPosition = wsdDefault;
-        wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
-        simulator.setDefaults();
-        simulator.setOBDData(obdData);
         videoWallDefault = videoWalls.transform.position;
 
         if (NodeInformation.type.Equals(MASTERNODE))
@@ -248,7 +255,6 @@ public class Controller : MonoBehaviour {
         AudioListener.volume = 1;
         manualIP = false;
         //TODO SOURCE for Downloadserver
-        
     }
     void Update () {
         if (cdnLoaded && cdnProject)
@@ -307,7 +313,7 @@ public class Controller : MonoBehaviour {
         {
             if (syncData.doesStatusChanged())
             {
-                this.doesStatusChanged(syncData.getStatus());
+                this.statusChange(syncData.getStatus());
             }
             steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
             digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
@@ -368,7 +374,7 @@ public class Controller : MonoBehaviour {
                     wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 + keypressScale),
                         wsdSizeDyn.y * (1 + keypressScale),
                         wsdSizeDyn.z * (1 + keypressScale));
-                    wsd.sizeWSD(wsdSizeDyn);
+                    wsd.setSizeWSD(wsdSizeDyn);
                 }
                 if (Input.GetKeyDown(KeyCode.KeypadMinus)||
                     Input.GetKey(KeyCode.KeypadMinus))
@@ -376,7 +382,7 @@ public class Controller : MonoBehaviour {
                     wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
                      wsdSizeDyn.y * (1 -keypressScale),
                      wsdSizeDyn.z * (1 - keypressScale));
-                    wsd.sizeWSD(wsdSizeDyn);
+                    wsd.setSizeWSD(wsdSizeDyn);
                 }
                 if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
@@ -384,7 +390,7 @@ public class Controller : MonoBehaviour {
                     wsdSizeDyn = wsdSizeDefault;
                     wsdRotationDyn = wsdRotationDefault;
                     wsd.rotateWSD(wsdRotationDyn);
-                    wsd.sizeWSD(wsdSizeDyn);
+                    wsd.setSizeWSD(wsdSizeDyn);
                 }
             }
             if (Input.GetKeyUp(KeyCode.Numlock))
@@ -716,7 +722,7 @@ public class Controller : MonoBehaviour {
                         }
                         break;
                     case STATUSUPDATE:
-                        clientRecieveUpdate(splitData[1], splitData[2], splitData[3], splitData[4], splitData[5], splitData[6], splitData[7], msg);
+                        clientRecieveUpdate(msg);
                         break;
                     default:
                         Debug.Log("Unkown Message" + msg); break;
@@ -754,26 +760,23 @@ public class Controller : MonoBehaviour {
     private void sendStatusToClient()
     {
         string msg = STATUSUPDATE + "|" + syncData.getStat();
+        if (wsd.isWSDActive())
+        {
+            msg += wsd.wsdMessageString(obdData.getSteeringWheelAngle());
+        }
         if (syncData.doesStatusChanged())
         {
             serverToClientListSend(msg, relChannel, clients);
         }
         else if(syncData.getStatus() == START)
         {
-            if (noteachState == 0)
+            if(lastMessage != msg)
             {
+                Debug.Log(msg);
+                lastMessage = msg;
                 serverToClientListSend(msg, unrelSeqChannel, clients);
                 noteachState++;
             }
-            else
-            {
-                noteachState++;
-                if (noteachState >= nthMessage)
-                {
-                    noteachState = 0;
-                }
-            }
-           
         }
     }
     private void serverProjectRequest(int conID)
@@ -805,12 +808,60 @@ public class Controller : MonoBehaviour {
         this.project = project;
         loadSimulatorSetup(address, project);
     }
-    private void clientRecieveUpdate(string status, string speed, string steerRot, string gasPed, string breakPed, string isBrake, string isGas, string msg)
+    private void clientRecieveUpdate(string msg)
     {
-        syncData.setSimState(int.Parse(status));
-        syncData.updateOBD(int.Parse(speed), int.Parse(steerRot), int.Parse(gasPed), int.Parse(breakPed), bool.Parse(isBrake), bool.Parse(isGas));
+        Debug.Log(msg);
+        string[] data = msg.Split('|');
+        syncData.setSimState(int.Parse(data[2]));
+        if (syncData.doesStatusChanged())
+        {
+            statusChange(syncData.getStatus());
+        }
+        syncData.updateOBD(
+               int.Parse(data[2]),
+               int.Parse(data[3]),
+               int.Parse(data[4]),
+               int.Parse(data[5]),
+               bool.Parse(data[6]),
+               bool.Parse(data[7]));
+
+        if (data.Length > 18)
+        {
+            wsd.setWSD(
+                new Vector3(int.Parse(data[8]), int.Parse(data[9]), int.Parse(data[10])),
+                new Vector3(int.Parse(data[11]), int.Parse(data[12]), int.Parse(data[13])),
+                new Vector3(int.Parse(data[14]), int.Parse(data[15]), int.Parse(data[16])));
+
+            if(!wsd.isWSDActive())
+            {
+                wsd.enableWSD();
+            }
+        }
+        else
+        {
+            if (wsd.isWSDActive())
+            {
+                wsd.disableWSD();
+            }
+        }
+        if (data.Length == 19 || data.Length == 9)
+        {
+            if (!wsd.isTiningActive())
+            {
+                wsd.setWSDTinting(true);
+            }
+            wsd.setTintingTransparency(int.Parse(data[data.Length - 1]));
+
+        }
+        else
+        {
+            if (wsd.isTiningActive())
+            {
+                wsd.setWSDTinting(false);
+            };
+        }
     }
-    private void doesStatusChanged(int status)
+    private void statusChange(int status)
     {
         switch (status)
         {
@@ -995,8 +1046,7 @@ public class Controller : MonoBehaviour {
     {
         return (renderMode == MASTER && actualMode == CAVEMODE);
     }
-
-
+    
     //
     private void prepareSimulator()
     {

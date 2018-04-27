@@ -4,6 +4,7 @@ using MyNetwork;
 
 
 public class WindShield {
+    private bool wsdIsActive;
     private bool wsdIsTinting;
     private bool wsdChromaActive;
     private bool wsdXMovement;
@@ -19,6 +20,8 @@ public class WindShield {
     private Renderer wsTintRenderer;
     private AudioSource wsaudioSource;
     private Vector3 wsdDefault;
+    private Vector3 wsdSize;
+    private Vector3 wsdRotation;
 
     // Setters
     public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource, Vector3 wsdDefault) {
@@ -27,6 +30,7 @@ public class WindShield {
         this.wsdYMovement = false;
         this.wsdChromaActive = false;
         this.camAvailable = false;
+        this.wsdIsActive = false;
         this.wsDisplay = wsDisplay;
         this.wsTint = wsTint;
         this.wsDisplayRenderer = wsDisplay.GetComponent<Renderer>();
@@ -36,9 +40,9 @@ public class WindShield {
         this.chromaShader = chromashader;
         this.wsaudioSource = wsAudioSource;
         this.noShader = noShader;
+        this.wsdDefault = wsdDefault;
         tintingTransparency = 0;
         initialHDMIWindshield();
-        this.wsdDefault = wsdDefault;
     }
     public void setWSDTinting(bool isActive) {
         this.wsdIsTinting = isActive;
@@ -70,8 +74,12 @@ public class WindShield {
     }
     public void enableWSD()
     {
-        wsDisplayRenderer.enabled = true;
-
+        if(NodeInformation.type == Controller.MASTERNODE ||
+            NodeInformation.screen == 1)
+        {
+            wsDisplayRenderer.enabled = true;
+            wsdIsActive = true;
+        }
         if (isWebcamAvailable())
         {
             webcamTexture.Play();
@@ -79,9 +87,14 @@ public class WindShield {
             this.wsaudioSource.volume = 1;
         }
     }
+    public bool isWSDActive()
+    {
+        return this.wsdIsActive;
+    }
     public void disableWSD()
     {
         wsDisplayRenderer.enabled = false;
+        wsdIsActive = false;
         if (isWebcamAvailable())
         {
             webcamTexture.Stop();
@@ -100,7 +113,6 @@ public class WindShield {
             this.reposWSD();
         }
     }
-
 
     // Getters
     public bool isTiningActive()
@@ -182,18 +194,60 @@ public class WindShield {
     }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.localPosition = new Vector3(wsdDefault.x + (float)(0.02 * steeringWheel), wsdDefault.y, wsdDefault.z);
+        wsDisplay.transform.localPosition = this.getWSDwithMovement(steeringWheel);
+    }
+    public Vector3 getWSDwithMovement(int steeringWheel)
+    {
+        return new Vector3(wsdDefault.x + (float)(0.02 * steeringWheel), wsdDefault.y, wsdDefault.z);
+    }
+    public void setWSD(Vector3 pos, Vector3 rotation, Vector3 size)
+    {
+        this.updateWSDDefault(pos);
+        this.setSizeWSD(size);
+        this.rotateWSD(rotation);
+    }
+    public string wsdMessageString(int steeringWheel)
+    {
+        string msg="|";
+        //Position
+        msg += Math.Round(getWSDwithMovement(steeringWheel).x,4) + "|" +
+             Math.Round(getWSDwithMovement(steeringWheel).y, 4) + "|" +
+             Math.Round(getWSDwithMovement(steeringWheel).z, 4);
+        msg += "|";
+        //Rotation
+        msg +=  Math.Round(wsdRotation.x, 4) + "|" +
+            Math.Round(wsdRotation.y, 4) + "|" +
+            Math.Round(wsdRotation.z, 4);
+        msg += "|";
+        //Scale
+        msg += Math.Round(wsdSize.x,4) + "|" + 
+            Math.Round(wsdSize.y,4) + "|" + 
+            Math.Round(wsdSize.z,4);
+
+       
+        return msg;
+    }
+    public string tintMessageString()
+    {
+        string msg = "";
+        if (isTiningActive())
+        {
+            msg += "|" + tintingTransparency;
+        }
+        return msg;
     }
     public void reposWSD()
     {
         wsDisplay.transform.localPosition = new Vector3(wsdDefault.x, wsdDefault.y, wsdDefault.z);
     }
-    public void rotateWSD(Vector3 rot)
+    public void rotateWSD(Vector3 rotation)
     {
-        wsDisplay.transform.localEulerAngles = rot;
+        wsdRotation = rotation;
+        wsDisplay.transform.localEulerAngles = rotation;
     }
-    public void sizeWSD(Vector3 size)
+    public void setSizeWSD(Vector3 size)
     {
+        wsdSize = size;
         wsDisplay.transform.localScale=size;
     }
     public bool isWebcamAvailable()

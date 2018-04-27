@@ -4,7 +4,6 @@ using UnityEngine;
 
 
 public class Simulation {
-
     private Controller controller;
 
     private bool isRunning;
