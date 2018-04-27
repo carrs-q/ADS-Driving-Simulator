@@ -228,7 +228,7 @@ public class WindShield {
         string msg = "";
         if (isTiningActive())
         {
-            msg += "|" + tintingTransparency;
+            msg += "|" + tintingTransparency+"|"+wsdChromaActive;
         }
         return msg;
     }

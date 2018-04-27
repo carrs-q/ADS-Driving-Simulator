@@ -21,13 +21,14 @@ using System.Text;
  *          ✔  Request Project after load
  *          ✔  Controlls for WSD (V3 Dyn Controll)
  *          #  Sensors
- *          #  Network Message for WSD
+ *          ✔  Network Message for WSD
  *          ✔  Limit Network requests
- *          #  Tinting Network
+ *          ✔  Tinting Network
  *          #  Remote Client force to Screen Change
  *          #  Slider in running Programm
  *          #  Make Programm nice again 
  *          #  Big File Transfer
+ *          #  Chroma Shader activate
  */
 
 public class Controller : MonoBehaviour {
@@ -539,10 +540,18 @@ public class Controller : MonoBehaviour {
         yield return www.SendWebRequest();
 
         if (www.isNetworkError || www.isHttpError) {
-            Debug.Log(www.error);
+            if (www.error == "Cannot connect to destination host")
+            {
+                writeError("NodeJs Project Server is not running");
+            }
+            else
+            {
+                writeError(www.error);
+            }
         }
         else
         {
+            writeLog("Projectlist loaded");
             projectList = www.downloadHandler.text.Split(new string[] { "," }, StringSplitOptions.None);
             updateProjectList();
         }
@@ -847,14 +856,14 @@ public class Controller : MonoBehaviour {
                 wsd.disableWSD();
             }
         }
-        if (data.Length == 17 || data.Length == 9)
+        if (data.Length == 18 || data.Length == 10)
         {
             if (!wsd.isTiningActive())
             {
                 wsd.setWSDTinting(true);
             }
-            wsd.setTintingTransparency(float.Parse(data[data.Length - 1]));
-
+            wsd.setTintingTransparency(float.Parse(data[data.Length - 2]));
+            wsd.setWSDChroma(bool.Parse(data[data.Length - 1]));
         }
         else
         {
@@ -1490,6 +1499,10 @@ public class Controller : MonoBehaviour {
         }
         return min + ":" + sec;
 
+    }
+    public void loadProjectList()
+    {
+        StartCoroutine(getProjectList());
     }
 
 }

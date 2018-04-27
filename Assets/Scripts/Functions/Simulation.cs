@@ -1,8 +1,6 @@
 ﻿using System;
 using UnityEngine;
 
-
-
 public class Simulation {
     private Controller controller;
 
@@ -20,7 +18,6 @@ public class Simulation {
     private char gear;
     private string temperature;
     private string currentTime;
-
 
     public Boolean isStarted()
     {
