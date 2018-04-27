@@ -74,12 +74,8 @@ public class WindShield {
     }
     public void enableWSD()
     {
-        if(NodeInformation.type == Controller.MASTERNODE ||
-            NodeInformation.screen == 1)
-        {
-            wsDisplayRenderer.enabled = true;
-            wsdIsActive = true;
-        }
+        wsDisplayRenderer.enabled = true;
+        wsdIsActive = true;
         if (isWebcamAvailable())
         {
             webcamTexture.Play();

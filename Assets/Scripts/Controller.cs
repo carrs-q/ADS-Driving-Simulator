@@ -766,6 +766,7 @@ public class Controller : MonoBehaviour {
         }
         if (syncData.doesStatusChanged())
         {
+            Debug.Log(msg);
             serverToClientListSend(msg, relChannel, clients);
         }
         else if(syncData.getStatus() == START)
@@ -810,9 +811,10 @@ public class Controller : MonoBehaviour {
     }
     private void clientRecieveUpdate(string msg)
     {
-        Debug.Log(msg);
         string[] data = msg.Split('|');
-        syncData.setSimState(int.Parse(data[2]));
+        Debug.Log(msg);
+        Debug.Log(data.Length);
+        syncData.setSimState(int.Parse(data[1]));
         if (syncData.doesStatusChanged())
         {
             statusChange(syncData.getStatus());
@@ -825,12 +827,13 @@ public class Controller : MonoBehaviour {
                bool.Parse(data[6]),
                bool.Parse(data[7]));
 
-        if (data.Length > 18)
+        if (data.Length >= 17)
         {
+
             wsd.setWSD(
-                new Vector3(int.Parse(data[8]), int.Parse(data[9]), int.Parse(data[10])),
-                new Vector3(int.Parse(data[11]), int.Parse(data[12]), int.Parse(data[13])),
-                new Vector3(int.Parse(data[14]), int.Parse(data[15]), int.Parse(data[16])));
+                new Vector3(float.Parse(data[8]), float.Parse(data[9]), float.Parse(data[10])),
+                new Vector3(float.Parse(data[11]), float.Parse(data[12]), float.Parse(data[13])),
+                new Vector3(float.Parse(data[14]), float.Parse(data[15]), float.Parse(data[16])));
 
             if(!wsd.isWSDActive())
             {
@@ -844,13 +847,13 @@ public class Controller : MonoBehaviour {
                 wsd.disableWSD();
             }
         }
-        if (data.Length == 19 || data.Length == 9)
+        if (data.Length == 17 || data.Length == 9)
         {
             if (!wsd.isTiningActive())
             {
                 wsd.setWSDTinting(true);
             }
-            wsd.setTintingTransparency(int.Parse(data[data.Length - 1]));
+            wsd.setTintingTransparency(float.Parse(data[data.Length - 1]));
 
         }
         else

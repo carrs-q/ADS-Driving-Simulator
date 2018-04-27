@@ -34,7 +34,6 @@
 
     public void setSimState(int state)
     {
-        this.oldSimState = this.simulationState;
         this.simulationState = state;
     }
     public bool doesStatusChanged()
