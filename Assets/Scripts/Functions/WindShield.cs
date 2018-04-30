@@ -219,8 +219,8 @@ public class WindShield {
         msg += Math.Round(wsdSize.x,4) + "|" + 
             Math.Round(wsdSize.y,4) + "|" + 
             Math.Round(wsdSize.z,4);
-
-       
+        msg += "|" + isChromaActive();
+        msg += tintMessageString();
         return msg;
     }
     public string tintMessageString()
@@ -228,7 +228,7 @@ public class WindShield {
         string msg = "";
         if (isTiningActive())
         {
-            msg += "|" + tintingTransparency+"|"+wsdChromaActive;
+            msg += "|" + tintingTransparency;
         }
         return msg;
     }

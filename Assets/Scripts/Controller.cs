@@ -186,6 +186,7 @@ public class Controller : MonoBehaviour {
     public GameObject LoadProject;
     public GameObject videoWalls;
     public GameObject WSDCamera;
+    public bool sendSync = false;
 
     private int noteachState = 0;
     private static int nthMessage = 10; //Every n.th message get send to all clients
@@ -776,13 +777,13 @@ public class Controller : MonoBehaviour {
         if (syncData.doesStatusChanged())
         {
             Debug.Log(msg);
+            this.sendSync = true;
             serverToClientListSend(msg, relChannel, clients);
         }
         else if(syncData.getStatus() == START)
         {
             if(lastMessage != msg)
             {
-                Debug.Log(msg);
                 lastMessage = msg;
                 serverToClientListSend(msg, unrelSeqChannel, clients);
                 noteachState++;
@@ -836,15 +837,15 @@ public class Controller : MonoBehaviour {
                bool.Parse(data[6]),
                bool.Parse(data[7]));
 
-        if (data.Length >= 17)
+        if (data.Length >= 18)
         {
 
             wsd.setWSD(
                 new Vector3(float.Parse(data[8]), float.Parse(data[9]), float.Parse(data[10])),
                 new Vector3(float.Parse(data[11]), float.Parse(data[12]), float.Parse(data[13])),
                 new Vector3(float.Parse(data[14]), float.Parse(data[15]), float.Parse(data[16])));
-
-            if(!wsd.isWSDActive())
+            wsd.setWSDChroma(bool.Parse((data[17])));
+            if (!wsd.isWSDActive())
             {
                 wsd.enableWSD();
             }
@@ -856,14 +857,13 @@ public class Controller : MonoBehaviour {
                 wsd.disableWSD();
             }
         }
-        if (data.Length == 18 || data.Length == 10)
+        if (data.Length == 19 || data.Length == 9)
         {
             if (!wsd.isTiningActive())
             {
                 wsd.setWSDTinting(true);
             }
-            wsd.setTintingTransparency(float.Parse(data[data.Length - 2]));
-            wsd.setWSDChroma(bool.Parse(data[data.Length - 1]));
+            wsd.setTintingTransparency(float.Parse(data[data.Length - 1]));
         }
         else
         {
@@ -1042,18 +1042,7 @@ public class Controller : MonoBehaviour {
     {
         wsd.setWSDHorizontalMovement(state);
     }
-    public void setSensorSync(bool state)
-    {
-        this.enabledSensorSync = state;
-        if (enabledSensorSync)
-        {
-            this.runNetworkservice();
-        }
-        else
-        {
-            this.stopNetworkservice();
-        }
-    }
+  
     public bool isMasterAndCave()
     {
         return (renderMode == MASTER && actualMode == CAVEMODE);
@@ -1344,39 +1333,7 @@ public class Controller : MonoBehaviour {
     {
         return this.config;
     }
-    public static void netWorkService()
-    {
-        Controller controller = getController();
-        while (controller.areThreadsAlive())
-        {
-            try
-            {
-                if(controller.getOldStatus() != controller.getActualStatus())
-                {
-                    controller.setOldStatus(controller.getActualStatus());
-                    string url;
-                    if (controller.manualIP)
-                    {
-                        url = "http://" + controller.customAddress + "/?event=" + controller.getActualStatus();
-                    }
-                    else
-                    {
-                        url = "http://" + controller.getIRIPAddress()+":"+controller.getPort() + "/?event=" + controller.getActualStatus();
-                    }
-                    Debug.Log(url);
-                    WebRequest request = WebRequest.Create(url);
-                    request.Method = "POST";
-                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-                }
-            }
-            catch (Exception e)
-            {
-
-                Debug.Log("Error: " + e.Message);
-            }
-
-        }
-    }
+   
     public IPAddress getIRIPAddress()
     {
         return this.irIPAddress;
@@ -1401,6 +1358,18 @@ public class Controller : MonoBehaviour {
     {
         return this.threadsAlive;
     }
+    public void setSensorSync(bool state)
+    {
+        this.enabledSensorSync = state;
+        if (enabledSensorSync)
+        {
+            this.runNetworkservice();
+        }
+        else
+        {
+            this.stopNetworkservice();
+        }
+    }
     public void runNetworkservice()
     {
         if (NodeInformation.type.Equals(MASTERNODE)){
@@ -1420,6 +1389,44 @@ public class Controller : MonoBehaviour {
             threadList.Add(t);
         }
        
+    }
+    public static void netWorkService()
+    {
+        Controller controller = getController();
+        while (controller.areThreadsAlive())
+        {
+            try
+            {
+                if (controller.sendSync)
+                {
+                    controller.sendSync = false;
+                    controller.setOldStatus(controller.getActualStatus());
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + controller.getSyncStatus();
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getSyncStatus();
+                    }
+                    Debug.Log(url);
+                    WebRequest request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                }
+            }
+            catch (Exception e)
+            {
+
+                Debug.Log("Error: " + e.Message);
+            }
+
+        }
+    }
+    public int getSyncStatus()
+    {
+        return this.syncData.getStatus();
     }
     public void stopNetworkservice()
     {
