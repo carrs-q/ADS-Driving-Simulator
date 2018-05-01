@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node type="slave" screen="1" debug="1">
-    <server ip="131.181.139.168" port="25000"/>
-    <cdn address="http://131.181.139.168:1605"/>
+<node type="master" screen="1" debug="1">
+    <server ip="131.181.139.172" port="25000"/>
+    <cdn address="http://131.181.139.172:1605"/>
     <hdmi video="USB3.0 Capture Video" audio="Digital Audio Interface (USB3.0 Capture Audio)"/>
 </node>

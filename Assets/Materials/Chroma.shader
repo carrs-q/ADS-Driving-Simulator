@@ -2,10 +2,10 @@
 // actual key is pink 
 Shader "Custom/transparent_col" {
     Properties {
+		_MainTex("Albedo (RGB)", 2D) = "black" {}
+		_TransparentColor("Transparent Color", Color) = (1,0,1,1)
         _Color ("Color", Color) = (0.8,0.8,0.8,0.8)
-        _TransparentColor ("Transparent Color", Color) = (1,0,1,1)
-        _Threshold ("Threshhold", Float) = 0.6
-        _MainTex ("Albedo (RGB)", 2D) = "white" {}
+        _Threshold ("Threshhold", Float) = 0.5
     }
     SubShader {
 	Tags { "Queue"="Overlay" "RenderType"="Overlay" }
@@ -43,7 +43,7 @@ Shader "Custom/transparent_col" {
              
         //output albedo and alpha just like a normal shader
         o.Albedo = output_col.rgb;
-        o.Alpha  = output_col.a;
+        o.Alpha  = output_col.a*0.7;
         }
         ENDCG
     } 
