@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
 using System;
+using MyNetwork;
 
 
 public class WindShield {
+    private bool wsdIsActive;
     private bool wsdIsTinting;
     private bool wsdChromaActive;
     private bool wsdXMovement;
@@ -17,16 +19,18 @@ public class WindShield {
     private Renderer wsDisplayRenderer;
     private Renderer wsTintRenderer;
     private AudioSource wsaudioSource;
+    private Vector3 wsdDefault;
+    private Vector3 wsdSize;
+    private Vector3 wsdRotation;
 
-    private float wsdX=-3f, wsdY=-0.7f, wsdZ=0.3f;
-    
     // Setters
-    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource) {
+    public void setDefaults(Component wsDisplay, Component wsTint, Shader chromashader, Shader noShader, AudioSource wsAudioSource, Vector3 wsdDefault) {
         this.wsdIsTinting = false;
         this.wsdXMovement = false;
         this.wsdYMovement = false;
         this.wsdChromaActive = false;
         this.camAvailable = false;
+        this.wsdIsActive = false;
         this.wsDisplay = wsDisplay;
         this.wsTint = wsTint;
         this.wsDisplayRenderer = wsDisplay.GetComponent<Renderer>();
@@ -36,6 +40,7 @@ public class WindShield {
         this.chromaShader = chromashader;
         this.wsaudioSource = wsAudioSource;
         this.noShader = noShader;
+        this.wsdDefault = wsdDefault;
         tintingTransparency = 0;
         initialHDMIWindshield();
     }
@@ -57,6 +62,10 @@ public class WindShield {
     }
     public void setWSDHorizontalMovement(bool isActive)
     {
+        if (!isActive)
+        {
+            this.reposWSD();
+        }
         this.wsdXMovement = isActive;
     }
     public void setWSDAutoSize(bool isActive)
@@ -65,28 +74,42 @@ public class WindShield {
     }
     public void enableWSD()
     {
-        // TODO:
-        // Not working, Devices List doesn't update while running
-        // Camera need to be plugged in before it get started
-        if (!isWebcamAvailable())
-        {
-            //initialHDMIWindshield(); 
+        if((NodeInformation.type != Controller.SLAVENODE) || isWebcamAvailable()) { 
+            wsDisplayRenderer.enabled = true;
+            wsdIsActive = true;
+            if (isWebcamAvailable())
+            {
+                webcamTexture.Play();
+                addAudioToImage();
+                this.wsaudioSource.volume = 1;
+            }
         }
-        wsDisplayRenderer.enabled = true;
-        webcamTexture.Play();
-        addAudioToImage();
-        this.wsaudioSource.volume = 1;
-
+    }
+    public bool isWSDActive()
+    {
+        return this.wsdIsActive;
     }
     public void disableWSD()
     {
         wsDisplayRenderer.enabled = false;
-        webcamTexture.Stop();
-        this.wsaudioSource.volume = 0;
+        wsdIsActive = false;
+        if (isWebcamAvailable())
+        {
+            webcamTexture.Stop();
+            this.wsaudioSource.volume = 0;
+        }
     }
     public void setTintingTransparency(Single tintPercent)
     {
         wsTintRenderer.material.color= new Color(0,0,0,tintPercent/100);
+    }
+    public void updateWSDDefault(Vector3 wsdDefault)
+    {
+        this.wsdDefault = wsdDefault;
+        if (!wsdXMovement)
+        {
+            this.reposWSD();
+        }
     }
 
     // Getters
@@ -106,42 +129,44 @@ public class WindShield {
     {
         return this.wsdYMovement;
     }
-    private void initialHDMIWindshield()
+    public void initialHDMIWindshield()
     {
-        //TODO HDMI Input AUDIO
-        WebCamDevice[] devices = WebCamTexture.devices;
+        if (!camAvailable)
+        {
+            //TODO HDMI Input AUDIO
+            WebCamDevice[] devices = WebCamTexture.devices;
 
-        if (devices.Length == 0)
-        {
-            Debug.Log("No Webcam devices are detected");
-            //TODO System log
-            camAvailable = false;
-            return;
-        }
-        else
-        {
-            for (int i = 0; i < devices.Length; i++)
+            if (devices.Length == 0)
             {
-                if (devices[i].name == "USB3.0 Capture Video")
+                Debug.Log("No Webcam devices are detected");
+                //TODO System log
+                camAvailable = false;
+                return;
+            }
+            else
+            {
+                for (int i = 0; i < devices.Length; i++)
                 {
-                    //WARNING! Hard Coded Name
-                    Debug.Log("Video Input: "+devices[i].name);
-                    webcamTexture = new WebCamTexture(devices[i].name, Screen.width, Screen.height);
-                    camAvailable = true;
-                    break;
+                    if (devices[i].name == NodeInformation.hdmiVideo)
+                    {
+                        Debug.Log("Video Input: " + devices[i].name);
+                        webcamTexture = new WebCamTexture(devices[i].name, Screen.width, Screen.height);
+                        camAvailable = true;
+                        break;
+                    }
                 }
-            }
-            if (webcamTexture == null)
-            {
-                Debug.Log("Video Input: " + devices[0].name);
-                webcamTexture = new WebCamTexture(devices[0].name, Screen.width, Screen.height);
-                camAvailable = true;
-            }
-            if (camAvailable)
-            {
-                //wsDisplayRenderer.material.shader = noShader;
-                wsDisplayRenderer.material.mainTexture = webcamTexture;
-     
+                if (webcamTexture == null)
+                {
+                    Debug.Log("Video Input: " + devices[0].name);
+                    webcamTexture = new WebCamTexture(devices[0].name, Screen.width, Screen.height);
+                    camAvailable = true;
+                }
+                if (camAvailable)
+                {
+                    //wsDisplayRenderer.material.shader = noShader;
+                    wsDisplayRenderer.material.mainTexture = webcamTexture;
+
+                }
             }
         }
     }
@@ -149,7 +174,7 @@ public class WindShield {
     {
         foreach(string device in Microphone.devices)
         {
-            if(device == "Digital Audio Interface (USB3.0 Capture Audio)")
+            if(device == NodeInformation.hdmiAudio)
             {
                 // Oculus overrides Audio Input
                 // Disable Oculus Mic in Windows Settings
@@ -162,48 +187,69 @@ public class WindShield {
                     this.wsaudioSource.Play();
                     Debug.Log("Audio Input: " + device);
                 }
-                
             }
         }
-
     }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.localPosition = new Vector3(wsdX + (float)(0.02 * steeringWheel), wsdY, wsdZ);
+        wsDisplay.transform.localPosition = this.getWSDwithMovement(steeringWheel);
+    }
+    public Vector3 getWSDwithMovement(int steeringWheel)
+    {
+        return new Vector3(wsdDefault.x + (float)(0.02 * steeringWheel), wsdDefault.y, wsdDefault.z);
+    }
+    public void setWSD(Vector3 pos, Vector3 rotation, Vector3 size)
+    {
+        this.updateWSDDefault(pos);
+        this.setSizeWSD(size);
+        this.rotateWSD(rotation);
+    }
+    public string wsdMessageString(int steeringWheel)
+    {
+        string msg="|";
+        //Position
+        msg += Math.Round(getWSDwithMovement(steeringWheel).x,4) + "|" +
+             Math.Round(getWSDwithMovement(steeringWheel).y, 4) + "|" +
+             Math.Round(getWSDwithMovement(steeringWheel).z, 4);
+        msg += "|";
+        //Rotation
+        msg +=  Math.Round(wsdRotation.x, 4) + "|" +
+            Math.Round(wsdRotation.y, 4) + "|" +
+            Math.Round(wsdRotation.z, 4);
+        msg += "|";
+        //Scale
+        msg += Math.Round(wsdSize.x,4) + "|" + 
+            Math.Round(wsdSize.y,4) + "|" + 
+            Math.Round(wsdSize.z,4);
+        msg += "|" + isChromaActive();
+        msg += tintMessageString();
+        return msg;
+    }
+    public string tintMessageString()
+    {
+        string msg = "";
+        if (isTiningActive())
+        {
+            msg += "|" + tintingTransparency;
+        }
+        return msg;
+    }
+    public void reposWSD()
+    {
+        wsDisplay.transform.localPosition = new Vector3(wsdDefault.x, wsdDefault.y, wsdDefault.z);
+    }
+    public void rotateWSD(Vector3 rotation)
+    {
+        wsdRotation = rotation;
+        wsDisplay.transform.localEulerAngles = rotation;
+    }
+    public void setSizeWSD(Vector3 size)
+    {
+        wsdSize = size;
+        wsDisplay.transform.localScale=size;
     }
     public bool isWebcamAvailable()
     {
         return this.camAvailable;
     }
-
-
 }
-
-/*
-void Start()
-{
-    isLoaded = false;
-    obdRunning = true; // just for testing true
-    initHMD = 0f;
-    actualFrame = 0;
-
-}
-
-// Update is called once per frame
-void Update()
-{
-    if (isLoaded && obdRunning)
-    {
-        if (actualFrame < obdDataCount)
-        {
-            arDisplay.transform.position = new Vector3(initHMD + (float)(0.002 * obdData[actualFrame]), 5.5f, 7f);
-            actualFrame++;
-        }
-        else
-        {
-            actualFrame = 0;
-            obdRunning = false;
-        }
-    }
-}
-*/

@@ -10,7 +10,6 @@ public class Audio : MonoBehaviour {
     private List<string> names = new List<string>() { "Load Audio", "Right Mirror", "Left Mirror" };
     private Controller controller;
     public Dropdown audiDrowpdown;
-    public Text LogText;
 
     // Use this for initialization
     void Start () {
@@ -44,18 +43,12 @@ public class Audio : MonoBehaviour {
                         };  break;
                     default:
                         {
-                            LogText.text = "Index out of bound";
+                            controller.writeError("Index out of Bound - Audio");
                         }
                         break;
                 }
-
             }
         }
         audiDrowpdown.value = 0;
     }
-
-    // Update is called once per frame
-    void Update () {
-		
-	}
 }

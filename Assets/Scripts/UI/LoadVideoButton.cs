@@ -6,7 +6,6 @@ using SFB;
 public class LoadVideoButton : MonoBehaviour
 {
     public Dropdown loadVideoDropDown;
-    public Text LogText;
     private Controller controller;
 
     private List<string> names = new List<string>() { "Load Video", "Front", "Left", "Right", "HMD/Nav", "Mirror Back", "Mirror Left", "Mirror Right" };
@@ -32,12 +31,14 @@ public class LoadVideoButton : MonoBehaviour
             if (path.Length > 0)
             {
                 string newPath = WWW.UnEscapeURL(path[0].Replace("file://", ""));
+               
+
                 controller.loadVideotoPlayer(index - 1, newPath);
             }
         }
         if (index >=5)
         {
-            LogText.text="Display is currently not available";
+            controller.writeLog("Display is currently not available");
         }
         loadVideoDropDown.value = 0;
     }

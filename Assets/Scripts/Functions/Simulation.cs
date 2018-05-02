@@ -1,15 +1,12 @@
 ﻿using System;
 using UnityEngine;
 
-
-
 public class Simulation {
-
     private Controller controller;
 
     private bool isRunning;
     private bool wasRunning;
-    private Int64 currentMillis;
+    private Int64 currentMillis=0;
     private Int64 beginningTime;
     private Int64 frameTime;
 
@@ -21,7 +18,6 @@ public class Simulation {
     private char gear;
     private string temperature;
     private string currentTime;
-
 
     public Boolean isStarted()
     {
@@ -122,5 +118,9 @@ public class Simulation {
         {
             currentMillis = this.getCurrentUnixMillis() - this.beginningTime;
         }
+    }
+    public int getDifferenceInSecs()
+    {
+        return (int)currentMillis/1000;
     }
 }
