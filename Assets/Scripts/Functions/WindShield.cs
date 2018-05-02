@@ -74,13 +74,15 @@ public class WindShield {
     }
     public void enableWSD()
     {
-        wsDisplayRenderer.enabled = true;
-        wsdIsActive = true;
-        if (isWebcamAvailable())
-        {
-            webcamTexture.Play();
-            addAudioToImage();
-            this.wsaudioSource.volume = 1;
+        if((NodeInformation.type == Controller.SLAVENODE) || isWebcamAvailable()) { 
+            wsDisplayRenderer.enabled = true;
+            wsdIsActive = true;
+            if (isWebcamAvailable())
+            {
+                webcamTexture.Play();
+                addAudioToImage();
+                this.wsaudioSource.volume = 1;
+            }
         }
     }
     public bool isWSDActive()
