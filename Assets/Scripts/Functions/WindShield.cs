@@ -74,7 +74,7 @@ public class WindShield {
     }
     public void enableWSD()
     {
-        if((NodeInformation.type == Controller.SLAVENODE) || isWebcamAvailable()) { 
+        if((NodeInformation.type != Controller.SLAVENODE) || isWebcamAvailable()) { 
             wsDisplayRenderer.enabled = true;
             wsdIsActive = true;
             if (isWebcamAvailable())
