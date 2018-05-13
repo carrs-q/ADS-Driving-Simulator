@@ -7,7 +7,7 @@ PlayerSettings:
   productGUID: 7aed8cddf309e4d75944ee3b34b35773
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
-  defaultScreenOrientation: 4
+  defaultScreenOrientation: 3
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
@@ -158,6 +158,7 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
+    Android: com.oculus.UnitySample
     Standalone: com.QUT.CARSSQ.SVCC
   buildNumber:
     Standalone: 1
@@ -282,6 +283,9 @@ PlayerSettings:
     m_Enabled: 1
     m_Devices:
     - Oculus
+  - m_BuildTarget: Android
+    m_Enabled: 1
+    m_Devices: []
   m_BuildTargetEnableVuforiaSettings:
   - m_BuildTarget: Standalone
     m_Enabled: 0
