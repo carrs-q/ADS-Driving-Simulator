@@ -7,10 +7,15 @@ public class overTake : MonoBehaviour
     public Toggle xMoveToogle;
     public Toggle Chroma;
     public Toggle Tinting;
+    private Controller controller;
 
-
+    public void Start()
+    {
+        controller = Controller.getController();
+    }
     public void userTakeOver()
     {
+        controller.serverTakeOverRequest();
         if (wsdToogle.isOn)
         {
             wsdToogle.isOn = false;

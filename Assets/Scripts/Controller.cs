@@ -42,7 +42,9 @@ public class Controller : MonoBehaviour {
         "ma.mp4",   //Mirror All
         "mb.mp4",   //Mirror Back
         "ml.mp4",   //Mirror Left
-        "mr.mp4"    //Mirror Right
+        "mr.mp4",    //Mirror Right
+        "soundL.ogg",       //Sound Left
+        "soundR.ogg"        //Sound Right
     };
     
     //VideoStates
@@ -78,6 +80,7 @@ public class Controller : MonoBehaviour {
     public const string SENDPROJECT     = "PRO";
     public const string REQPROJECT      = "RPRO";
     public const string STATUSUPDATE    = "STA";
+    public const string TORMESSAGE      = "TOR";
     public const string EMPTYMESSAGE    = "undefined";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
@@ -144,14 +147,15 @@ public class Controller : MonoBehaviour {
     private bool cdnProject = false;
     private bool wsdMovingLocked = false;
 
-    public VideoPlayer frontWall;              //Player 0
-    public VideoPlayer leftWall;               //Player 1
-    public VideoPlayer rightWall;              //Player 2
-    public VideoPlayer navigationScreen;       //Player 3
-    public VideoPlayer MirrorCameraPlayer;     //Player 4
-    public VideoPlayer MirrorStraigt;          //Player 5
-    public VideoPlayer MirrorLeft;             //Player 6
-    public VideoPlayer MirrorRight;            //Player 7
+                                               //Main Menue
+    public VideoPlayer frontWall;              //Player 1
+    public VideoPlayer leftWall;               //Player 2
+    public VideoPlayer rightWall;              //Player 3
+    public VideoPlayer navigationScreen;       //Player 4
+    public VideoPlayer MirrorCameraPlayer;     //Player 5
+    public VideoPlayer MirrorStraigt;          //Player 6
+    public VideoPlayer MirrorLeft;             //Player 7
+    public VideoPlayer MirrorRight;            //Player 8
 
     public AudioSource windShieldSound;
     public AudioSource rightMirrorSound;
@@ -734,6 +738,9 @@ public class Controller : MonoBehaviour {
                     case STATUSUPDATE:
                         clientRecieveUpdate(msg);
                         break;
+                    case TORMESSAGE:
+                        //TODO TOR Client functions
+                        ; break;
                     default:
                         Debug.Log("Unkown Message" + msg); break;
                 }
@@ -802,6 +809,11 @@ public class Controller : MonoBehaviour {
             message += EMPTYMESSAGE;
         }
         serverToClientSend(message, relChannel, conID);
+    }
+    public void serverTakeOverRequest()
+    {
+        string message = TORMESSAGE + "|";
+        serverToClientListSend(message, relChannel, clients);
     }
     
     //Network function Client-Side
