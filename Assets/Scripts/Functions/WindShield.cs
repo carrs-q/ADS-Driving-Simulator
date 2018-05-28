@@ -192,7 +192,15 @@ public class WindShield {
     }
     public void moveWSD(int steeringWheel)
     {
-        wsDisplay.transform.localPosition = this.getWSDwithMovement(steeringWheel);
+        if (this.wsdXMovement)
+        {
+            wsDisplay.transform.localPosition = this.getWSDwithMovement(steeringWheel);
+        }
+        else
+        {
+            wsDisplay.transform.localPosition = wsdDefault;
+        }
+       
     }
     public Vector3 getWSDwithMovement(int steeringWheel)
     {
@@ -208,9 +216,18 @@ public class WindShield {
     {
         string msg="|";
         //Position
-        msg += Math.Round(getWSDwithMovement(steeringWheel).x,4) + "|" +
-             Math.Round(getWSDwithMovement(steeringWheel).y, 4) + "|" +
-             Math.Round(getWSDwithMovement(steeringWheel).z, 4);
+        if (wsdXMovement)
+        {
+            msg += Math.Round(getWSDwithMovement(steeringWheel).x, 4) + "|" +
+            Math.Round(getWSDwithMovement(steeringWheel).y, 4) + "|" +
+            Math.Round(getWSDwithMovement(steeringWheel).z, 4);
+        }
+        else
+        {
+            msg += Math.Round(wsdDefault.x, 4) + "|" +
+                  Math.Round(wsdDefault.y, 4) + "|" +
+                  Math.Round(wsdDefault.z, 4);
+        }
         msg += "|";
         //Rotation
         msg +=  Math.Round(wsdRotation.x, 4) + "|" +
