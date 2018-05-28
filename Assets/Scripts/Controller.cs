@@ -246,6 +246,8 @@ public class Controller : MonoBehaviour {
             actualMode = CAVEMODE;
             renderMode = NodeInformation.screen;
             windshieldDisplay.transform.localPosition = WSDINFRONT;
+
+            Cursor.visible = false;
             
             if (NodeInformation.debug != 1)
             {
@@ -324,7 +326,7 @@ public class Controller : MonoBehaviour {
             steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
             digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
         }
-        if ((Input.anyKeyDown || Input.anyKey) && ( 
+        if ((Input.anyKeyDown) && ( 
             !Input.GetMouseButton(0) &&
             !Input.GetMouseButtonDown(0) &&
             !Input.GetMouseButtonUp(0))) //Key down or hold Key
@@ -386,26 +388,29 @@ public class Controller : MonoBehaviour {
                     Input.GetKey(KeyCode.KeypadMinus))
                 {
                     wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
-                     wsdSizeDyn.y * (1 -keypressScale),
-                     wsdSizeDyn.z * (1 - keypressScale));
+                    wsdSizeDyn.y * (1 -keypressScale),
+                    wsdSizeDyn.z * (1 - keypressScale));
                     wsd.setSizeWSD(wsdSizeDyn);
                 }
                 if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
-                    WSDDyn = wsdDefault;
-                    wsdSizeDyn = wsdSizeDefault;
+                    WSDDyn = new Vector3(0f, 0f, 0f);
+
                     wsdRotationDyn = wsdRotationDefault;
-                    wsd.rotateWSD(wsdRotationDyn);
+                    wsd.rotateWSD(wsdRotationDefault);
+
+                    wsdSizeDyn = wsdSizeDefault;
                     wsd.setSizeWSD(wsdSizeDyn);
                 }
+                wsd.updateWSDDefault(wsdDefault + WSDDyn);
+                sendStatusToClient();
             }
             if (Input.GetKeyUp(KeyCode.Numlock))
             {
                 wsdMovingLocked = !wsdMovingLocked;
                 Debug.Log("Keypress");
             }
-         
-            wsd.updateWSDDefault(wsdDefault + WSDDyn);
+            
         }
     }
 
@@ -513,6 +518,8 @@ public class Controller : MonoBehaviour {
             {
                 case FRONT: { FrontCamera.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
+                        FrontCamera.AddComponent<AudioListener>();
+
                     } break;
                 case LEFT: { LeftCamera.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
@@ -674,7 +681,6 @@ public class Controller : MonoBehaviour {
             case NetworkEventType.Nothing:         //1
                 break;
             case NetworkEventType.ConnectEvent:    //2
-                log.write("Node " + outConnectionId + " has connected");
                 serverReqDisplay(outConnectionId);
                 break;
             case NetworkEventType.DataEvent:       //3 
@@ -693,7 +699,7 @@ public class Controller : MonoBehaviour {
                 }
                 break;
             case NetworkEventType.DisconnectEvent: //4
-                log.write("Node " + outConnectionId + " has disconnected");
+                this.disconnectMessage(outConnectionId);
                 break;
         }
     }
@@ -765,6 +771,7 @@ public class Controller : MonoBehaviour {
             if (cN.getConnectionID() == conID)
             {
                 cN.setdisplayID(displayID);
+                log.write(getNodeName(displayID) + " has been connected");
             }
         }
     }
@@ -814,6 +821,16 @@ public class Controller : MonoBehaviour {
     {
         string message = TORMESSAGE + "|";
         serverToClientListSend(message, relChannel, clients);
+    }
+    public void disconnectMessage(int conID)
+    {
+        foreach (ClientNode cN in clients)
+        {
+            if (cN.getConnectionID() == conID)
+            {
+                log.write(getNodeName(cN.getDisplayID()) + " has been disconnected");
+            }
+        }
     }
     
     //Network function Client-Side
@@ -1115,9 +1132,24 @@ public class Controller : MonoBehaviour {
                             loadVideo(MirrorRight, temppath);
                         }
                     }break;
-                    default:{
-
+                    case 8:{
+                        if(NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1)
+                            {
+                                loadAudioSource(2, temppath);
+                            }
                     }break;
+                    case 9:
+                        {
+                            if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1)
+                            {
+                                loadAudioSource(1, temppath);
+                            }
+                        }
+                        break;
+                    default:
+                        {
+
+                        } break;
                 }
             }
             ++temp;
@@ -1229,7 +1261,6 @@ public class Controller : MonoBehaviour {
 
                 };break;
         }
-
     }
     private void AudioSourceLoader(string path, AudioSource player)
     {
@@ -1237,7 +1268,9 @@ public class Controller : MonoBehaviour {
         AudioClip clip = www.GetAudioClip(false);
         clip.name= Path.GetFileName(path);
         player.clip = clip;
-        
+        player.Play();
+        player.Pause();
+        player.time = 0;
     }
 
     //Video Controll Helping Method for Seeking
@@ -1472,7 +1505,44 @@ public class Controller : MonoBehaviour {
         tmp.text = "";
     }
 
-
+    private string getNodeName(int displayID)
+    {
+        string tempName = "";
+        switch (displayID)
+        {
+            case 1:
+                {
+                    tempName = "Visual Center";
+                }
+                break;
+            case 2:
+                {
+                    tempName = "Visual Left";
+                }
+                break;
+            case 3:
+                {
+                    tempName = "Visual Right";
+                }
+                break;
+            case 4:
+                {
+                    tempName = "Highmounted Display";
+                }
+                break;
+            case 5:
+                {
+                    tempName = "Mirrors";
+                }
+                break;
+            case 6:
+                {
+                    tempName = "Driver Display ";
+                }
+                break;
+        }
+        return tempName;
+    }
     public void changeWSDDefault(int wsdPos)
     {
         //TODO
