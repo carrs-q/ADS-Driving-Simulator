@@ -12,6 +12,7 @@ using System.Collections;
 using MyNetwork;
 using UnityEngine.Networking;
 using System.Text;
+using System.Runtime.InteropServices;
 
 //TODO
 /*
@@ -32,6 +33,11 @@ using System.Text;
  */
 
 public class Controller : MonoBehaviour {
+    [DllImport("user32.dll", 
+        CharSet = CharSet.Auto, 
+        ExactSpelling = true, 
+        CallingConvention = CallingConvention.Winapi)]
+    public static extern short GetKeyState(int keyCode);
 
     //CDN FileNames
     public static string[] filenames ={
@@ -145,7 +151,6 @@ public class Controller : MonoBehaviour {
     private string project;
     private bool cdnLoaded = false;
     private bool cdnProject = false;
-    private bool wsdMovingLocked = false;
 
                                                //Main Menue
     public VideoPlayer frontWall;              //Player 1
@@ -164,10 +169,6 @@ public class Controller : MonoBehaviour {
     public Shader chromaShader;
     public Shader noShader;
 
-    public Text startButtonText;
-    public Text LogText;
-    public Text timeText;
-
     public TextMeshPro digitalSpeedoMeter;
     public TextMeshPro currTime;
     public TextMeshPro gear;
@@ -175,8 +176,6 @@ public class Controller : MonoBehaviour {
     public TextMeshPro trip2;
     public TextMeshPro fuelkm;
     public TextMeshPro temp;
-
-    public InputField ipInputField;
 
     public Component windshieldDisplay;
     public Component wsdDynTint;
@@ -192,13 +191,94 @@ public class Controller : MonoBehaviour {
     public GameObject WSDCamera;
     public bool sendSync = false;
 
+    private GameObject buttonResetHeadPosition;
+    private GameObject buttonResetSimulation;
+    private GameObject buttonStartSimulation;
+    private GameObject buttonJumpTo;
+    private GameObject buttonClose;
+
+    private GameObject checkBoxTOR;
+    private GameObject checkBoxSafety;
+    private GameObject checkBoxRecording;
+    private GameObject checkBoxsyncSensors;
+
+
+    private GameObject textTimeCurrentLog;
+    private GameObject textTimeRemainingLog;
+    private GameObject textSpeedLog;
+    private GameObject textSteeringWheelLog;
+
+    private GameObject inputSyncServer;
+    private GameObject inputTORTime;
+    private GameObject inputTimeGotTo;
+    private GameObject inputParticipantCode;
+
+    private GameObject dropDownChangeProject;
+    private GameObject dropDownChangeSimulatorMode;
+    private GameObject dropDownLoadVideoManual;
+    private GameObject dropDownLoadSoundManual;
+
+    private Toggle toggleSyncServer;
+    private Toggle toggleIndicateTOR;
+
+    public Text LogText;
+
     private int noteachState = 0;
     private static int nthMessage = 10; //Every n.th message get send to all clients
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
 
+
+    private void findAllGameObjects()
+    {
+
+        //Buttons
+        buttonResetHeadPosition = GameObject.Find(DefaultSettings.ButtonResetOculus);
+        buttonResetSimulation = GameObject.Find(DefaultSettings.ButtonResetSimulation);
+        buttonStartSimulation = GameObject.Find(DefaultSettings.ButtonStartSimulation);
+        buttonJumpTo = GameObject.Find(DefaultSettings.ButtonJumpTo);
+        buttonClose = GameObject.Find(DefaultSettings.ButtonCloseSoftware);
+        //CheckBoxes
+        checkBoxTOR = GameObject.Find(DefaultSettings.CheckBoxTOR);
+        checkBoxSafety = GameObject.Find(DefaultSettings.CheckBoxSafety);
+        checkBoxRecording = GameObject.Find(DefaultSettings.CheckBoxRecored);
+        checkBoxsyncSensors = GameObject.Find(DefaultSettings.CheckBoxSyncSensors);
+
+
+        toggleSyncServer = checkBoxsyncSensors.GetComponent<Toggle>();
+        toggleIndicateTOR = checkBoxTOR.GetComponent<Toggle>();
+
+        //DynamicText
+        textTimeCurrentLog = GameObject.Find(DefaultSettings.TextTimeCurrentLog);
+        textTimeRemainingLog = GameObject.Find(DefaultSettings.TextTimeRemainingLog);
+        textSpeedLog = GameObject.Find(DefaultSettings.TextSpeedLog);
+        textSteeringWheelLog = GameObject.Find(DefaultSettings.TextSteeringWheelLog);
+
+        //LabelText
+
+
+        //Input
+        inputSyncServer = GameObject.Find(DefaultSettings.InputSyncAddress);
+        inputTimeGotTo = GameObject.Find(DefaultSettings.InputJumpToTime);
+        inputParticipantCode = GameObject.Find(DefaultSettings.InputParticipantCode);
+        inputTORTime = GameObject.Find(DefaultSettings.InputTORTime);
+
+        //DropDown
+        dropDownChangeProject = GameObject.Find(DefaultSettings.DropDownLoadProject);
+        dropDownChangeSimulatorMode = GameObject.Find(DefaultSettings.DropDownSimulatorMode);
+        dropDownLoadVideoManual = GameObject.Find(DefaultSettings.DropDownLoadManualVideo);
+        dropDownLoadSoundManual = GameObject.Find(DefaultSettings.DropDownLoadManualSound);
+        
+    }
+
+    private void writeLabels()
+    {
+
+    }
+
 // Should be before Start
     void Awake () {
+        findAllGameObjects();
         syncData = new SyncData();
         simulationContent = new SimulationContent();
         StartCoroutine(getProjectList());
@@ -262,6 +342,7 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         AudioListener.volume = 1;
         manualIP = false;
+        updateInterface();
         //TODO SOURCE for Downloadserver
     }
     void Update () {
@@ -288,7 +369,7 @@ public class Controller : MonoBehaviour {
         }
         if (renderMode == MASTER && syncData.getStatus()==START)
         {
-            UpdateTime();
+            updateInterface();
             syncData.setSpeed(obdData.getSpeed());
             syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
 
@@ -331,7 +412,7 @@ public class Controller : MonoBehaviour {
             !Input.GetMouseButtonDown(0) &&
             !Input.GetMouseButtonUp(0))) //Key down or hold Key
         {
-            if (!wsdMovingLocked)
+            if (wsd.isWSDActive() && ((((ushort)GetKeyState(0x90)) & 0xffff) != 0))
             {
                 if (Input.GetKeyDown(KeyCode.Keypad4)
              || Input.GetKey(KeyCode.Keypad4))
@@ -405,11 +486,6 @@ public class Controller : MonoBehaviour {
                 wsd.updateWSDDefault(wsdDefault + WSDDyn);
                 sendStatusToClient();
             }
-            if (Input.GetKeyUp(KeyCode.Numlock))
-            {
-                wsdMovingLocked = !wsdMovingLocked;
-                Debug.Log("Keypress");
-            }
             
         }
     }
@@ -459,6 +535,17 @@ public class Controller : MonoBehaviour {
         MirrorCamera.SetActive(false);
         WSDCamera.SetActive(false);
 
+        oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
+        buttonJumpTo.SetActive(DefaultSettings.buttonJumpToVisible);
+
+        checkBoxTOR.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxTORDefault;
+        checkBoxSafety.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxSafetyDefault;
+        checkBoxRecording.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxRecordDefault;
+        toggleSyncServer.isOn = DefaultSettings.checkBoxSyncSensorsDefault;
+
+        inputSyncServer.GetComponent<InputField>().text = DefaultSettings.syncServerDefault;
+
+
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             Destroy(Oculus);
@@ -491,11 +578,11 @@ public class Controller : MonoBehaviour {
     private void loadVRSettings()
     {
         Oculus.SetActive(true);
+        oculusCalibrateHideButton(true);
         videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
         wsdDefault = WSDINCAR;
         Camera wsdCam = WSDCamera.GetComponent<Camera>();
         wsdCam.targetDisplay = 2;
-
         Oculus.AddComponent(typeof(AudioListener));
         for (int i = 0; i < Display.displays.Length; i++)
         {
@@ -1005,6 +1092,7 @@ public class Controller : MonoBehaviour {
         navigationScreen.Play();
         rightMirrorSound.Play();
         leftMirrorSound.Play();
+        guiProtection(false);
 
     }
     public void stopSimulation()
@@ -1022,6 +1110,7 @@ public class Controller : MonoBehaviour {
         MirrorCameraPlayer.Pause();
         rightMirrorSound.Pause();
         leftMirrorSound.Pause();
+        guiProtection(true);
     }
     public void resetSimulation()
     {
@@ -1047,10 +1136,41 @@ public class Controller : MonoBehaviour {
         MirrorStraigt.Pause();
         MirrorLeft.Pause();
         MirrorRight.Pause();
-        startButtonText.text = "Play";
-        UpdateTime();
+        buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
+        updateInterface();
     }
    
+
+    private void guiProtection(bool isInteractable)
+    {
+        buttonResetSimulation.GetComponent<Button>().interactable = isInteractable;
+        buttonClose.GetComponent<Button>().interactable = isInteractable;
+        toggleSyncServer.interactable = isInteractable;
+        toggleIndicateTOR.interactable = isInteractable;
+
+        inputTimeGotTo.GetComponent<InputField>().interactable = isInteractable;
+        inputParticipantCode.GetComponent<InputField>().interactable = isInteractable;
+        
+        dropDownChangeProject.GetComponent<Dropdown>().interactable = isInteractable;
+        dropDownChangeSimulatorMode.GetComponent<Dropdown>().interactable = isInteractable;
+        dropDownLoadVideoManual.GetComponent<Dropdown>().interactable = isInteractable;
+        dropDownLoadSoundManual.GetComponent<Dropdown>().interactable = isInteractable;
+
+        if (!isInteractable)
+        {
+            inputSyncServer.GetComponent<InputField>().interactable = isInteractable;
+            inputTORTime.GetComponent<InputField>().interactable = isInteractable;
+        }
+        if (!toggleSyncServer.isOn)
+        {
+            inputSyncServer.GetComponent<InputField>().interactable = isInteractable;
+        }
+        if (!toggleIndicateTOR.isOn)
+        {
+            inputTORTime.GetComponent<InputField>().interactable = isInteractable;
+        }
+    }
+
     public void enableWindshield()
     {
         this.wsd.enableWSD();
@@ -1409,18 +1529,20 @@ public class Controller : MonoBehaviour {
         if (enabledSensorSync)
         {
             this.runNetworkservice();
+            inputSyncServer.GetComponent<InputField>().interactable = false;
         }
         else
         {
             this.stopNetworkservice();
+            inputSyncServer.GetComponent<InputField>().interactable = true;
         }
     }
     public void runNetworkservice()
     {
         if (NodeInformation.type.Equals(MASTERNODE)){
-            if (ipInputField.text != "")
+            if (inputSyncServer.GetComponent<InputField>().text != "")
             {
-                customAddress = ipInputField.text;
+                customAddress = inputSyncServer.GetComponent<InputField>().text;
                 manualIP = true;
             }
             else
@@ -1463,12 +1585,15 @@ public class Controller : MonoBehaviour {
             }
             catch (Exception e)
             {
-
                 Debug.Log("Error: " + e.Message);
+                //TODO: Write Message and Close Threads
+                // work over boolean
+                //controller.setSensorSync(false);
             }
 
         }
     }
+    
     public int getSyncStatus()
     {
         return this.syncData.getStatus();
@@ -1560,9 +1685,13 @@ public class Controller : MonoBehaviour {
         log.writeError(logMessage);
     }
 
-    private void UpdateTime()
+    private void updateInterface()
     {
-        timeText.text = getSimTime();
+        inputTimeGotTo.GetComponent<InputField>().text = getSimTime();
+        textTimeRemainingLog.GetComponent<Text>().text = "00:00";
+        textSteeringWheelLog.GetComponent<Text>().text = obdData.getSteeringWheelAngle().ToString() + " °";
+        textSpeedLog.GetComponent<Text>().text = obdData.getSpeed().ToString() + " km/h";
+
     }
     public string getSimTime()
     {
@@ -1594,6 +1723,11 @@ public class Controller : MonoBehaviour {
         StartCoroutine(getProjectList());
     }
 
+    private void oculusCalibrateHideButton(bool visible)
+    {
+        buttonResetHeadPosition.SetActive(visible);
+
+    }
 }
 
 /*
