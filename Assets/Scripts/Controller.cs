@@ -270,7 +270,6 @@ public class Controller : MonoBehaviour {
         dropDownLoadSoundManual = GameObject.Find(DefaultSettings.DropDownLoadManualSound);
         
     }
-
     private void writeLabels()
     {
 
@@ -908,6 +907,7 @@ public class Controller : MonoBehaviour {
     {
         string message = TORMESSAGE + "|";
         serverToClientListSend(message, relChannel, clients);
+        wsd.takeOverRequest();
     }
     public void disconnectMessage(int conID)
     {
@@ -1029,6 +1029,7 @@ public class Controller : MonoBehaviour {
         serverToClientListSend(message, channelID, c);
     }
     //Send to all clients
+
     private void serverToClientListSend(string message, int channelID, List<ClientNode> c)
     {
         byte[] msg = Encoding.Unicode.GetBytes(message);
@@ -1155,6 +1156,9 @@ public class Controller : MonoBehaviour {
         dropDownChangeSimulatorMode.GetComponent<Dropdown>().interactable = isInteractable;
         dropDownLoadVideoManual.GetComponent<Dropdown>().interactable = isInteractable;
         dropDownLoadSoundManual.GetComponent<Dropdown>().interactable = isInteractable;
+
+        checkBoxRecording.GetComponent<Toggle>().interactable = isInteractable;
+        checkBoxSafety.GetComponent<Toggle>().interactable = isInteractable;
 
         if (!isInteractable)
         {
@@ -1618,17 +1622,13 @@ public class Controller : MonoBehaviour {
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
-    private void debugInformations(bool activated)
+
+    private void oculusCalibrateHideButton(bool visible)
     {
-        TextMeshPro tmp = FrontCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+        buttonResetHeadPosition.SetActive(visible);
 
-        tmp = LeftCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
-
-        tmp = RightCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
     }
+
 
     private string getNodeName(int displayID)
     {
@@ -1722,12 +1722,18 @@ public class Controller : MonoBehaviour {
     {
         StartCoroutine(getProjectList());
     }
-
-    private void oculusCalibrateHideButton(bool visible)
+    private void debugInformations(bool activated)
     {
-        buttonResetHeadPosition.SetActive(visible);
+        TextMeshPro tmp = FrontCamera.GetComponentInChildren<TextMeshPro>();
+        tmp.text = "";
 
+        tmp = LeftCamera.GetComponentInChildren<TextMeshPro>();
+        tmp.text = "";
+
+        tmp = RightCamera.GetComponentInChildren<TextMeshPro>();
+        tmp.text = "";
     }
+
 }
 
 /*

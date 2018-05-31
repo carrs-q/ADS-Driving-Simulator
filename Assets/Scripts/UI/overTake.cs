@@ -5,7 +5,6 @@ public class overTake : MonoBehaviour
 {
     public Toggle wsdToogle;
     public Toggle xMoveToogle;
-    public Toggle Chroma;
     public Toggle Tinting;
     private Controller controller;
 
@@ -24,14 +23,9 @@ public class overTake : MonoBehaviour
         {
             xMoveToogle.isOn = false;
         }
-        if (Chroma.isOn)
-        {
-            Chroma.isOn = false;
-        }
         if (Tinting.isOn)
         {
             Tinting.isOn = false;
         }
-
     }
 }

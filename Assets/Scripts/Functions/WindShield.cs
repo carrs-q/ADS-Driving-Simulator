@@ -269,4 +269,9 @@ public class WindShield {
     {
         return this.camAvailable;
     }
+
+    public void takeOverRequest()
+    {
+
+    }
 }
