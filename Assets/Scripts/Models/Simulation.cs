@@ -1,12 +1,13 @@
 ﻿using System;
 using UnityEngine;
 
-public class Simulation {
+public class Simulation
+{
     private Controller controller;
 
     private bool isRunning;
     private bool wasRunning;
-    private Int64 currentMillis=0;
+    private Int64 currentMillis = 0;
     private Int64 beginningTime;
     private Int64 frameTime;
 
@@ -35,7 +36,7 @@ public class Simulation {
         }
         else
         {
-            beginningTime = getCurrentUnixMillis()-this.currentMillis;
+            beginningTime = getCurrentUnixMillis() - this.currentMillis;
         }
         this.gear = 'D';
         isRunning = true;
@@ -62,20 +63,8 @@ public class Simulation {
     {
         this.obdData = obdData;
     }
-    public Int64 getTimeDifference()
-    {
-        return this.currentMillis;
-    }
-    public Int64 getBeginningTime()
-    {
-        return this.beginningTime;
-    }
-
-    private string updateCurrTime()
-    {
-        DateTime dt = DateTime.Now;
-        return dt.ToString("HH:mm");
-    }
+   
+    
     public string getCurrTime()
     {
         this.currentTime = updateCurrTime();
@@ -92,11 +81,11 @@ public class Simulation {
     }
     public int getTrip1()
     {
-        return this.trip1KMDefault+ Mathf.RoundToInt(getTrip2km());
+        return this.trip1KMDefault + Mathf.RoundToInt(getTrip2km());
     }
     public float getTrip2km()
     {
-        return this.trip2cm/100000;
+        return this.trip2cm / 100000;
     }
     public char getGear()
     {
@@ -104,13 +93,27 @@ public class Simulation {
     }
     public void calcDistance(int kmh)
     {
-        trip2cm += (float)((kmh * 0.2778)  * (obdData.getMillisTimeDifference() / 10));
+        trip2cm += (float)((kmh * 0.2778) * (obdData.getMillisTimeDifference() / 10));
     }
+
     // Time Methods
-    private Int64 getCurrentUnixMillis()
+    private string updateCurrTime()
+    {
+        DateTime dt = DateTime.Now;
+        return dt.ToString("HH:mm");
+    }
+    public Int64 getTimeDifference()
+    {
+        return this.currentMillis;
+    }
+    public Int64 getBeginningTime()
+    {
+        return this.beginningTime;
+    }
+    public Int64 getCurrentUnixMillis()
     {
         DateTime unixBeginn = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        return (Int64) (DateTime.UtcNow - unixBeginn).TotalMilliseconds; 
+        return (Int64)(DateTime.UtcNow - unixBeginn).TotalMilliseconds;
     }
     private void calcDifference()
     {
@@ -121,6 +124,10 @@ public class Simulation {
     }
     public int getDifferenceInSecs()
     {
-        return (int)currentMillis/1000;
+        return (int)currentMillis / 1000;
+    }
+    public int timeRemaining(double videoLengthSeconds)
+    {
+        return (int)videoLengthSeconds - getDifferenceInSecs();
     }
 }

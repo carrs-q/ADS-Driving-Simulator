@@ -22,6 +22,9 @@
     public static string CheckBoxRecored            = "checkBoxRecordData";
     public static string CheckBoxSafety             = "checkBoxSafety";
     public static string CheckBoxSyncSensors        = "checkBoxSyncSensors";
+    public static string CheckBoxWindshieldDisplay  = "checkBoxWindshieldDisplay";
+    public static string CheckBoxHorizontalMovement = "checkBoxHorizontalMovement";
+    public static string CheckBoxWSDTinting         = "checkBoxWSDTinting";
 
     public static string TextTimeCurrentLog         = "CurrentTimeLog";
     public static string TextTimeRemainingLog       = "RemainingTimeLog";

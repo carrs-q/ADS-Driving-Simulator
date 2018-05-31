@@ -165,6 +165,9 @@ public class Controller : MonoBehaviour {
     public AudioSource windShieldSound;
     public AudioSource rightMirrorSound;
     public AudioSource leftMirrorSound;
+    private Timing torTime;
+    private Timing torTimeRemain;
+
 
     public Shader chromaShader;
     public Shader noShader;
@@ -190,6 +193,8 @@ public class Controller : MonoBehaviour {
     public GameObject videoWalls;
     public GameObject WSDCamera;
     public bool sendSync = false;
+    private bool torFired = false;
+    private string torTimeRemaining = "";
 
     private GameObject buttonResetHeadPosition;
     private GameObject buttonResetSimulation;
@@ -201,7 +206,9 @@ public class Controller : MonoBehaviour {
     private GameObject checkBoxSafety;
     private GameObject checkBoxRecording;
     private GameObject checkBoxsyncSensors;
-
+    private GameObject checkBoxWindshieldDisplay;
+    private GameObject checkBoxHorizontalMovement;
+    private GameObject checkBoxWSDTinting;
 
     private GameObject textTimeCurrentLog;
     private GameObject textTimeRemainingLog;
@@ -220,30 +227,32 @@ public class Controller : MonoBehaviour {
 
     private Toggle toggleSyncServer;
     private Toggle toggleIndicateTOR;
-
     public Text LogText;
+    public DateTime lastTOR;
+    private double videoLengthSeconds = 0;
 
-    private int noteachState = 0;
-    private static int nthMessage = 10; //Every n.th message get send to all clients
+
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
 
 
     private void findAllGameObjects()
     {
-
         //Buttons
         buttonResetHeadPosition = GameObject.Find(DefaultSettings.ButtonResetOculus);
         buttonResetSimulation = GameObject.Find(DefaultSettings.ButtonResetSimulation);
         buttonStartSimulation = GameObject.Find(DefaultSettings.ButtonStartSimulation);
         buttonJumpTo = GameObject.Find(DefaultSettings.ButtonJumpTo);
         buttonClose = GameObject.Find(DefaultSettings.ButtonCloseSoftware);
+
         //CheckBoxes
         checkBoxTOR = GameObject.Find(DefaultSettings.CheckBoxTOR);
         checkBoxSafety = GameObject.Find(DefaultSettings.CheckBoxSafety);
         checkBoxRecording = GameObject.Find(DefaultSettings.CheckBoxRecored);
         checkBoxsyncSensors = GameObject.Find(DefaultSettings.CheckBoxSyncSensors);
-
+        checkBoxWindshieldDisplay = GameObject.Find(DefaultSettings.CheckBoxWindshieldDisplay);
+        checkBoxHorizontalMovement = GameObject.Find(DefaultSettings.CheckBoxHorizontalMovement);
+        checkBoxWSDTinting = GameObject.Find(DefaultSettings.CheckBoxWSDTinting);
 
         toggleSyncServer = checkBoxsyncSensors.GetComponent<Toggle>();
         toggleIndicateTOR = checkBoxTOR.GetComponent<Toggle>();
@@ -268,7 +277,6 @@ public class Controller : MonoBehaviour {
         dropDownChangeSimulatorMode = GameObject.Find(DefaultSettings.DropDownSimulatorMode);
         dropDownLoadVideoManual = GameObject.Find(DefaultSettings.DropDownLoadManualVideo);
         dropDownLoadSoundManual = GameObject.Find(DefaultSettings.DropDownLoadManualSound);
-        
     }
     private void writeLabels()
     {
@@ -277,9 +285,13 @@ public class Controller : MonoBehaviour {
 
 // Should be before Start
     void Awake () {
+        Application.runInBackground = true;
         findAllGameObjects();
         syncData = new SyncData();
         simulationContent = new SimulationContent();
+        torTime = new Timing();
+        lastTOR = DateTime.Now;
+        torTimeRemain = new Timing();
         StartCoroutine(getProjectList());
         this.gameObject.SetActive(true);
         //Network.sendRate = 50;
@@ -319,6 +331,7 @@ public class Controller : MonoBehaviour {
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             threadList = new List<Thread>();
             threadsAlive = true;
+            updateInterface();
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -341,7 +354,7 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         AudioListener.volume = 1;
         manualIP = false;
-        updateInterface();
+        
         //TODO SOURCE for Downloadserver
     }
     void Update () {
@@ -706,7 +719,8 @@ public class Controller : MonoBehaviour {
             }
         }
     }
-         // Sub Init TODO Reconnecter
+    
+    // Sub Init TODO Reconnecter
     private IEnumerator AttemptRecconnect()
     {
         yield return new WaitForSeconds(10.0f);
@@ -886,7 +900,6 @@ public class Controller : MonoBehaviour {
             {
                 lastMessage = msg;
                 serverToClientListSend(msg, unrelSeqChannel, clients);
-                noteachState++;
             }
         }
     }
@@ -907,7 +920,6 @@ public class Controller : MonoBehaviour {
     {
         string message = TORMESSAGE + "|";
         serverToClientListSend(message, relChannel, clients);
-        wsd.takeOverRequest();
     }
     public void disconnectMessage(int conID)
     {
@@ -1075,7 +1087,7 @@ public class Controller : MonoBehaviour {
         }
         else
         {
-            log.writeWarning("Simualtion continued at " + getSimTime());
+            log.writeWarning("Simualtion continued at " + getSimTime(simulator.getDifferenceInSecs()));
         }
        
         if (rightMirrorSound.clip)
@@ -1139,9 +1151,60 @@ public class Controller : MonoBehaviour {
         MirrorRight.Pause();
         buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
         updateInterface();
+        torFired = false;
     }
-   
-
+    public void takeOverRequest()
+    {
+        serverTakeOverRequest();
+        if (checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn)
+        {
+            checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn = false;
+        }
+        if (checkBoxWSDTinting.GetComponent<Toggle>().isOn)
+        {
+            checkBoxWSDTinting.GetComponent<Toggle>().isOn = false;
+        }
+    }
+    public void takeOverRequest(DateTime time)
+    {
+        if (time.Subtract(lastTOR).TotalSeconds >= 10)
+        {
+            lastTOR = DateTime.Now;
+            this.takeOverRequest();
+        }
+    }
+    public void automatedTOR(bool isActivated)
+    {
+        InputField temp = inputTORTime.GetComponent<InputField>();
+        temp.interactable = !isActivated;
+        if (isActivated)
+        {
+            bool requirements = false;
+            if (temp.text != "")
+            {
+                string[] times = temp.text.Split(':');
+                if (times.Length == 4)
+                {
+                    torTime = new Timing(times[0], times[1], times[2], times[3]);
+                }
+                if (times.Length == 3)
+                {
+                    torTime = new Timing(times[0], times[1], times[2]);
+                }
+                requirements = true;
+                temp.text = torTime.getTiming();
+            }
+            if (!requirements)
+            {
+                checkBoxTOR.GetComponent<Toggle>().isOn = false;
+            }
+        }
+        else
+        {
+            temp.text = torTime.getTiming();
+        }
+        
+    }
     private void guiProtection(bool isInteractable)
     {
         buttonResetSimulation.GetComponent<Button>().interactable = isInteractable;
@@ -1217,6 +1280,7 @@ public class Controller : MonoBehaviour {
                     case 0:{
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
                                 loadVideo(frontWall, temppath);
+
                     }break;
                     case 1:{
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
@@ -1297,6 +1361,7 @@ public class Controller : MonoBehaviour {
         if (frontWall.isPrepared)
         {
             checksum++;
+            videoLengthSeconds = (int)(this.frontWall.frameCount / this.frontWall.frameRate);
             this.videoPlayerAttached = true;
         }
         return (checksum == 1);
@@ -1496,7 +1561,6 @@ public class Controller : MonoBehaviour {
                 }
             }
         }
-        noteachState = 0;
     }
     public Config getConfig()
     {
@@ -1629,7 +1693,6 @@ public class Controller : MonoBehaviour {
 
     }
 
-
     private string getNodeName(int displayID)
     {
         string tempName = "";
@@ -1687,16 +1750,33 @@ public class Controller : MonoBehaviour {
 
     private void updateInterface()
     {
-        inputTimeGotTo.GetComponent<InputField>().text = getSimTime();
-        textTimeRemainingLog.GetComponent<Text>().text = "00:00";
+        if (!torFired)
+        {
+            torTimeRemaining = torTime.getDifference(simulator.getTimeDifference());
+            if (torTimeRemaining == Labels.torFired)
+            {
+                torFired = true;
+                takeOverRequest(DateTime.Now);
+            }
+            inputTORTime.GetComponent<InputField>().text = torTimeRemaining;
+        }
+        inputTimeGotTo.GetComponent<InputField>().text = getSimTime(simulator.getDifferenceInSecs());
+        if (frontWall.isPrepared)
+        {
+            textTimeRemainingLog.GetComponent<Text>().text = getSimTime(simulator.timeRemaining(videoLengthSeconds));
+        }
+        else
+        {
+            textTimeRemainingLog.GetComponent<Text>().text = "00:00";
+        }
         textSteeringWheelLog.GetComponent<Text>().text = obdData.getSteeringWheelAngle().ToString() + " °";
         textSpeedLog.GetComponent<Text>().text = obdData.getSpeed().ToString() + " km/h";
 
     }
-    public string getSimTime()
+    public string getSimTime(int seconds)
     {
-        int curMin = simulator.getDifferenceInSecs() / 60;
-        int curSec = simulator.getDifferenceInSecs() % 60;
+        int curMin = seconds / 60;
+        int curSec = seconds % 60;
         string min, sec;
         if (curMin < 10)
         {
