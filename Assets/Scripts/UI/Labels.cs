@@ -10,6 +10,4 @@
     public static string labelLogRemainingTime = "Remaining";
     public static string labelLogSpeed = "Speed";
     public static string labelLogSteeringWheel = "Steering Wheel";
-
-
 }

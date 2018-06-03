@@ -14,7 +14,7 @@ public class PlayAllButton : MonoBehaviour {
         controller = Controller.getController();
 
         if (playerText.text== Labels.startSimulation) {
-            if (controller.isSimulationReady()) {
+            if (controller.isSimulationReady() && controller.requestSimStart()) {
                 controller.startSimulation();
                 playerText.text = Labels.stopSimulation;
             }

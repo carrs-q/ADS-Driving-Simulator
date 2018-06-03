@@ -1,45 +1,51 @@
 ﻿class DefaultSettings
 {
     //Default Setting
-    public static bool buttonResetOculusVisible     = false;
-    public static bool buttonJumpToVisible          = false;
-    public static bool checkBoxTORDefault           = false;
-    public static bool checkBoxRecordDefault        = false;
-    public static bool checkBoxSafetyDefault        = false;
-    public static bool checkBoxSyncSensorsDefault   = false;
-    public static string syncServerDefault          = "192.168.0.216:1605";
+    public const bool buttonResetOculusVisible     = false;
+    public const bool buttonJumpToVisible          = false;
+    public const bool checkBoxTORDefault           = false;
+    public const bool checkBoxRecordDefault        = false;
+    public const bool checkBoxSafetyDefault        = false;
+    public const bool checkBoxSyncSensorsDefault   = false;
+    public const string syncServerDefault          = "192.168.0.216:1605";
 
 
     //Game Object Names
-    public static string ButtonResetOculus          = "ButtonOculusRecalibrate";
-    public static string ButtonResetSimulation      = "ButtonResetSimulation";
-    public static string ButtonStartSimulation      = "ButtonStartSimulation";
-    public static string ButtonOverTake             = "ButtonOverTake";
-    public static string ButtonCloseSoftware        = "ButtonExit";
-    public static string ButtonJumpTo               = "ButtonJumpTo";
+    public const string ButtonResetOculus          = "ButtonOculusRecalibrate";
+    public const string ButtonResetSimulation      = "ButtonResetSimulation";
+    public const string ButtonStartSimulation      = "ButtonStartSimulation";
+    public const string ButtonOverTake             = "ButtonOverTake";
+    public const string ButtonCloseSoftware        = "ButtonExit";
+    public const string ButtonJumpTo               = "ButtonJumpTo";
 
-    public static string CheckBoxTOR                = "checkBoxTakeOverReqest";
-    public static string CheckBoxRecored            = "checkBoxRecordData";
-    public static string CheckBoxSafety             = "checkBoxSafety";
-    public static string CheckBoxSyncSensors        = "checkBoxSyncSensors";
-    public static string CheckBoxWindshieldDisplay  = "checkBoxWindshieldDisplay";
-    public static string CheckBoxHorizontalMovement = "checkBoxHorizontalMovement";
-    public static string CheckBoxWSDTinting         = "checkBoxWSDTinting";
+    public const string CheckBoxTOR                = "checkBoxTakeOverReqest";
+    public const string CheckBoxRecored            = "checkBoxRecordData";
+    public const string CheckBoxSafety             = "checkBoxSafety";
+    public const string CheckBoxSyncSensors        = "checkBoxSyncSensors";
+    public const string CheckBoxWindshieldDisplay  = "checkBoxWindshieldDisplay";
+    public const string CheckBoxHorizontalMovement = "checkBoxHorizontalMovement";
+    public const string CheckBoxWSDTinting         = "checkBoxWSDTinting";
 
-    public static string TextTimeCurrentLog         = "CurrentTimeLog";
-    public static string TextTimeRemainingLog       = "RemainingTimeLog";
-    public static string TextSpeedLog               = "SpeedLog";
-    public static string TextSteeringWheelLog       = "SteeringWheelLog";
+    public const string TextTimeCurrentLog         = "CurrentTimeLog";
+    public const string TextTimeRemainingLog       = "RemainingTimeLog";
+    public const string TextSpeedLog               = "SpeedLog";
+    public const string TextSteeringWheelLog       = "SteeringWheelLog";
 
-    public static string InputSyncAddress           = "InputSyncServerIP";
-    public static string InputParticipantCode       = "InputParticipantCode";
-    public static string InputTORTime               = "InputTORTime";
-    public static string InputJumpToTime            = "InputJumptoTime";
+    public const string InputSyncAddress           = "InputSyncServerIP";
+    public const string InputParticipantCode       = "InputParticipantCode";
+    public const string InputTORTime               = "InputTORTime";
+    public const string InputJumpToTime            = "InputJumptoTime";
 
-    public static string DropDownLoadProject        = "DropDownLoadProject";
-    public static string DropDownSimulatorMode      = "dropDownSimulatorMode";
-    public static string DropDownLoadManualVideo    = "dropDownLoadManualVideo";
-    public static string DropDownLoadManualSound    = "dropDownLoadManualAudio";
+    public const string DropDownLoadProject        = "DropDownLoadProject";
+    public const string DropDownSimulatorMode      = "dropDownSimulatorMode";
+    public const string DropDownLoadManualVideo    = "dropDownLoadManualVideo";
+    public const string DropDownLoadManualSound    = "dropDownLoadManualAudio";
+
+    public const string SliderTintState            = "SliderTintState";
+    public const string SliderVolumeMaster         = "SliderVolumeMaster";
+    public const string SliderInCarVolume          = "SliderInCarVolume";
+    public const string SliderWarnVolume           = "SliderTORVolume";
+    public const string SliderWSDVolume            = "SliderWSDVolume";
 
 
 }

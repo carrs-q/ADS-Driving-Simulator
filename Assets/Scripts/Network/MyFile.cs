@@ -3,8 +3,11 @@ using System.IO;
 using UnityEngine;
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 public class MyFile {
+    [ComVisibleAttribute(false)]
+    public long LongLength { get};
     public static int BUFFERSIZE = 8192;
 
     private string directory;
@@ -62,7 +65,7 @@ public class MyFile {
                 downloaded = true;
                 download = false;
                 checkPending = false;
-                data = www.bytes;
+                data = www.bytes; // MaxFileSize 2GB
                 Thread thread = new Thread(saveData);
                 thread.Start();
                // Debug.Log("Download finished for file " + filename + "");
