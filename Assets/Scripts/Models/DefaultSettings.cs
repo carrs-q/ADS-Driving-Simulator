@@ -11,12 +11,24 @@
 
 
     //Game Object Names
+    public const string CameraMenue                = "CameraMenue";
+    public const string CameraFrontWall            = "CameraNodeFront";
+    public const string CameraLeftWall             = "CameraNodeLeft";
+    public const string CameraRightWall            = "CameraNodeRight";
+    public const string CameraMirrors              = "CameraNodeMirrors";
+    public const string CameraWindshieldDisplay    = "CameraWSD";
+    public const string Oculus                     = "Oculus";
+
     public const string ButtonResetOculus          = "ButtonOculusRecalibrate";
     public const string ButtonResetSimulation      = "ButtonResetSimulation";
     public const string ButtonStartSimulation      = "ButtonStartSimulation";
     public const string ButtonOverTake             = "ButtonOverTake";
     public const string ButtonCloseSoftware        = "ButtonExit";
     public const string ButtonJumpTo               = "ButtonJumpTo";
+
+    public const string pannelResearch             = "ResearchPanel";
+    public const string pannelSimulation           = "SimulationPanel";
+    public const string pannelWSD                  = "WindshieldPanel";
 
     public const string CheckBoxTOR                = "checkBoxTakeOverReqest";
     public const string CheckBoxRecored            = "checkBoxRecordData";

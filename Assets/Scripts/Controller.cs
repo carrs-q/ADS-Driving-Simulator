@@ -33,6 +33,8 @@ using System.Runtime.InteropServices;
  */
 
 public class Controller : MonoBehaviour {
+
+    //Needed to have Access of NumLock
     [DllImport("user32.dll", 
         CharSet = CharSet.Auto, 
         ExactSpelling = true, 
@@ -87,6 +89,7 @@ public class Controller : MonoBehaviour {
     public const string REQPROJECT      = "RPRO";
     public const string STATUSUPDATE    = "STA";
     public const string TORMESSAGE      = "TOR";
+    public const string VOLUMECONTROL   = "NVC";
     public const string EMPTYMESSAGE    = "undefined";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
@@ -182,16 +185,10 @@ public class Controller : MonoBehaviour {
     public Component wsdDynTint;
 
     public GameObject steeringWheel;
-    public GameObject Oculus;
-    public GameObject FrontCamera;
-    public GameObject LeftCamera;
-    public GameObject RightCamera;
-    public GameObject MirrorCamera;
-    public GameObject LoadProject;
     public GameObject videoWalls;
-    public GameObject WSDCamera;
     public bool sendSync = false;
     private bool torFired = false;
+    private bool sendTOR = false;
     private string torTimeRemaining = "";
 
     private GameObject buttonResetHeadPosition;
@@ -223,6 +220,24 @@ public class Controller : MonoBehaviour {
     private GameObject dropDownLoadVideoManual;
     private GameObject dropDownLoadSoundManual;
 
+    private GameObject sliderVolumeMaster;
+    private GameObject sliderInCarVolume;
+    private GameObject sliderWarnVolume;
+    private GameObject sliderWSDVolume;
+
+    private GameObject cameraMenue;
+    private GameObject cameraNodeFront;
+    private GameObject cameraNodeLeft;
+    private GameObject cameraNodeRight;
+    private GameObject cameraNodeMirrors;
+    private GameObject cameraWSD;
+
+    private GameObject oculus;
+
+    private GameObject pannelResearch;
+    private GameObject pannelSimulation;
+    private GameObject pannelWSD;
+
     private Toggle toggleSyncServer;
     private Toggle toggleIndicateTOR;
     public Text LogText;
@@ -235,6 +250,23 @@ public class Controller : MonoBehaviour {
     
     private void findAllGameObjects()
     {
+
+        //Oculus
+        oculus = GameObject.Find(DefaultSettings.Oculus);
+
+        //Cameras
+        cameraMenue = GameObject.Find(DefaultSettings.CameraMenue);
+        cameraNodeFront = GameObject.Find(DefaultSettings.CameraFrontWall);
+        cameraNodeLeft = GameObject.Find(DefaultSettings.CameraLeftWall);
+        cameraNodeRight = GameObject.Find(DefaultSettings.CameraRightWall);
+        cameraNodeMirrors = GameObject.Find(DefaultSettings.CameraMirrors);
+        cameraWSD = GameObject.Find(DefaultSettings.CameraWindshieldDisplay);
+        cameraWSD.SetActive(false);
+
+        pannelResearch = GameObject.Find(DefaultSettings.pannelResearch);
+        pannelSimulation = GameObject.Find(DefaultSettings.pannelSimulation);
+        pannelWSD = GameObject.Find(DefaultSettings.pannelWSD);
+
         //Buttons
         buttonResetHeadPosition = GameObject.Find(DefaultSettings.ButtonResetOculus);
         buttonResetSimulation = GameObject.Find(DefaultSettings.ButtonResetSimulation);
@@ -274,6 +306,13 @@ public class Controller : MonoBehaviour {
         dropDownChangeSimulatorMode = GameObject.Find(DefaultSettings.DropDownSimulatorMode);
         dropDownLoadVideoManual = GameObject.Find(DefaultSettings.DropDownLoadManualVideo);
         dropDownLoadSoundManual = GameObject.Find(DefaultSettings.DropDownLoadManualSound);
+
+        //Slider
+        sliderVolumeMaster = GameObject.Find(DefaultSettings.SliderVolumeMaster);
+        sliderInCarVolume = GameObject.Find(DefaultSettings.SliderInCarVolume);
+        sliderWarnVolume = GameObject.Find(DefaultSettings.SliderWarnVolume);
+        sliderWSDVolume = GameObject.Find(DefaultSettings.SliderWSDVolume);
+
     }
     private void writeLabels()
     {
@@ -348,10 +387,7 @@ public class Controller : MonoBehaviour {
         videoPlayerAttached = false;
         this.oldStatus = INIT;
         this.actualStatus = INIT;
-        AudioListener.volume = 1;
         manualIP = false;
-        
-        //TODO SOURCE for Downloadserver
     }
     void Update () {
         if (cdnLoaded && cdnProject)
@@ -511,13 +547,14 @@ public class Controller : MonoBehaviour {
                         actualMode = CAVEMODE;
                     }
                     loadCaveSettings();
+                    hideSeekPanel(true);
                 }
                 break;
             case VRMODE:
                 {
                     actualMode = VRMODE;
                     loadVRSettings();
-
+                    hideSeekPanel(true);
 
                 }
                 break;
@@ -525,7 +562,6 @@ public class Controller : MonoBehaviour {
                 {
                     actualMode = ARMODE;
                     loadARSettings();
-
                 }
                 break;
             default:
@@ -541,12 +577,13 @@ public class Controller : MonoBehaviour {
         {
             Destroy(GameObject.FindObjectOfType<AudioListener>());
         }
+        cameraNodeFront.SetActive(false);
+        cameraNodeLeft.SetActive(false);
+        cameraNodeRight.SetActive(false);
+        cameraNodeMirrors.SetActive(false);
+        cameraWSD.SetActive(false);
 
-        FrontCamera.SetActive(false);
-        LeftCamera.SetActive(false);
-        RightCamera.SetActive(false);
-        MirrorCamera.SetActive(false);
-        WSDCamera.SetActive(false);
+        hideSeekPanel(false);
 
         oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
         buttonJumpTo.SetActive(DefaultSettings.buttonJumpToVisible);
@@ -557,11 +594,10 @@ public class Controller : MonoBehaviour {
         toggleSyncServer.isOn = DefaultSettings.checkBoxSyncSensorsDefault;
 
         inputSyncServer.GetComponent<InputField>().text = DefaultSettings.syncServerDefault;
-
-
+        
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-            Destroy(Oculus);
+            Destroy(oculus);
             if (NodeInformation.screen == 1)
             {
                 //Update Later with outside renderer
@@ -572,7 +608,7 @@ public class Controller : MonoBehaviour {
         }
         else
         {
-            Oculus.SetActive(false);
+            oculus.SetActive(false);
             for (int i = 1; i < MAXDISPLAY; i++)
             {
                 if (Display.displays.Length > i)
@@ -581,16 +617,17 @@ public class Controller : MonoBehaviour {
                 }
             }
         }
+
     }
     private void loadVRSettings()
     {
-        Oculus.SetActive(true);
+        oculus.SetActive(true);
         oculusCalibrateHideButton(true);
         videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
         wsdDefault = WSDINCAR;
-        Camera wsdCam = WSDCamera.GetComponent<Camera>();
+        Camera wsdCam = cameraWSD.GetComponent<Camera>();
         wsdCam.targetDisplay = 2;
-        Oculus.AddComponent(typeof(AudioListener));
+        oculus.AddComponent(typeof(AudioListener));
         for (int i = 0; i < Display.displays.Length; i++)
         {
             Debug.Log(Display.displays[i].ToString());
@@ -602,25 +639,33 @@ public class Controller : MonoBehaviour {
     }
     private void loadCaveSettings()
     {
-        Camera wsdCam = WSDCamera.GetComponent<Camera>();
-        wsdCam.targetDisplay = 1;
+        //Camera wsdCam = cameraWSD.GetComponent<Camera>();
+        //wsdCam.targetDisplay = 1;
+        if (isMasterAndCave())
+        {
+            cameraMenue.AddComponent<AudioListener>();
+        }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             wsdDefault = WSDINFRONT;
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
             {
-                case FRONT: { FrontCamera.SetActive(true);
+                case FRONT: {
+                        cameraNodeFront.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-                        FrontCamera.AddComponent<AudioListener>();
+                        cameraNodeFront.AddComponent<AudioListener>();
                     } break;
-                case LEFT: { LeftCamera.SetActive(true);
+                case LEFT: {
+                        cameraNodeLeft.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
                     } break;
-                case RIGHT: { RightCamera.SetActive(true);
+                case RIGHT: {
+                        cameraNodeRight.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
                     } break;
-                case MIRRORS: { MirrorCamera.SetActive(true);
+                case MIRRORS: {
+                        cameraNodeMirrors.SetActive(true);
                         Screen.SetResolution(2400, 600, true, 60);
                     } break;
                 default: { this.GetComponent<Camera>().targetDisplay = 0;
@@ -663,7 +708,7 @@ public class Controller : MonoBehaviour {
     }
     private void updateProjectList()
     {
-        projectList pL = (projectList)LoadProject.GetComponent(typeof(projectList));
+        projectList pL = (projectList)dropDownChangeProject.GetComponent(typeof(projectList));
         pL.addList(projectList);
     }
     public void loadProject(string project)
@@ -841,6 +886,10 @@ public class Controller : MonoBehaviour {
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
+                    case VOLUMECONTROL:
+                        {
+                            clientRecieveVolume(splitData[1], splitData[2], splitData[3], splitData[4]);
+                        } break;
                     default:
                         Debug.Log("Unkown Message" + msg); break;
                 }
@@ -911,7 +960,17 @@ public class Controller : MonoBehaviour {
     }
     public void serverTakeOverRequest()
     {
+        this.sendTOR = true;
         string message = TORMESSAGE + "|";
+        serverToClientListSend(message, relChannel, clients);
+    }
+    public void sendVolume()
+    {
+        string message = VOLUMECONTROL + "|";
+        message += sliderVolumeMaster.GetComponent<Slider>().value + "|";
+        message += sliderInCarVolume.GetComponent<Slider>().value + "|";
+        message += sliderWarnVolume.GetComponent<Slider>().value + "|";
+        message += sliderWSDVolume.GetComponent<Slider>().value;
         serverToClientListSend(message, relChannel, clients);
     }
     public void disconnectMessage(int conID)
@@ -994,24 +1053,26 @@ public class Controller : MonoBehaviour {
             };
         }
     }
+    private void clientRecieveVolume(string volMaster, string volAmb, string volTOR, string volWSD)
+    {
+        changeVolume(DefaultSettings.SliderVolumeMaster, int.Parse(volMaster));
+        changeVolume(DefaultSettings.SliderInCarVolume, int.Parse(volAmb));
+        changeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
+        changeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
+    }
     public void changeVolume(string sourceName, int value)
     {
+        if(isMasterAndCave())
+        {
+            sendVolume();
+        }
         float volume = ((float)value)/ 100;
         //Network Send
         switch (sourceName)
         {
             case DefaultSettings.SliderVolumeMaster:
                 {
-                    if(NodeInformation.type == MASTERNODE)
-                    {
-                        if (renderMode == MASTER){
-
-                        }
-                    }
-                    else
-                    {
-
-                    }
+                    AudioListener.volume = volume;
                 }; break;
             case DefaultSettings.SliderInCarVolume:
                 {
@@ -1023,15 +1084,8 @@ public class Controller : MonoBehaviour {
                     // This is a Android Setting
                 }; break;
             case DefaultSettings.SliderWSDVolume:
-                { 
-                    if (NodeInformation.type == MASTERNODE && renderMode == MASTER)
-                    {
-                        
-                    }
-                    else
-                    {
-                        windShieldSound.volume = volume;
-                    }
+                {
+                    windShieldSound.volume = volume;
                 }; break;
             default:
                 {
@@ -1078,8 +1132,8 @@ public class Controller : MonoBehaviour {
         c.Add(clients.Find(x => x.getConnectionID() == conID));
         serverToClientListSend(message, channelID, c);
     }
+   
     //Send to all clients
-
     private void serverToClientListSend(string message, int channelID, List<ClientNode> c)
     {
         byte[] msg = Encoding.Unicode.GetBytes(message);
@@ -1228,10 +1282,21 @@ public class Controller : MonoBehaviour {
     }
     public void takeOverRequest(DateTime time)
     {
-        if (time.Subtract(lastTOR).TotalSeconds >= 10)
+        if (this.syncData.getStatus() == START)
         {
-            lastTOR = DateTime.Now;
-            this.takeOverRequest();
+            if (time.Subtract(lastTOR).TotalSeconds >= 10)
+            {
+                lastTOR = DateTime.Now;
+                this.takeOverRequest();
+            }
+            else
+            {
+                log.writeWarning("Between two TOR need to be at least 10 seconds");
+            }
+        }
+        else
+        {
+            log.writeWarning("The Simulation need to be started for TOR");
         }
     }
     public void automatedTOR(bool isActivated)
@@ -1298,6 +1363,12 @@ public class Controller : MonoBehaviour {
             inputTORTime.GetComponent<InputField>().interactable = isInteractable;
         }
     }
+    private void hideSeekPanel(bool active)
+    {
+        pannelSimulation.SetActive(active);
+        pannelResearch.SetActive(active);
+        pannelWSD.SetActive(active);
+    }
 
     public void enableWindshield()
     {
@@ -1319,7 +1390,12 @@ public class Controller : MonoBehaviour {
     {
         wsd.setWSDHorizontalMovement(state);
     }
-  
+    public void setTintState(Single tintPercent)
+    {
+        wsd.setTintingTransparency(tintPercent);
+    }
+
+
     public bool isMasterAndCave()
     {
         return (renderMode == MASTER && actualMode == CAVEMODE);
@@ -1382,14 +1458,13 @@ public class Controller : MonoBehaviour {
                         }
                     }break;
                     case 8:{
-                        if(NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1)
+                        if((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
                                 loadAudioSource(2, temppath);
                             }
                     }break;
-                    case 9:
-                        {
-                            if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1)
+                    case 9:{
+                            if ((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
                                 loadAudioSource(1, temppath);
                             }
@@ -1442,7 +1517,7 @@ public class Controller : MonoBehaviour {
         video.StepForward();
         if (NodeInformation.type == SLAVENODE && NodeInformation.screen == 5)
         {
-            video.targetTexture = MirrorCamera.GetComponent<RenderTexture>();
+            video.targetTexture = cameraNodeMirrors.GetComponent<RenderTexture>();
         }
     }
     public void loadVideotoPlayer(int player, string path)
@@ -1522,8 +1597,6 @@ public class Controller : MonoBehaviour {
         player.time = 0;
     }
 
-    
-
     //Video Controll Helping Method for Seeking
     private void Seek(VideoPlayer p, float nTime)
     {
@@ -1537,10 +1610,6 @@ public class Controller : MonoBehaviour {
     public bool areVideosAttached()
     {
         return this.videoPlayerAttached;
-    }
-    public void setTintState(Single tintPercent)
-    {
-        wsd.setTintingTransparency(tintPercent);
     }
 
     //Operation Overloading for Init OBD Data
@@ -1628,6 +1697,18 @@ public class Controller : MonoBehaviour {
     {
         return this.config;
     }
+    public bool isTor()
+    {
+        if (sendTOR)
+        {
+            this.sendTOR = false;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
    
     public IPAddress getIRIPAddress()
     {
@@ -1639,7 +1720,7 @@ public class Controller : MonoBehaviour {
     }
     public int getActualStatus()
     {
-        return this.actualStatus;
+        return this.syncData.getStatus();
     }
     public int getOldStatus()
     {
@@ -1694,18 +1775,28 @@ public class Controller : MonoBehaviour {
         {
             try
             {
-                if (controller.sendSync)
+                if (controller.sendSync || controller.isTor())
                 {
-                    controller.sendSync = false;
-                    controller.setOldStatus(controller.getActualStatus());
-                    string url;
-                    if (controller.manualIP)
+                    int code = 0; 
+                    if (controller.sendSync)
                     {
-                        url = "http://" + controller.customAddress + "/?event=" + controller.getSyncStatus();
+                        controller.sendSync = false;
+                        controller.setOldStatus(controller.getActualStatus());
+                        code = controller.getActualStatus();
                     }
                     else
                     {
-                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getSyncStatus();
+                        code = 4;
+                    }
+
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + code;
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + code;
                     }
                     Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
@@ -1740,19 +1831,13 @@ public class Controller : MonoBehaviour {
     }
 
     //Oculus Specific
-    public void loadOculusCamera()
-    {
-
-    }
     public void reCenterOculus()
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
-
     private void oculusCalibrateHideButton(bool visible)
     {
         buttonResetHeadPosition.SetActive(visible);
-
     }
 
     private string getNodeName(int displayID)
@@ -1866,13 +1951,13 @@ public class Controller : MonoBehaviour {
     }
     private void debugInformations(bool activated)
     {
-        TextMeshPro tmp = FrontCamera.GetComponentInChildren<TextMeshPro>();
+        TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
         tmp.text = "";
 
-        tmp = LeftCamera.GetComponentInChildren<TextMeshPro>();
+        tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
         tmp.text = "";
 
-        tmp = RightCamera.GetComponentInChildren<TextMeshPro>();
+        tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
         tmp.text = "";
     }
 

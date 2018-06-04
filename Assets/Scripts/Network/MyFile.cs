@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 public class MyFile {
-    [ComVisibleAttribute(false)]
-    public long LongLength { get};
     public static int BUFFERSIZE = 8192;
 
     private string directory;

@@ -629,7 +629,7 @@ GameObject:
   - component: {fileID: 64685985}
   - component: {fileID: 64685984}
   m_Layer: 10
-  m_Name: WSD Camera
+  m_Name: CameraWSD
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -704,7 +704,7 @@ GameObject:
   - component: {fileID: 68415166}
   - component: {fileID: 68415165}
   m_Layer: 0
-  m_Name: MirrorCameraPlayer
+  m_Name: CameraNodeMirrors
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2461,7 +2461,7 @@ GameObject:
   - component: {fileID: 195129842}
   - component: {fileID: 195129841}
   m_Layer: 5
-  m_Name: Simulation Panel
+  m_Name: SimulationPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4423,7 +4423,7 @@ GameObject:
   - component: {fileID: 412252173}
   - component: {fileID: 412252172}
   m_Layer: 0
-  m_Name: Right Camera
+  m_Name: CameraNodeRight
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7324,7 +7324,7 @@ GameObject:
   - component: {fileID: 611149623}
   - component: {fileID: 611149622}
   m_Layer: 0
-  m_Name: Front Camera
+  m_Name: CameraNodeFront
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9644,7 +9644,7 @@ GameObject:
   - component: {fileID: 765964073}
   - component: {fileID: 765964072}
   m_Layer: 5
-  m_Name: Research Panel
+  m_Name: ResearchPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11591,7 +11591,7 @@ GameObject:
   - component: {fileID: 931374001}
   - component: {fileID: 931374000}
   m_Layer: 0
-  m_Name: Menue Camera
+  m_Name: CameraMenue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11631,14 +11631,7 @@ MonoBehaviour:
   windshieldDisplay: {fileID: 83500666}
   wsdDynTint: {fileID: 950375486}
   steeringWheel: {fileID: 1422167136}
-  Oculus: {fileID: 1708103721}
-  FrontCamera: {fileID: 611149620}
-  LeftCamera: {fileID: 974718213}
-  RightCamera: {fileID: 412252169}
-  MirrorCamera: {fileID: 68415161}
-  LoadProject: {fileID: 1266471198}
   videoWalls: {fileID: 2094020644}
-  WSDCamera: {fileID: 64685982}
   sendSync: 0
   LogText: {fileID: 1130880174}
 --- !u!124 &931374001
@@ -11947,7 +11940,7 @@ GameObject:
   - component: {fileID: 974718217}
   - component: {fileID: 974718216}
   m_Layer: 0
-  m_Name: Left Camera
+  m_Name: CameraNodeLeft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12711,7 +12704,7 @@ GameObject:
   - component: {fileID: 1024497836}
   - component: {fileID: 1024497835}
   m_Layer: 5
-  m_Name: Windshield Panel
+  m_Name: WindshieldPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -14167,7 +14160,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000020980835, y: -0.00005075697}
+  m_AnchoredPosition: {x: -0.000032424927, y: -0.0000068888967}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1130880174
@@ -16290,7 +16283,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1330816466}
   m_Layer: 0
-  m_Name: Display Cameras
+  m_Name: NodeCameras
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
