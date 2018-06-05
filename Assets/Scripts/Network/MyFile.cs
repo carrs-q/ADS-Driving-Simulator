@@ -3,6 +3,8 @@ using System.IO;
 using UnityEngine;
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using UnityEngine.Networking;
 
 public class MyFile {
     public static int BUFFERSIZE = 8192;
@@ -24,6 +26,9 @@ public class MyFile {
 
     private byte[] data;
 
+    byte[] bytes = new byte[BUFFERSIZE];
+    UnityWebRequest webRequest;
+
 
     public MyFile(string filesource, string directory)
     {
@@ -41,6 +46,7 @@ public class MyFile {
     //Non Blocking Download
     public IEnumerator downloadFile()
     {
+        
         if (File.Exists(this.directory + this.filename))
         {
             downloaded = true;
@@ -49,44 +55,31 @@ public class MyFile {
         }
         else
         {
+
             download = true;
-            WWW www = new WWW(filesource);
-            while(!www.isDone)
+            webRequest = new UnityWebRequest(filesource);
+            webRequest.downloadHandler = new CustomWebRequest(bytes, this.directory , this.filename);
+            webRequest.SendWebRequest();
+            while (!webRequest.isDone)
             {
-                progress = www.progress;
+                progress = webRequest.downloadProgress;
                 yield return null;
             }
-            if (string.IsNullOrEmpty(www.error))
+            if (!webRequest.isNetworkError)
             {
-                progress = 1.0f;
                 downloaded = true;
                 download = false;
                 checkPending = false;
-                data = www.bytes;
-                Thread thread = new Thread(saveData);
-                thread.Start();
-               // Debug.Log("Download finished for file " + filename + "");
+                ready = true;
             }
             else
             {
-                File.WriteAllBytes(getFilePath(), data);
                 download = false;
                 checkPending = false;
-                if (www.error == "404 Not Found")
-                    fileNotExist = true;
-                else
-                    Debug.Log(www.error);
+                if (webRequest.error == "404 Not Found")
+                    Debug.Log(webRequest.error);
             }
         }
-    }
-
-    //Non Blocking Storeing
-    private void saveData()
-    {
-        File.WriteAllBytes(getFilePath(), data);
-        ready = true;
-        fileNotExist = false;
-        data=null;
     }
 
     public float getProgress()

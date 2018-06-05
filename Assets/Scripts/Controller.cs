@@ -12,6 +12,7 @@ using System.Collections;
 using MyNetwork;
 using UnityEngine.Networking;
 using System.Text;
+using System.Runtime.InteropServices;
 
 //TODO
 /*
@@ -32,6 +33,14 @@ using System.Text;
  */
 
 public class Controller : MonoBehaviour {
+
+    //Needed to have Access of NumLock
+    [DllImport("user32.dll", 
+        CharSet = CharSet.Auto, 
+        ExactSpelling = true, 
+        CallingConvention = CallingConvention.Winapi)]
+
+    public static extern short GetKeyState(int keyCode);
 
     //CDN FileNames
     public static string[] filenames ={
@@ -81,6 +90,7 @@ public class Controller : MonoBehaviour {
     public const string REQPROJECT      = "RPRO";
     public const string STATUSUPDATE    = "STA";
     public const string TORMESSAGE      = "TOR";
+    public const string VOLUMECONTROL   = "NVC";
     public const string EMPTYMESSAGE    = "undefined";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
@@ -145,7 +155,6 @@ public class Controller : MonoBehaviour {
     private string project;
     private bool cdnLoaded = false;
     private bool cdnProject = false;
-    private bool wsdMovingLocked = false;
 
                                                //Main Menue
     public VideoPlayer frontWall;              //Player 1
@@ -160,13 +169,10 @@ public class Controller : MonoBehaviour {
     public AudioSource windShieldSound;
     public AudioSource rightMirrorSound;
     public AudioSource leftMirrorSound;
+    private Timing torTime;
 
     public Shader chromaShader;
     public Shader noShader;
-
-    public Text startButtonText;
-    public Text LogText;
-    public Text timeText;
 
     public TextMeshPro digitalSpeedoMeter;
     public TextMeshPro currTime;
@@ -176,31 +182,152 @@ public class Controller : MonoBehaviour {
     public TextMeshPro fuelkm;
     public TextMeshPro temp;
 
-    public InputField ipInputField;
-
     public Component windshieldDisplay;
     public Component wsdDynTint;
 
     public GameObject steeringWheel;
-    public GameObject Oculus;
-    public GameObject FrontCamera;
-    public GameObject LeftCamera;
-    public GameObject RightCamera;
-    public GameObject MirrorCamera;
-    public GameObject LoadProject;
     public GameObject videoWalls;
-    public GameObject WSDCamera;
     public bool sendSync = false;
+    private bool torFired = false;
+    private bool sendTOR = false;
+    private string torTimeRemaining = "";
 
-    private int noteachState = 0;
-    private static int nthMessage = 10; //Every n.th message get send to all clients
+    private GameObject buttonResetHeadPosition;
+    private GameObject buttonResetSimulation;
+    private GameObject buttonStartSimulation;
+    private GameObject buttonJumpTo;
+    private GameObject buttonClose;
+
+    private GameObject checkBoxTOR;
+    private GameObject checkBoxSafety;
+    private GameObject checkBoxRecording;
+    private GameObject checkBoxsyncSensors;
+    private GameObject checkBoxWindshieldDisplay;
+    private GameObject checkBoxHorizontalMovement;
+    private GameObject checkBoxWSDTinting;
+
+    private GameObject textTimeCurrentLog;
+    private GameObject textTimeRemainingLog;
+    private GameObject textSpeedLog;
+    private GameObject textSteeringWheelLog;
+
+    private GameObject inputSyncServer;
+    private GameObject inputTORTime;
+    private GameObject inputTimeGotTo;
+    private GameObject inputParticipantCode;
+
+    private GameObject dropDownChangeProject;
+    private GameObject dropDownChangeSimulatorMode;
+    private GameObject dropDownLoadVideoManual;
+    private GameObject dropDownLoadSoundManual;
+
+    private GameObject sliderVolumeMaster;
+    private GameObject sliderInCarVolume;
+    private GameObject sliderWarnVolume;
+    private GameObject sliderWSDVolume;
+
+    private GameObject cameraMenue;
+    private GameObject cameraNodeFront;
+    private GameObject cameraNodeLeft;
+    private GameObject cameraNodeRight;
+    private GameObject cameraNodeMirrors;
+    private GameObject cameraWSD;
+
+    private GameObject oculus;
+
+    private GameObject pannelResearch;
+    private GameObject pannelSimulation;
+    private GameObject pannelWSD;
+
+    private Toggle toggleSyncServer;
+    private Toggle toggleIndicateTOR;
+    public Text LogText;
+    public DateTime lastTOR;
+    private double videoLengthSeconds = 0;
+
+
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
+    
+    private void findAllGameObjects()
+    {
+
+        //Oculus
+        oculus = GameObject.Find(DefaultSettings.Oculus);
+
+        //Cameras
+        cameraMenue = GameObject.Find(DefaultSettings.CameraMenue);
+        cameraNodeFront = GameObject.Find(DefaultSettings.CameraFrontWall);
+        cameraNodeLeft = GameObject.Find(DefaultSettings.CameraLeftWall);
+        cameraNodeRight = GameObject.Find(DefaultSettings.CameraRightWall);
+        cameraNodeMirrors = GameObject.Find(DefaultSettings.CameraMirrors);
+        cameraWSD = GameObject.Find(DefaultSettings.CameraWindshieldDisplay);
+        cameraWSD.SetActive(false);
+
+        pannelResearch = GameObject.Find(DefaultSettings.pannelResearch);
+        pannelSimulation = GameObject.Find(DefaultSettings.pannelSimulation);
+        pannelWSD = GameObject.Find(DefaultSettings.pannelWSD);
+
+        //Buttons
+        buttonResetHeadPosition = GameObject.Find(DefaultSettings.ButtonResetOculus);
+        buttonResetSimulation = GameObject.Find(DefaultSettings.ButtonResetSimulation);
+        buttonStartSimulation = GameObject.Find(DefaultSettings.ButtonStartSimulation);
+        buttonJumpTo = GameObject.Find(DefaultSettings.ButtonJumpTo);
+        buttonClose = GameObject.Find(DefaultSettings.ButtonCloseSoftware);
+
+        //CheckBoxes
+        checkBoxTOR = GameObject.Find(DefaultSettings.CheckBoxTOR);
+        checkBoxSafety = GameObject.Find(DefaultSettings.CheckBoxSafety);
+        checkBoxRecording = GameObject.Find(DefaultSettings.CheckBoxRecored);
+        checkBoxsyncSensors = GameObject.Find(DefaultSettings.CheckBoxSyncSensors);
+        checkBoxWindshieldDisplay = GameObject.Find(DefaultSettings.CheckBoxWindshieldDisplay);
+        checkBoxHorizontalMovement = GameObject.Find(DefaultSettings.CheckBoxHorizontalMovement);
+        checkBoxWSDTinting = GameObject.Find(DefaultSettings.CheckBoxWSDTinting);
+
+        toggleSyncServer = checkBoxsyncSensors.GetComponent<Toggle>();
+        toggleIndicateTOR = checkBoxTOR.GetComponent<Toggle>();
+
+        //DynamicText
+        textTimeCurrentLog = GameObject.Find(DefaultSettings.TextTimeCurrentLog);
+        textTimeRemainingLog = GameObject.Find(DefaultSettings.TextTimeRemainingLog);
+        textSpeedLog = GameObject.Find(DefaultSettings.TextSpeedLog);
+        textSteeringWheelLog = GameObject.Find(DefaultSettings.TextSteeringWheelLog);
+
+        //LabelText
+
+
+        //Input
+        inputSyncServer = GameObject.Find(DefaultSettings.InputSyncAddress);
+        inputTimeGotTo = GameObject.Find(DefaultSettings.InputJumpToTime);
+        inputParticipantCode = GameObject.Find(DefaultSettings.InputParticipantCode);
+        inputTORTime = GameObject.Find(DefaultSettings.InputTORTime);
+
+        //DropDown
+        dropDownChangeProject = GameObject.Find(DefaultSettings.DropDownLoadProject);
+        dropDownChangeSimulatorMode = GameObject.Find(DefaultSettings.DropDownSimulatorMode);
+        dropDownLoadVideoManual = GameObject.Find(DefaultSettings.DropDownLoadManualVideo);
+        dropDownLoadSoundManual = GameObject.Find(DefaultSettings.DropDownLoadManualSound);
+
+        //Slider
+        sliderVolumeMaster = GameObject.Find(DefaultSettings.SliderVolumeMaster);
+        sliderInCarVolume = GameObject.Find(DefaultSettings.SliderInCarVolume);
+        sliderWarnVolume = GameObject.Find(DefaultSettings.SliderWarnVolume);
+        sliderWSDVolume = GameObject.Find(DefaultSettings.SliderWSDVolume);
+
+    }
+    private void writeLabels()
+    {
+
+    }
 
 // Should be before Start
     void Awake () {
+        Application.runInBackground = true;
+        findAllGameObjects();
         syncData = new SyncData();
         simulationContent = new SimulationContent();
+        torTime = new Timing();
+        lastTOR = DateTime.Now;
         StartCoroutine(getProjectList());
         this.gameObject.SetActive(true);
         //Network.sendRate = 50;
@@ -240,6 +367,7 @@ public class Controller : MonoBehaviour {
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             threadList = new List<Thread>();
             threadsAlive = true;
+            updateInterface();
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -260,9 +388,7 @@ public class Controller : MonoBehaviour {
         videoPlayerAttached = false;
         this.oldStatus = INIT;
         this.actualStatus = INIT;
-        AudioListener.volume = 1;
         manualIP = false;
-        //TODO SOURCE for Downloadserver
     }
     void Update () {
         if (cdnLoaded && cdnProject)
@@ -288,7 +414,7 @@ public class Controller : MonoBehaviour {
         }
         if (renderMode == MASTER && syncData.getStatus()==START)
         {
-            UpdateTime();
+            updateInterface();
             syncData.setSpeed(obdData.getSpeed());
             syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
 
@@ -331,7 +457,7 @@ public class Controller : MonoBehaviour {
             !Input.GetMouseButtonDown(0) &&
             !Input.GetMouseButtonUp(0))) //Key down or hold Key
         {
-            if (!wsdMovingLocked)
+            if (wsd.isWSDActive() && ((((ushort)GetKeyState(0x90)) & 0xffff) != 0))
             {
                 if (Input.GetKeyDown(KeyCode.Keypad4)
              || Input.GetKey(KeyCode.Keypad4))
@@ -405,11 +531,6 @@ public class Controller : MonoBehaviour {
                 wsd.updateWSDDefault(wsdDefault + WSDDyn);
                 sendStatusToClient();
             }
-            if (Input.GetKeyUp(KeyCode.Numlock))
-            {
-                wsdMovingLocked = !wsdMovingLocked;
-                Debug.Log("Keypress");
-            }
             
         }
     }
@@ -427,13 +548,14 @@ public class Controller : MonoBehaviour {
                         actualMode = CAVEMODE;
                     }
                     loadCaveSettings();
+                    hideSeekPanel(true);
                 }
                 break;
             case VRMODE:
                 {
                     actualMode = VRMODE;
                     loadVRSettings();
-
+                    hideSeekPanel(true);
 
                 }
                 break;
@@ -441,7 +563,6 @@ public class Controller : MonoBehaviour {
                 {
                     actualMode = ARMODE;
                     loadARSettings();
-
                 }
                 break;
             default:
@@ -453,32 +574,42 @@ public class Controller : MonoBehaviour {
     }
     private void initSettings()
     {
-        FrontCamera.SetActive(false);
-        LeftCamera.SetActive(false);
-        RightCamera.SetActive(false);
-        MirrorCamera.SetActive(false);
-        WSDCamera.SetActive(false);
+        if(GameObject.FindObjectOfType<AudioListener>() != null)
+        {
+            Destroy(GameObject.FindObjectOfType<AudioListener>());
+        }
+        cameraNodeFront.SetActive(false);
+        cameraNodeLeft.SetActive(false);
+        cameraNodeRight.SetActive(false);
+        cameraNodeMirrors.SetActive(false);
+        cameraWSD.SetActive(false);
 
+        hideSeekPanel(false);
+
+        oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
+        buttonJumpTo.SetActive(DefaultSettings.buttonJumpToVisible);
+
+        checkBoxTOR.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxTORDefault;
+        checkBoxSafety.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxSafetyDefault;
+        checkBoxRecording.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxRecordDefault;
+        toggleSyncServer.isOn = DefaultSettings.checkBoxSyncSensorsDefault;
+
+        inputSyncServer.GetComponent<InputField>().text = DefaultSettings.syncServerDefault;
+        
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-            Destroy(Oculus);
+            Destroy(oculus);
             if (NodeInformation.screen == 1)
             {
                 //Update Later with outside renderer
                 //WSDCamera.SetActive(true); 
                 windshieldDisplay.transform.localPosition = WSDINFRONT;
+                
             }
         }
         else
         {
-            Oculus.SetActive(false);
-            if (Oculus != null)
-            {
-                if (Oculus.GetComponent(typeof(AudioListener)) != null)
-                {
-                    Destroy(Oculus.GetComponent(typeof(AudioListener)));
-                }
-            }
+            oculus.SetActive(false);
             for (int i = 1; i < MAXDISPLAY; i++)
             {
                 if (Display.displays.Length > i)
@@ -487,16 +618,17 @@ public class Controller : MonoBehaviour {
                 }
             }
         }
+
     }
     private void loadVRSettings()
     {
-        Oculus.SetActive(true);
+        oculus.SetActive(true);
+        oculusCalibrateHideButton(true);
         videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
         wsdDefault = WSDINCAR;
-        Camera wsdCam = WSDCamera.GetComponent<Camera>();
+        Camera wsdCam = cameraWSD.GetComponent<Camera>();
         wsdCam.targetDisplay = 2;
-
-        Oculus.AddComponent(typeof(AudioListener));
+        oculus.AddComponent(typeof(AudioListener));
         for (int i = 0; i < Display.displays.Length; i++)
         {
             Debug.Log(Display.displays[i].ToString());
@@ -508,26 +640,33 @@ public class Controller : MonoBehaviour {
     }
     private void loadCaveSettings()
     {
-        Camera wsdCam = WSDCamera.GetComponent<Camera>();
-        wsdCam.targetDisplay = 1;
+        //Camera wsdCam = cameraWSD.GetComponent<Camera>();
+        //wsdCam.targetDisplay = 1;
+        if (isMasterAndCave())
+        {
+            cameraMenue.AddComponent<AudioListener>();
+        }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             wsdDefault = WSDINFRONT;
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
             {
-                case FRONT: { FrontCamera.SetActive(true);
+                case FRONT: {
+                        cameraNodeFront.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-                        FrontCamera.AddComponent<AudioListener>();
-
+                        cameraNodeFront.AddComponent<AudioListener>();
                     } break;
-                case LEFT: { LeftCamera.SetActive(true);
-                        Screen.SetResolution(1400, 1050, true, 60);
-                    } break;
-                case RIGHT: { RightCamera.SetActive(true);
+                case LEFT: {
+                        cameraNodeLeft.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
                     } break;
-                case MIRRORS: { MirrorCamera.SetActive(true);
+                case RIGHT: {
+                        cameraNodeRight.SetActive(true);
+                        Screen.SetResolution(1400, 1050, true, 60);
+                    } break;
+                case MIRRORS: {
+                        cameraNodeMirrors.SetActive(true);
                         Screen.SetResolution(2400, 600, true, 60);
                     } break;
                 default: { this.GetComponent<Camera>().targetDisplay = 0;
@@ -570,12 +709,13 @@ public class Controller : MonoBehaviour {
     }
     private void updateProjectList()
     {
-        projectList pL = (projectList)LoadProject.GetComponent(typeof(projectList));
+        projectList pL = (projectList)dropDownChangeProject.GetComponent(typeof(projectList));
         pL.addList(projectList);
     }
     public void loadProject(string project)
     {
         log.write("Project " + project + " loaded");
+        this.project = project;
         cdnProject = true;
         sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
@@ -620,7 +760,8 @@ public class Controller : MonoBehaviour {
             }
         }
     }
-         // Sub Init TODO Reconnecter
+    
+    // Sub Init TODO Reconnecter
     private IEnumerator AttemptRecconnect()
     {
         yield return new WaitForSeconds(10.0f);
@@ -747,6 +888,10 @@ public class Controller : MonoBehaviour {
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
+                    case VOLUMECONTROL:
+                        {
+                            clientRecieveVolume(splitData[1], splitData[2], splitData[3], splitData[4]);
+                        } break;
                     default:
                         Debug.Log("Unkown Message" + msg); break;
                 }
@@ -790,9 +935,8 @@ public class Controller : MonoBehaviour {
         }
         if (syncData.doesStatusChanged())
         {
-            Debug.Log(msg);
             this.sendSync = true;
-            serverToClientListSend(msg, relChannel, clients);
+            serverToClientListSend(msg, allCostDeliChannel, clients);
         }
         else if(syncData.getStatus() == START)
         {
@@ -800,7 +944,6 @@ public class Controller : MonoBehaviour {
             {
                 lastMessage = msg;
                 serverToClientListSend(msg, unrelSeqChannel, clients);
-                noteachState++;
             }
         }
     }
@@ -819,7 +962,17 @@ public class Controller : MonoBehaviour {
     }
     public void serverTakeOverRequest()
     {
+        this.sendTOR = true;
         string message = TORMESSAGE + "|";
+        serverToClientListSend(message, relChannel, clients);
+    }
+    public void sendVolume()
+    {
+        string message = VOLUMECONTROL + "|";
+        message += sliderVolumeMaster.GetComponent<Slider>().value + "|";
+        message += sliderInCarVolume.GetComponent<Slider>().value + "|";
+        message += sliderWarnVolume.GetComponent<Slider>().value + "|";
+        message += sliderWSDVolume.GetComponent<Slider>().value;
         serverToClientListSend(message, relChannel, clients);
     }
     public void disconnectMessage(int conID)
@@ -902,6 +1055,46 @@ public class Controller : MonoBehaviour {
             };
         }
     }
+    private void clientRecieveVolume(string volMaster, string volAmb, string volTOR, string volWSD)
+    {
+        changeVolume(DefaultSettings.SliderVolumeMaster, int.Parse(volMaster));
+        changeVolume(DefaultSettings.SliderInCarVolume, int.Parse(volAmb));
+        changeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
+        changeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
+    }
+    public void changeVolume(string sourceName, int value)
+    {
+        if(isMasterAndCave())
+        {
+            sendVolume();
+        }
+        float volume = ((float)value)/ 100;
+        //Network Send
+        switch (sourceName)
+        {
+            case DefaultSettings.SliderVolumeMaster:
+                {
+                    AudioListener.volume = volume;
+                }; break;
+            case DefaultSettings.SliderInCarVolume:
+                {
+                    leftMirrorSound.volume = volume;
+                    rightMirrorSound.volume = volume;
+                }; break;
+            case DefaultSettings.SliderWarnVolume:
+                {
+                    // This is a Android Setting
+                }; break;
+            case DefaultSettings.SliderWSDVolume:
+                {
+                    windShieldSound.volume = volume;
+                }; break;
+            default:
+                {
+
+                };break;
+        }
+    }
     private void statusChange(int status)
     {
         switch (status)
@@ -941,6 +1134,7 @@ public class Controller : MonoBehaviour {
         c.Add(clients.Find(x => x.getConnectionID() == conID));
         serverToClientListSend(message, channelID, c);
     }
+   
     //Send to all clients
     private void serverToClientListSend(string message, int channelID, List<ClientNode> c)
     {
@@ -978,22 +1172,67 @@ public class Controller : MonoBehaviour {
     }
 
     // Core Functions for Simulator
-    public void startSimulation()
+    public bool requestSimStart()
     {
-        sendMarker(START);
-        if (simulator.getDifferenceInSecs() == 0)
+        if (log.isRecording())
         {
-            log.writeWarning("Simualtion started from beginning");
+            if (toggleSyncServer.isOn)
+            { 
+                if(inputParticipantCode.GetComponent<InputField>().text != "")
+                {
+                    log.setParticipantCode(inputParticipantCode.GetComponent<InputField>().text);
+                    Debug.Log(project);
+
+                    if (simulationContent.isProjectLoaded())
+                    {
+                        log.setScenario(simulationContent.getProjectName());
+                    }
+                    else{
+                        log.setScenario(Labels.noScenarioLoaded);
+                    }
+                    
+                    if (log.isSafety())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        log.writeWarning(Labels.messageSafetyRequirements);
+                        return false;
+                    }
+                }
+                else
+                {
+                    log.writeWarning(Labels.messageParticipantCodeMissing);
+                    return false;
+                }
+            }
+            else
+            {
+                log.writeWarning(Labels.messageConnectToSyncServer);
+                return false;
+            }
         }
         else
         {
-            log.writeWarning("Simualtion continued at " + getSimTime());
+            return true;
         }
-       
-        if (rightMirrorSound.clip)
-            Debug.Log(rightMirrorSound.clip.loadState);
-        if (leftMirrorSound.clip)
-            Debug.Log(leftMirrorSound.clip.loadState);
+    }
+    public void startSimulation()
+    {
+        if (log.isRecording())
+        {
+            log.recordedStart(Labels.startSimulation);
+        }
+        sendMarker(START);
+        if (simulator.getDifferenceInSecs() == 0)
+        {
+            log.write("Simualtion started from beginning");
+        }
+        else
+        {
+            log.write("Simualtion continued at " + getSimTime(simulator.getDifferenceInSecs()));
+        }
         simulator.beginnSimulation();
         frontWall.Play();
         leftWall.Play();
@@ -1005,10 +1244,15 @@ public class Controller : MonoBehaviour {
         navigationScreen.Play();
         rightMirrorSound.Play();
         leftMirrorSound.Play();
-
+        guiProtection(false);
+        
     }
     public void stopSimulation()
     {
+        if (log.isRecording())
+        {
+            log.recordedStart(Labels.stopSimulation);
+        }
         sendMarker(PAUSE);
         log.write("Simualtion paused");
         simulator.pauseSimulation();
@@ -1022,6 +1266,8 @@ public class Controller : MonoBehaviour {
         MirrorCameraPlayer.Pause();
         rightMirrorSound.Pause();
         leftMirrorSound.Pause();
+        guiProtection(true);
+        
     }
     public void resetSimulation()
     {
@@ -1047,10 +1293,117 @@ public class Controller : MonoBehaviour {
         MirrorStraigt.Pause();
         MirrorLeft.Pause();
         MirrorRight.Pause();
-        startButtonText.text = "Play";
-        UpdateTime();
+        buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
+        updateInterface();
+        torFired = false;
     }
-   
+    public void takeOverRequest()
+    {
+        if (log.isRecording())
+        {
+            log.recordedStart(Labels.torFired);
+        }
+        serverTakeOverRequest();
+        if (checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn)
+        {
+            checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn = false;
+        }
+        if (checkBoxWSDTinting.GetComponent<Toggle>().isOn)
+        {
+            checkBoxWSDTinting.GetComponent<Toggle>().isOn = false;
+        }
+
+    }
+    public void takeOverRequest(DateTime time)
+    {
+        if (this.syncData.getStatus() == START)
+        {
+            if (time.Subtract(lastTOR).TotalSeconds >= 10)
+            {
+                lastTOR = DateTime.Now;
+                this.takeOverRequest();
+            }
+            else
+            {
+                log.writeWarning("Between two TOR need to be at least 10 seconds");
+            }
+        }
+        else
+        {
+            log.writeWarning("The Simulation need to be started for TOR");
+        }
+    }
+    public void automatedTOR(bool isActivated)
+    {
+        InputField temp = inputTORTime.GetComponent<InputField>();
+        temp.interactable = !isActivated;
+        if (isActivated)
+        {
+            bool requirements = false;
+            if (temp.text != "")
+            {
+                string[] times = temp.text.Split(':');
+                if (times.Length == 4)
+                {
+                    torTime = new Timing(times[0], times[1], times[2], times[3]);
+                }
+                if (times.Length == 3)
+                {
+                    torTime = new Timing(times[0], times[1], times[2]);
+                }
+                requirements = true;
+                temp.text = torTime.getTiming();
+            }
+            if (!requirements)
+            {
+                checkBoxTOR.GetComponent<Toggle>().isOn = false;
+            }
+        }
+        else
+        {
+            temp.text = torTime.getTiming();
+        }
+        
+    }
+    private void guiProtection(bool isInteractable)
+    {
+        buttonResetSimulation.GetComponent<Button>().interactable = isInteractable;
+        buttonClose.GetComponent<Button>().interactable = isInteractable;
+        toggleSyncServer.interactable = isInteractable;
+        toggleIndicateTOR.interactable = isInteractable;
+
+        inputTimeGotTo.GetComponent<InputField>().interactable = isInteractable;
+        inputParticipantCode.GetComponent<InputField>().interactable = isInteractable;
+        
+        dropDownChangeProject.GetComponent<Dropdown>().interactable = isInteractable;
+        dropDownChangeSimulatorMode.GetComponent<Dropdown>().interactable = isInteractable;
+        dropDownLoadVideoManual.GetComponent<Dropdown>().interactable = isInteractable;
+        dropDownLoadSoundManual.GetComponent<Dropdown>().interactable = isInteractable;
+
+        checkBoxRecording.GetComponent<Toggle>().interactable = isInteractable;
+        checkBoxSafety.GetComponent<Toggle>().interactable = isInteractable;
+
+        if (!isInteractable)
+        {
+            inputSyncServer.GetComponent<InputField>().interactable = isInteractable;
+            inputTORTime.GetComponent<InputField>().interactable = isInteractable;
+        }
+        if (!toggleSyncServer.isOn)
+        {
+            inputSyncServer.GetComponent<InputField>().interactable = isInteractable;
+        }
+        if (!toggleIndicateTOR.isOn)
+        {
+            inputTORTime.GetComponent<InputField>().interactable = isInteractable;
+        }
+    }
+    private void hideSeekPanel(bool active)
+    {
+        pannelSimulation.SetActive(active);
+        pannelResearch.SetActive(active);
+        pannelWSD.SetActive(active);
+    }
+
     public void enableWindshield()
     {
         this.wsd.enableWSD();
@@ -1071,13 +1424,15 @@ public class Controller : MonoBehaviour {
     {
         wsd.setWSDHorizontalMovement(state);
     }
-  
+    public void setTintState(Single tintPercent)
+    {
+        wsd.setTintingTransparency(tintPercent);
+    }
+
     public bool isMasterAndCave()
     {
         return (renderMode == MASTER && actualMode == CAVEMODE);
     }
-    
-    //
     private void prepareSimulator()
     {
         int temp = 0;
@@ -1093,6 +1448,7 @@ public class Controller : MonoBehaviour {
                     case 0:{
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
                                 loadVideo(frontWall, temppath);
+
                     }break;
                     case 1:{
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
@@ -1133,14 +1489,13 @@ public class Controller : MonoBehaviour {
                         }
                     }break;
                     case 8:{
-                        if(NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1)
+                        if((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
                                 loadAudioSource(2, temppath);
                             }
                     }break;
-                    case 9:
-                        {
-                            if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1)
+                    case 9:{
+                            if ((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
                                 loadAudioSource(1, temppath);
                             }
@@ -1173,6 +1528,7 @@ public class Controller : MonoBehaviour {
         if (frontWall.isPrepared)
         {
             checksum++;
+            videoLengthSeconds = (int)(this.frontWall.frameCount / this.frontWall.frameRate);
             this.videoPlayerAttached = true;
         }
         return (checksum == 1);
@@ -1192,7 +1548,7 @@ public class Controller : MonoBehaviour {
         video.StepForward();
         if (NodeInformation.type == SLAVENODE && NodeInformation.screen == 5)
         {
-            video.targetTexture = MirrorCamera.GetComponent<RenderTexture>();
+            video.targetTexture = cameraNodeMirrors.GetComponent<RenderTexture>();
         }
     }
     public void loadVideotoPlayer(int player, string path)
@@ -1217,7 +1573,6 @@ public class Controller : MonoBehaviour {
             case 3:
                 {
                     loadVideo(navigationScreen, path);
-
                 }
                 break;
             case 4:
@@ -1286,10 +1641,6 @@ public class Controller : MonoBehaviour {
     public bool areVideosAttached()
     {
         return this.videoPlayerAttached;
-    }
-    public void setTintState(Single tintPercent)
-    {
-        wsd.setTintingTransparency(tintPercent);
     }
 
     //Operation Overloading for Init OBD Data
@@ -1372,11 +1723,22 @@ public class Controller : MonoBehaviour {
                 }
             }
         }
-        noteachState = 0;
     }
     public Config getConfig()
     {
         return this.config;
+    }
+    public bool isTor()
+    {
+        if (sendTOR)
+        {
+            this.sendTOR = false;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
    
     public IPAddress getIRIPAddress()
@@ -1389,7 +1751,7 @@ public class Controller : MonoBehaviour {
     }
     public int getActualStatus()
     {
-        return this.actualStatus;
+        return this.syncData.getStatus();
     }
     public int getOldStatus()
     {
@@ -1409,18 +1771,20 @@ public class Controller : MonoBehaviour {
         if (enabledSensorSync)
         {
             this.runNetworkservice();
+            inputSyncServer.GetComponent<InputField>().interactable = false;
         }
         else
         {
             this.stopNetworkservice();
+            inputSyncServer.GetComponent<InputField>().interactable = true;
         }
     }
     public void runNetworkservice()
     {
         if (NodeInformation.type.Equals(MASTERNODE)){
-            if (ipInputField.text != "")
+            if (inputSyncServer.GetComponent<InputField>().text != "")
             {
-                customAddress = ipInputField.text;
+                customAddress = inputSyncServer.GetComponent<InputField>().text;
                 manualIP = true;
             }
             else
@@ -1442,18 +1806,45 @@ public class Controller : MonoBehaviour {
         {
             try
             {
-                if (controller.sendSync)
+                if (controller.sendSync || controller.isTor())
                 {
-                    controller.sendSync = false;
-                    controller.setOldStatus(controller.getActualStatus());
-                    string url;
-                    if (controller.manualIP)
+                    int code = 0; 
+                    if (controller.sendSync)
                     {
-                        url = "http://" + controller.customAddress + "/?event=" + controller.getSyncStatus();
+                        controller.sendSync = false;
+                        controller.setOldStatus(controller.getActualStatus());
+                        code = controller.getActualStatus();
                     }
                     else
                     {
-                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + controller.getSyncStatus();
+                        code = 4;
+                    }
+
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + code;
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + code;
+                    }
+                    WebRequest request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                }
+                if (controller.isNewLogEntry())
+                {
+                    string message = controller.getNewLogEntry();
+                    message = WWW.EscapeURL(message);
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + message;
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + message;
                     }
                     Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
@@ -1463,12 +1854,62 @@ public class Controller : MonoBehaviour {
             }
             catch (Exception e)
             {
-
                 Debug.Log("Error: " + e.Message);
+                //TODO: Write Message and Close Threads
+                // work over boolean
+                //controller.setSensorSync(false);
             }
+            try
+            {
+                if (controller.isNewLogEntry())
+                {
+                    string message = controller.getNewLogEntry();
+                    message = WWW.EscapeURL(message);
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + message;
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + message;
+                    }
+                    Debug.Log(url);
+                    WebRequest request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Error: " + e.Message);
+                //TODO: Write Message and Close Threads
+                // work over boolean
+                //controller.setSensorSync(false);
+            }
+
 
         }
     }
+
+    public bool isNewLogEntry()
+    {
+        return log.isNewLogEntry();
+    }
+    public string getNewLogEntry()
+    {
+        return this.log.getUnstoredLog();
+    }
+   
+    public void startRecording(bool recordingState)
+    {
+        log.recordingStatus(recordingState);
+    }
+    public void safetyRequirements(bool requirementsSet)
+    {
+        log.safetyRequirements(requirementsSet);
+    }
+    
     public int getSyncStatus()
     {
         return this.syncData.getStatus();
@@ -1485,24 +1926,13 @@ public class Controller : MonoBehaviour {
     }
 
     //Oculus Specific
-    public void loadOculusCamera()
-    {
-
-    }
     public void reCenterOculus()
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
-    private void debugInformations(bool activated)
+    private void oculusCalibrateHideButton(bool visible)
     {
-        TextMeshPro tmp = FrontCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
-
-        tmp = LeftCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
-
-        tmp = RightCamera.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+        buttonResetHeadPosition.SetActive(visible);
     }
 
     private string getNodeName(int displayID)
@@ -1560,14 +1990,35 @@ public class Controller : MonoBehaviour {
         log.writeError(logMessage);
     }
 
-    private void UpdateTime()
+    private void updateInterface()
     {
-        timeText.text = getSimTime();
+        if (!torFired)
+        {
+            torTimeRemaining = torTime.getDifference(simulator.getTimeDifference());
+            if (torTimeRemaining == Labels.torFired)
+            {
+                torFired = true;
+                takeOverRequest(DateTime.Now);
+            }
+            inputTORTime.GetComponent<InputField>().text = torTimeRemaining;
+        }
+        inputTimeGotTo.GetComponent<InputField>().text = getSimTime(simulator.getDifferenceInSecs());
+        if (frontWall.isPrepared)
+        {
+            textTimeRemainingLog.GetComponent<Text>().text = getSimTime(simulator.timeRemaining(videoLengthSeconds));
+        }
+        else
+        {
+            textTimeRemainingLog.GetComponent<Text>().text = "00:00";
+        }
+        textSteeringWheelLog.GetComponent<Text>().text = obdData.getSteeringWheelAngle().ToString() + " °";
+        textSpeedLog.GetComponent<Text>().text = obdData.getSpeed().ToString() + " km/h";
+
     }
-    public string getSimTime()
+    public string getSimTime(int seconds)
     {
-        int curMin = simulator.getDifferenceInSecs() / 60;
-        int curSec = simulator.getDifferenceInSecs() % 60;
+        int curMin = seconds / 60;
+        int curSec = seconds % 60;
         string min, sec;
         if (curMin < 10)
         {
@@ -1592,6 +2043,17 @@ public class Controller : MonoBehaviour {
     public void loadProjectList()
     {
         StartCoroutine(getProjectList());
+    }
+    private void debugInformations(bool activated)
+    {
+        TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
+        tmp.text = "";
+
+        tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
+        tmp.text = "";
+
+        tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
+        tmp.text = "";
     }
 
 }

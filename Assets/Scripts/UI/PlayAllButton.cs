@@ -13,14 +13,14 @@ public class PlayAllButton : MonoBehaviour {
     public void playAllVideos(){
         controller = Controller.getController();
 
-        if (playerText.text=="Play") {
-            if (controller.isSimulationReady()) {
+        if (playerText.text== Labels.startSimulation) {
+            if (controller.isSimulationReady() && controller.requestSimStart()) {
                 controller.startSimulation();
-                playerText.text = "Pause";
+                playerText.text = Labels.stopSimulation;
             }
 		} else {
             controller.stopSimulation();
-            playerText.text = "Play";
+            playerText.text = Labels.startSimulation;
 		}
 	}
 }
