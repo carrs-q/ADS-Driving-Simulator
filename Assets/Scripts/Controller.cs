@@ -715,6 +715,7 @@ public class Controller : MonoBehaviour {
     public void loadProject(string project)
     {
         log.write("Project " + project + " loaded");
+        this.project = project;
         cdnProject = true;
         sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
@@ -1173,23 +1174,42 @@ public class Controller : MonoBehaviour {
     // Core Functions for Simulator
     public bool requestSimStart()
     {
-        if (checkBoxRecording.GetComponent<Toggle>().isOn)
+        if (log.isRecording())
         {
-            if (toggleSyncServer.isOn && checkBoxSafety.GetComponent<Toggle>().isOn)
-            {
+            if (toggleSyncServer.isOn)
+            { 
                 if(inputParticipantCode.GetComponent<InputField>().text != "")
                 {
-                    return true;
+                    log.setParticipantCode(inputParticipantCode.GetComponent<InputField>().text);
+                    Debug.Log(project);
+
+                    if (simulationContent.isProjectLoaded())
+                    {
+                        log.setScenario(simulationContent.getProjectName());
+                    }
+                    else{
+                        log.setScenario(Labels.noScenarioLoaded);
+                    }
+                    
+                    if (log.isSafety())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        log.writeWarning(Labels.messageSafetyRequirements);
+                        return false;
+                    }
                 }
                 else
                 {
-                    log.writeWarning("Participant Code is empty");
+                    log.writeWarning(Labels.messageParticipantCodeMissing);
                     return false;
                 }
             }
             else
             {
-                log.writeWarning("Is Participant belted and Sync Server is connected?");
+                log.writeWarning(Labels.messageConnectToSyncServer);
                 return false;
             }
         }
@@ -1200,6 +1220,10 @@ public class Controller : MonoBehaviour {
     }
     public void startSimulation()
     {
+        if (log.isRecording())
+        {
+            log.recordedStart(Labels.startSimulation);
+        }
         sendMarker(START);
         if (simulator.getDifferenceInSecs() == 0)
         {
@@ -1209,7 +1233,6 @@ public class Controller : MonoBehaviour {
         {
             log.write("Simualtion continued at " + getSimTime(simulator.getDifferenceInSecs()));
         }
-       
         simulator.beginnSimulation();
         frontWall.Play();
         leftWall.Play();
@@ -1222,10 +1245,14 @@ public class Controller : MonoBehaviour {
         rightMirrorSound.Play();
         leftMirrorSound.Play();
         guiProtection(false);
-
+        
     }
     public void stopSimulation()
     {
+        if (log.isRecording())
+        {
+            log.recordedStart(Labels.stopSimulation);
+        }
         sendMarker(PAUSE);
         log.write("Simualtion paused");
         simulator.pauseSimulation();
@@ -1240,6 +1267,7 @@ public class Controller : MonoBehaviour {
         rightMirrorSound.Pause();
         leftMirrorSound.Pause();
         guiProtection(true);
+        
     }
     public void resetSimulation()
     {
@@ -1271,6 +1299,10 @@ public class Controller : MonoBehaviour {
     }
     public void takeOverRequest()
     {
+        if (log.isRecording())
+        {
+            log.recordedStart(Labels.torFired);
+        }
         serverTakeOverRequest();
         if (checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn)
         {
@@ -1280,6 +1312,7 @@ public class Controller : MonoBehaviour {
         {
             checkBoxWSDTinting.GetComponent<Toggle>().isOn = false;
         }
+
     }
     public void takeOverRequest(DateTime time)
     {
@@ -1400,8 +1433,6 @@ public class Controller : MonoBehaviour {
     {
         return (renderMode == MASTER && actualMode == CAVEMODE);
     }
-    
-    //
     private void prepareSimulator()
     {
         int temp = 0;
@@ -1798,6 +1829,51 @@ public class Controller : MonoBehaviour {
                     {
                         url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + code;
                     }
+                    WebRequest request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                }
+                if (controller.isNewLogEntry())
+                {
+                    string message = controller.getNewLogEntry();
+                    message = WWW.EscapeURL(message);
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + message;
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + message;
+                    }
+                    Debug.Log(url);
+                    WebRequest request = WebRequest.Create(url);
+                    request.Method = "POST";
+                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Error: " + e.Message);
+                //TODO: Write Message and Close Threads
+                // work over boolean
+                //controller.setSensorSync(false);
+            }
+            try
+            {
+                if (controller.isNewLogEntry())
+                {
+                    string message = controller.getNewLogEntry();
+                    message = WWW.EscapeURL(message);
+                    string url;
+                    if (controller.manualIP)
+                    {
+                        url = "http://" + controller.customAddress + "/?event=" + message;
+                    }
+                    else
+                    {
+                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + message;
+                    }
                     Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
@@ -1812,7 +1888,26 @@ public class Controller : MonoBehaviour {
                 //controller.setSensorSync(false);
             }
 
+
         }
+    }
+
+    public bool isNewLogEntry()
+    {
+        return log.isNewLogEntry();
+    }
+    public string getNewLogEntry()
+    {
+        return this.log.getUnstoredLog();
+    }
+   
+    public void startRecording(bool recordingState)
+    {
+        log.recordingStatus(recordingState);
+    }
+    public void safetyRequirements(bool requirementsSet)
+    {
+        log.safetyRequirements(requirementsSet);
     }
     
     public int getSyncStatus()

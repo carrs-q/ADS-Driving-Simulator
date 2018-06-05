@@ -5,7 +5,6 @@ using UnityEngine.Networking;
 
 
 //source: https://stackoverflow.com/questions/50689859/www-bytes-overflows-when-downloading-over-2gb
-
 public class CustomWebRequest : DownloadHandlerScript
 {
     // Standard scripted download handler - will allocate memory on each ReceiveData callback
@@ -96,12 +95,8 @@ public class CustomWebRequest : DownloadHandlerScript
     {
         if (success)
         {
-            Debug.Log("Done! Saved File to: " + vidSavePath.Replace("/", "\\"));
             finished = true;
         }
-        else
-            Debug.LogError("Failed to Save File to: " + vidSavePath.Replace("/", "\\"));
-
         //Close filestream
         fileStream.Close();
     }
