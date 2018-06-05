@@ -39,6 +39,7 @@ public class Controller : MonoBehaviour {
         CharSet = CharSet.Auto, 
         ExactSpelling = true, 
         CallingConvention = CallingConvention.Winapi)]
+
     public static extern short GetKeyState(int keyCode);
 
     //CDN FileNames
@@ -1394,7 +1395,6 @@ public class Controller : MonoBehaviour {
     {
         wsd.setTintingTransparency(tintPercent);
     }
-
 
     public bool isMasterAndCave()
     {
