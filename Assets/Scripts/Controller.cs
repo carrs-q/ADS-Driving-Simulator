@@ -245,7 +245,6 @@ public class Controller : MonoBehaviour {
     public DateTime lastTOR;
     private double videoLengthSeconds = 0;
 
-
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
     
@@ -379,7 +378,7 @@ public class Controller : MonoBehaviour {
             
             if (NodeInformation.debug != 1)
             {
-                debugInformations( true);
+                debugInformations(false);
             }
         }
         changeMode(actualMode);
@@ -528,6 +527,40 @@ public class Controller : MonoBehaviour {
                     wsdSizeDyn = wsdSizeDefault;
                     wsd.setSizeWSD(wsdSizeDyn);
                 }
+                if (Input.GetKeyDown(KeyCode.P))
+                {
+                    log.write("WSD Transform  \n "
+                        + "\t\t\tPosition:\t\t\t"
+                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                        + "\t\t\tRotation:\t\t"
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                         + "\t\t\tScale:\t\t\t\t"
+                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                    log.customRecord("WSD Transform  \n "
+                        + "Position:\t"
+                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                        + "Rotation:\t"
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                         + "Scale:\t\t"
+                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                }
+                if (Input.GetKeyDown(KeyCode.U))
+                {
+                    buttonStartSimulation.GetComponent<Button>().interactable = true;
+
+                }
                 wsd.updateWSDDefault(wsdDefault + WSDDyn);
                 sendStatusToClient();
             }
@@ -574,6 +607,7 @@ public class Controller : MonoBehaviour {
     }
     private void initSettings()
     {
+
         if(GameObject.FindObjectOfType<AudioListener>() != null)
         {
             Destroy(GameObject.FindObjectOfType<AudioListener>());
@@ -583,7 +617,7 @@ public class Controller : MonoBehaviour {
         cameraNodeRight.SetActive(false);
         cameraNodeMirrors.SetActive(false);
         cameraWSD.SetActive(false);
-
+        defaultVolumes();
         hideSeekPanel(false);
 
         oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
@@ -598,7 +632,10 @@ public class Controller : MonoBehaviour {
         
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-            Destroy(oculus);
+            if (oculus != null)
+            {
+                Destroy(oculus);
+            }
             if (NodeInformation.screen == 1)
             {
                 //Update Later with outside renderer
@@ -642,10 +679,7 @@ public class Controller : MonoBehaviour {
     {
         //Camera wsdCam = cameraWSD.GetComponent<Camera>();
         //wsdCam.targetDisplay = 1;
-        if (isMasterAndCave())
-        {
-            cameraMenue.AddComponent<AudioListener>();
-        }
+        
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             wsdDefault = WSDINFRONT;
@@ -655,7 +689,8 @@ public class Controller : MonoBehaviour {
                 case FRONT: {
                         cameraNodeFront.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-                        cameraNodeFront.AddComponent<AudioListener>();
+                        cameraNodeFront.AddComponent(typeof(AudioListener));
+                        AudioListener.pause = true;
                     } break;
                 case LEFT: {
                         cameraNodeLeft.SetActive(true);
@@ -679,6 +714,12 @@ public class Controller : MonoBehaviour {
             wsdDefault = WSDINCAR;
             this.GetComponent<Camera>().targetDisplay = 0;
             createMasterServer();
+            if (isMasterAndCave())
+            {
+                cameraMenue.AddComponent(typeof(AudioListener));
+                AudioListener.pause = true;
+                changeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
+            }
         }
         windshieldDisplay.transform.localPosition = wsdDefault;
         videoWalls.transform.localPosition = videoWallDefault;
@@ -714,6 +755,7 @@ public class Controller : MonoBehaviour {
     }
     public void loadProject(string project)
     {
+        buttonStartSimulation.GetComponent<Button>().interactable = false;
         log.write("Project " + project + " loaded");
         this.project = project;
         cdnProject = true;
@@ -908,6 +950,7 @@ public class Controller : MonoBehaviour {
         clients.Add(new ClientNode(conID, 0));
         string msg = REQDISPLAY + "|" + conID;
         serverToClientSend(msg, relChannel, conID);
+        sendVolume();
     }
     private void serverUpdateDisplay(int conID, int displayID)
     {
@@ -1062,6 +1105,13 @@ public class Controller : MonoBehaviour {
         changeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
         changeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
     }
+    private void defaultVolumes()
+    {
+        changeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
+        changeVolume(DefaultSettings.SliderInCarVolume, (int)sliderInCarVolume.GetComponent<Slider>().value);
+        changeVolume(DefaultSettings.SliderWarnVolume, (int)sliderWarnVolume.GetComponent<Slider>().value);
+        changeVolume(DefaultSettings.SliderWSDVolume, (int)sliderWSDVolume.GetComponent<Slider>().value);
+    }
     public void changeVolume(string sourceName, int value)
     {
         if(isMasterAndCave())
@@ -1074,7 +1124,11 @@ public class Controller : MonoBehaviour {
         {
             case DefaultSettings.SliderVolumeMaster:
                 {
-                    AudioListener.volume = volume;
+                    if (GameObject.FindObjectOfType<AudioListener>() != null)
+                    {
+                        AudioListener.volume = volume;
+                        AudioListener.pause = false;
+                    }
                 }; break;
             case DefaultSettings.SliderInCarVolume:
                 {
@@ -1242,10 +1296,11 @@ public class Controller : MonoBehaviour {
         MirrorRight.Play();
         MirrorCameraPlayer.Play();
         navigationScreen.Play();
-        rightMirrorSound.Play();
+        AudioListener.pause = false;
         leftMirrorSound.Play();
+        rightMirrorSound.Play();
         guiProtection(false);
-        
+        debugInformations(false);
     }
     public void stopSimulation()
     {
@@ -1264,10 +1319,8 @@ public class Controller : MonoBehaviour {
         MirrorLeft.Pause();
         MirrorRight.Pause();
         MirrorCameraPlayer.Pause();
-        rightMirrorSound.Pause();
-        leftMirrorSound.Pause();
+        AudioListener.pause = true;
         guiProtection(true);
-        
     }
     public void resetSimulation()
     {
@@ -1541,7 +1594,7 @@ public class Controller : MonoBehaviour {
         if (video.url == temp || temp == null)
         {
             log.write("Video error");
-            return;
+            
         }
         video.url = temp;
         video.Prepare(); // after Prepairing prepare Completed will be Executed
@@ -1557,7 +1610,7 @@ public class Controller : MonoBehaviour {
         {
             case 0:
                 {
-                    loadVideo(frontWall, path);
+                   loadVideo(frontWall, path);
                 }
                 break;
             case 1:
@@ -1567,12 +1620,12 @@ public class Controller : MonoBehaviour {
                 break;
             case 2:
                 {
-                    loadVideo(rightWall, path);
+                   loadVideo(rightWall, path);
                 }
                 break;
             case 3:
                 {
-                    loadVideo(navigationScreen, path);
+                   loadVideo(navigationScreen, path);
                 }
                 break;
             case 4:
@@ -1587,7 +1640,7 @@ public class Controller : MonoBehaviour {
                 break;
             case 6:
                 {
-                    loadVideo(MirrorRight, path);
+                   loadVideo(MirrorRight, path);
                 }
                 break;
             default:
@@ -1595,21 +1648,19 @@ public class Controller : MonoBehaviour {
                     log.write("Error while Video Loading - Playercount not found");
                 }
                 break;
-
         }
     }
     public void loadAudioSource (int player, string path)
     {
-        path = "file://" + path.Replace("\\" ,"/");
         switch (player)
         {
             case 1:
                 { //Right Mirror
-                    AudioSourceLoader(path, rightMirrorSound);
+                   StartCoroutine(AudioSourceLoader(path, 2));
                 };break;
             case 2:
                 { //Left Mirror
-                    AudioSourceLoader(path, leftMirrorSound);
+                    StartCoroutine(AudioSourceLoader(path, 1));
                 }; break;
             default:
                 {
@@ -1617,16 +1668,52 @@ public class Controller : MonoBehaviour {
                 };break;
         }
     }
-    private void AudioSourceLoader(string path, AudioSource player)
+    //private IEnumerator AudioSourceLoader(string path, AudioSource player)
+    private IEnumerator AudioSourceLoader(string path, int player)
     {
+        path = "file://" + path.Replace("\\", "/");
+        AudioClip audioClip;
         WWW www = new WWW(path);
-        AudioClip clip = www.GetAudioClip(false);
-        clip.name= Path.GetFileName(path);
-        player.clip = clip;
-        player.Play();
-        player.Pause();
-        player.time = 0;
+        while (!www.isDone)
+        {
+            yield return new WaitForSeconds(1);
+        }
+        audioClip = www.GetAudioClip();
+        audioClip.name = Path.GetFileName(path);
+        attachAudioClip(audioClip, player);
     }
+    private void attachAudioClip(AudioClip clip, int player)
+    {
+        if(clip.length != 0)
+        {
+            switch (player)
+            {
+                case 1:
+                    {
+                        leftMirrorSound.clip = clip;
+                        leftMirrorSound.Play();
+                    }; break;
+                case 2:
+                    {
+                        rightMirrorSound.clip = clip;
+                        rightMirrorSound.Play();
+                        log.write("All data loaded");
+                        buttonStartSimulation.GetComponent<Button>().interactable = true;
+                    }; break;
+                default:
+                    {
+                        Debug.Log("This should not happen");
+                    }; break;
+            }
+            
+        }
+        else
+        {
+            Debug.Log("No Length" + player);
+        }
+
+    }
+
 
     //Video Controll Helping Method for Seeking
     private void Seek(VideoPlayer p, float nTime)
@@ -2046,14 +2133,29 @@ public class Controller : MonoBehaviour {
     }
     private void debugInformations(bool activated)
     {
-        TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+        if (!activated)
+        {
+            TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "";
 
-        tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+            tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "";
 
-        tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+            tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "";
+        }
+        else
+        {
+            TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "Screen 1";
+
+            tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "Screen 2";
+
+            tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "Screen 3";
+        }
+       
     }
 
 }

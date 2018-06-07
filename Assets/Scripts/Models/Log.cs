@@ -165,6 +165,18 @@ public class Log {
     {
         return this.newEntry;
     }
+
+    public void customRecord(string text)
+    {
+        unstoredLog =
+            "---------------------------\n"
+            + "Label: " + this.participantcode + "\n"
+            + exactTime() + "\n"
+            + text
+            + "\n---------------------------"; ;
+        newEntry = true;
+    }
+
     public void recordedStart(string text)
     {
 
