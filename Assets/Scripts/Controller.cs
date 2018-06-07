@@ -378,7 +378,7 @@ public class Controller : MonoBehaviour {
             
             if (NodeInformation.debug != 1)
             {
-                debugInformations( true);
+                debugInformations(false);
             }
         }
         changeMode(actualMode);
@@ -526,6 +526,40 @@ public class Controller : MonoBehaviour {
 
                     wsdSizeDyn = wsdSizeDefault;
                     wsd.setSizeWSD(wsdSizeDyn);
+                }
+                if (Input.GetKeyDown(KeyCode.P))
+                {
+                    log.write("WSD Transform  \n "
+                        + "\t\t\tPosition:\t\t\t"
+                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                        + "\t\t\tRotation:\t\t"
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                         + "\t\t\tScale:\t\t\t\t"
+                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                    log.customRecord("WSD Transform  \n "
+                        + "Position:\t"
+                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                        + "Rotation:\t"
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                         + "Scale:\t\t"
+                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                }
+                if (Input.GetKeyDown(KeyCode.U))
+                {
+                    buttonStartSimulation.GetComponent<Button>().interactable = true;
+
                 }
                 wsd.updateWSDDefault(wsdDefault + WSDDyn);
                 sendStatusToClient();
@@ -721,6 +755,7 @@ public class Controller : MonoBehaviour {
     }
     public void loadProject(string project)
     {
+        buttonStartSimulation.GetComponent<Button>().interactable = false;
         log.write("Project " + project + " loaded");
         this.project = project;
         cdnProject = true;
@@ -1265,7 +1300,7 @@ public class Controller : MonoBehaviour {
         leftMirrorSound.Play();
         rightMirrorSound.Play();
         guiProtection(false);
-        
+        debugInformations(false);
     }
     public void stopSimulation()
     {
@@ -1663,6 +1698,7 @@ public class Controller : MonoBehaviour {
                         rightMirrorSound.clip = clip;
                         rightMirrorSound.Play();
                         log.write("All data loaded");
+                        buttonStartSimulation.GetComponent<Button>().interactable = true;
                     }; break;
                 default:
                     {
@@ -1675,7 +1711,7 @@ public class Controller : MonoBehaviour {
         {
             Debug.Log("No Length" + player);
         }
-        
+
     }
 
 
@@ -2097,14 +2133,29 @@ public class Controller : MonoBehaviour {
     }
     private void debugInformations(bool activated)
     {
-        TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+        if (!activated)
+        {
+            TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "";
 
-        tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+            tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "";
 
-        tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
-        tmp.text = "";
+            tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "";
+        }
+        else
+        {
+            TextMeshPro tmp = cameraNodeFront.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "Screen 1";
+
+            tmp = cameraNodeLeft.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "Screen 2";
+
+            tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
+            tmp.text = "Screen 3";
+        }
+       
     }
 
 }
