@@ -1678,9 +1678,17 @@ public class Controller : MonoBehaviour {
         {
             yield return new WaitForSeconds(1);
         }
-        audioClip = www.GetAudioClip();
-        audioClip.name = Path.GetFileName(path);
-        attachAudioClip(audioClip, player);
+        if (www.bytes.Length > 0)
+        {
+            audioClip = www.GetAudioClip();
+            audioClip.name = Path.GetFileName(path);
+            attachAudioClip(audioClip, player);
+        }
+        else
+        {
+            log.write("Not all data loaded");
+            buttonStartSimulation.GetComponent<Button>().interactable = true;
+        }
     }
     private void attachAudioClip(AudioClip clip, int player)
     {
