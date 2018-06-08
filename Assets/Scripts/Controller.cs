@@ -239,6 +239,8 @@ public class Controller : MonoBehaviour {
     private GameObject pannelSimulation;
     private GameObject pannelWSD;
 
+    private GameObject lightMovingSun;
+
     private Toggle toggleSyncServer;
     private Toggle toggleIndicateTOR;
     public Text LogText;
@@ -312,6 +314,9 @@ public class Controller : MonoBehaviour {
         sliderInCarVolume = GameObject.Find(DefaultSettings.SliderInCarVolume);
         sliderWarnVolume = GameObject.Find(DefaultSettings.SliderWarnVolume);
         sliderWSDVolume = GameObject.Find(DefaultSettings.SliderWSDVolume);
+
+        //Light
+        lightMovingSun = GameObject.Find(DefaultSettings.lightMovingsun);
 
     }
     private void writeLabels()
@@ -425,6 +430,7 @@ public class Controller : MonoBehaviour {
                     // Just if an new Dataset in OBD
                     if (!obdData.calcIterrator((int)timedifference))
                     {
+                        lightMovingSun.transform.position = new Vector3((float)(0.3 * obdData.getSpeed()), 6.6f, 8.1f);
                         steeringWheel.transform.localEulerAngles = new Vector3(0f, this.obdData.getSteeringWheelAngle(), 0f);
                         digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
                         currTime.SetText(simulator.getCurrTime());
@@ -1678,9 +1684,17 @@ public class Controller : MonoBehaviour {
         {
             yield return new WaitForSeconds(1);
         }
-        audioClip = www.GetAudioClip();
-        audioClip.name = Path.GetFileName(path);
-        attachAudioClip(audioClip, player);
+        if (www.bytes.Length > 0)
+        {
+            audioClip = www.GetAudioClip();
+            audioClip.name = Path.GetFileName(path);
+            attachAudioClip(audioClip, player);
+        }
+        else
+        {
+            log.write("Not all data loaded");
+            buttonStartSimulation.GetComponent<Button>().interactable = true;
+        }
     }
     private void attachAudioClip(AudioClip clip, int player)
     {

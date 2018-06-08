@@ -74,6 +74,7 @@ public class MyFile {
             }
             else
             {
+
                 download = false;
                 checkPending = false;
                 if (webRequest.error == "404 Not Found")

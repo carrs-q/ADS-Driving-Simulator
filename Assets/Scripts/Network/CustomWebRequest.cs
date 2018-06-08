@@ -29,9 +29,20 @@ public class CustomWebRequest : DownloadHandlerScript
     // Called once per frame when data has been received from the network.
     protected override bool ReceiveData(byte[] byteFromServer, int dataLength)
     {
+        
         if (byteFromServer == null || byteFromServer.Length < 1)
         {
             return false;
+        }
+        if(dataLength == 14)
+        {
+            if(System.Text.Encoding.Default.GetString(byteFromServer).Contains("File not found"))
+            {
+                //NetworkError.BadMessage
+                success = false;
+                return false;
+            }
+            Debug.Log(System.Text.Encoding.Default.GetString(byteFromServer));
         }
 
         //Write the current data chunk to file
@@ -44,6 +55,8 @@ public class CustomWebRequest : DownloadHandlerScript
     string vidSavePath;
     //The FileStream to save the file
     FileStream fileStream = null;
+    bool filestreamOpen = false;
+
     //Used to determine if there was an error while opening or saving the file
     bool success;
     bool finished;
@@ -59,33 +72,39 @@ public class CustomWebRequest : DownloadHandlerScript
         {
             Directory.CreateDirectory(Path.GetDirectoryName(vidSavePath));
         }
-
-
-        try
-        {
-            //Open the current file to write to
-            fileStream = new FileStream(vidSavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            success = true;
-        }
-        catch (Exception e)
-        {
-            Debug.Log(e);
-            success = false;
-        }
     }
 
     void AppendFile(byte[] buffer, int length)
     {
-        if (success)
+        if (!filestreamOpen)
         {
             try
             {
-                //Write the current data to the file
-                fileStream.Write(buffer, 0, length);
+                //Open the current file to write to
+                filestreamOpen = true;
+                fileStream = new FileStream(vidSavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                success = true;
             }
             catch (Exception e)
             {
+                Debug.Log(e);
+                filestreamOpen = false;
                 success = false;
+            }
+        }
+        if (success)
+        {
+            if (success)
+            {
+                try
+                {
+                    //Write the current data to the file
+                    fileStream.Write(buffer, 0, length);
+                }
+                catch (Exception e)
+                {
+                    success = false;
+                }
             }
         }
     }
@@ -98,7 +117,12 @@ public class CustomWebRequest : DownloadHandlerScript
             finished = true;
         }
         //Close filestream
-        fileStream.Close();
+        if (filestreamOpen)
+        {
+            fileStream.Close();
+            filestreamOpen = false;
+        }
+        
     }
 
     // Called when a Content-Length header is received from the server.

@@ -164,10 +164,10 @@ QualitySettings:
   - serializedVersion: 2
     name: Simulator Settings
     pixelLightCount: 1
-    shadows: 0
-    shadowResolution: 1
+    shadows: 2
+    shadowResolution: 2
     shadowProjection: 1
-    shadowCascades: 1
+    shadowCascades: 2
     shadowDistance: 5
     shadowNearPlaneOffset: 5
     shadowCascade2Split: 0.33333334
@@ -192,4 +192,7 @@ QualitySettings:
     - WebGL
     - Android
   m_PerPlatformDefaultQuality:
+    Android: 0
     Standalone: 0
+    WebGL: 0
+    Windows Store Apps: 0
