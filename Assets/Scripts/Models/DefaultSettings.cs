@@ -59,5 +59,7 @@
     public const string SliderWarnVolume           = "SliderTORVolume";
     public const string SliderWSDVolume            = "SliderWSDVolume";
 
+    public const string lightMovingsun             = "movingLight";
+
 
 }
