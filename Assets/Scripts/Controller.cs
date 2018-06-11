@@ -565,7 +565,6 @@ public class Controller : MonoBehaviour {
                 if (Input.GetKeyDown(KeyCode.U))
                 {
                     buttonStartSimulation.GetComponent<Button>().interactable = true;
-
                 }
                 wsd.updateWSDDefault(wsdDefault + WSDDyn);
                 sendStatusToClient();

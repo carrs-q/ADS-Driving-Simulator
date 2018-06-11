@@ -1,9 +1,6 @@
 ﻿using System.Collections;
 using System.IO;
 using UnityEngine;
-using System.Threading;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEngine.Networking;
 
 public class MyFile {
@@ -24,12 +21,6 @@ public class MyFile {
     private bool downloaded;
     private bool checkPending;
 
-    private byte[] data;
-
-    byte[] bytes = new byte[BUFFERSIZE];
-    UnityWebRequest webRequest;
-
-
     public MyFile(string filesource, string directory)
     {
         this.filesource = filesource;
@@ -46,39 +37,86 @@ public class MyFile {
     //Non Blocking Download
     public IEnumerator downloadFile()
     {
-        
+        bool downLoadPending = false;
         if (File.Exists(this.directory + this.filename))
         {
-            downloaded = true;
-            ready = true;
-            fileNotExist = false;
+            UnityWebRequest wrq = UnityWebRequest.Head(this.filesource);
+            wrq.chunkedTransfer = false;
+            wrq.SendWebRequest();
+
+            while (!wrq.isDone)
+            {
+                yield return null;
+            }
+
+            if (wrq.responseCode==404)
+            {
+                Debug.Log("Resource does not exist on CDN, I delete it :) ");
+                File.Delete(Path.Combine(this.directory, this.filename));
+                downLoadPending = true;
+            }
+            else if (wrq.responseCode == 200)
+            {
+                long localFileSize = new FileInfo(Path.Combine(this.directory, this.filename)).Length;
+                long remoteFileSize = long.Parse(wrq.GetResponseHeader("content-length"));
+                if (localFileSize != remoteFileSize)
+                {
+                    Debug.Log("File Update: " + filename);
+                    File.Delete(Path.Combine(this.directory, this.filename));
+                    downLoadPending = true;
+                }
+                else
+                {
+                    Debug.Log("Everthing fine");
+                    downloaded = true;
+                    ready = true;
+                    fileNotExist = false;
+                }
+            }
+            else
+            {
+                Debug.Log("Some other code");
+                downloaded = true;
+                ready = true;
+                fileNotExist = false;
+            }
         }
         else
         {
+            downLoadPending = true;
+        }
 
+        if(downLoadPending)
+        {
             download = true;
-            webRequest = new UnityWebRequest(filesource);
-            webRequest.downloadHandler = new CustomWebRequest(bytes, this.directory , this.filename);
-            webRequest.SendWebRequest();
-            while (!webRequest.isDone)
+            if (!Directory.Exists(this.directory))
             {
-                progress = webRequest.downloadProgress;
-                yield return null;
+                Directory.CreateDirectory(this.directory);
             }
-            if (!webRequest.isNetworkError)
+            var uwr = new UnityWebRequest(this.filesource);
+            uwr.method = UnityWebRequest.kHttpVerbGET;
+            var dh = new DownloadHandlerFile(Path.Combine(this.directory, this.filename));
+            dh.removeFileOnAbort = true;
+            uwr.downloadHandler = dh;
+            yield return uwr.SendWebRequest();
+
+
+            if(uwr.isNetworkError || uwr.isHttpError)
+            {
+                download = false;
+                checkPending = false;
+                if (File.Exists(Path.Combine(this.directory, this.filename)))
+                {
+                    File.Delete(Path.Combine(this.directory, this.filename));
+                }
+                Debug.Log(uwr.error);
+            }
+            else
             {
                 downloaded = true;
                 download = false;
                 checkPending = false;
                 ready = true;
-            }
-            else
-            {
-
-                download = false;
-                checkPending = false;
-                if (webRequest.error == "404 Not Found")
-                    Debug.Log(webRequest.error);
             }
         }
     }
