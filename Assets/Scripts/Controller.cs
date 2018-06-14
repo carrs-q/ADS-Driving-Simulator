@@ -423,9 +423,12 @@ public class Controller : MonoBehaviour {
         {
             if (NodeInformation.type.Equals(SLAVENODE))
             {
-                Debug.Log("Reconnect");
-                changeMode(CAVEMODE);
-                StartCoroutine(AttemptRecconnect());
+                if (!simulationContent.isProjectLoaded() || simulationContent.areFilesReady())
+                {
+                    Debug.Log("Reconnect");
+                    changeMode(CAVEMODE);
+                    StartCoroutine(AttemptRecconnect());
+                }
             }
         }
         //TODO distinguish if Master or Slave
