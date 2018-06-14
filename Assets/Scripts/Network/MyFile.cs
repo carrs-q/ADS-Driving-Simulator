@@ -67,7 +67,6 @@ public class MyFile {
                 }
                 else
                 {
-                    Debug.Log("Everthing fine");
                     downloaded = true;
                     ready = true;
                     fileNotExist = false;
