@@ -236,11 +236,9 @@ public class Controller : MonoBehaviour {
     private GameObject cameraWSD;
 
     private GameObject oculus;
-
     private GameObject pannelResearch;
     private GameObject pannelSimulation;
     private GameObject pannelWSD;
-
     private GameObject lightMovingSun;
 
     private Toggle toggleSyncServer;
@@ -249,7 +247,7 @@ public class Controller : MonoBehaviour {
     public DateTime lastTOR;
     private AudioSource[] allAudioSources;
     private double videoLengthSeconds = 0;
-    private bool connectionTry = false;
+    private bool connectionTry = false, shutdown = false;
 
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
@@ -386,7 +384,7 @@ public class Controller : MonoBehaviour {
             actualMode = CAVEMODE;
             renderMode = NodeInformation.screen;
             windshieldDisplay.transform.localPosition = WSDINFRONT;
-
+            shutdown = false;
             Cursor.visible = false;
             
             if (NodeInformation.debug != 1)
@@ -403,193 +401,196 @@ public class Controller : MonoBehaviour {
         manualIP = false;
     }
     void Update () {
-        if (cdnLoaded && cdnProject)
+        if (!shutdown)
         {
-            if (simulationContent.areFilesReady())
+            if (cdnLoaded && cdnProject)
             {
-                cdnProject = false;
-                prepareSimulator();
-            }
-        }
-        if(serverStarted)
-        {
-            serverRecieve();
-        }
-        else if(isConnected)
-        {
-            nodeRecieve();
-        }
-        else if(!connectionTry)
-        {
-            if (NodeInformation.type.Equals(SLAVENODE))
-            {
-                if (!simulationContent.isProjectLoaded() || simulationContent.areFilesReady())
+                if (simulationContent.areFilesReady())
                 {
-                    Debug.Log("Reconnect");
-                    changeMode(CAVEMODE);
-                    StartCoroutine(AttemptRecconnect());
+                    cdnProject = false;
+                    prepareSimulator();
                 }
             }
-        }
-        //TODO distinguish if Master or Slave
-        if (renderMode == MASTER)
-        {
-            sendStatusToClient();
-        }
-        if (renderMode == MASTER && syncData.getStatus()==START)
-        {
-            updateInterface();
-            syncData.setSpeed(obdData.getSpeed());
-            syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
-
-            if (videoPlayerAttached)
+            if (serverStarted)
             {
-                if (this.simulator.isStarted())
+                serverRecieve();
+            }
+            else if (isConnected)
+            {
+                nodeRecieve();
+            }
+            else if (!connectionTry)
+            {
+                if (NodeInformation.type.Equals(SLAVENODE))
                 {
-                    timedifference = simulator.getTimeDifference();
-                    // Just if an new Dataset in OBD
-                    if (!obdData.calcIterrator((int)timedifference))
+                    if (!simulationContent.isProjectLoaded() || simulationContent.areFilesReady())
                     {
-                        lightMovingSun.transform.position = new Vector3((float)(0.3 * obdData.getSpeed()), 6.6f, 8.1f);
-                        steeringWheel.transform.localEulerAngles = new Vector3(0f, this.obdData.getSteeringWheelAngle(), 0f);
-                        digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
-                        currTime.SetText(simulator.getCurrTime());
-                        temp.SetText(simulator.getCurrTemp());
-                        gear.SetText(simulator.getGear().ToString());
-                        simulator.calcDistance(obdData.getSpeed());
-                        trip2.SetText(simulator.getTrip2km().ToString("F1"));
-                        trip1.SetText(simulator.getTrip1().ToString());
-                        fuelkm.SetText(simulator.getFuelKM().ToString());
-                        if (this.wsd.isHorizontalMovement())
+                        Debug.Log("Reconnect");
+                        changeMode(CAVEMODE);
+                        StartCoroutine(AttemptRecconnect());
+                    }
+                }
+            }
+            //TODO distinguish if Master or Slave
+            if (renderMode == MASTER)
+            {
+                sendStatusToClient();
+            }
+            if (renderMode == MASTER && syncData.getStatus() == START)
+            {
+                updateInterface();
+                syncData.setSpeed(obdData.getSpeed());
+                syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
+
+                if (videoPlayerAttached)
+                {
+                    if (this.simulator.isStarted())
+                    {
+                        timedifference = simulator.getTimeDifference();
+                        // Just if an new Dataset in OBD
+                        if (!obdData.calcIterrator((int)timedifference))
                         {
-                            this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                            lightMovingSun.transform.position = new Vector3((float)(0.3 * obdData.getSpeed()), 6.6f, 8.1f);
+                            steeringWheel.transform.localEulerAngles = new Vector3(0f, this.obdData.getSteeringWheelAngle(), 0f);
+                            digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
+                            currTime.SetText(simulator.getCurrTime());
+                            temp.SetText(simulator.getCurrTemp());
+                            gear.SetText(simulator.getGear().ToString());
+                            simulator.calcDistance(obdData.getSpeed());
+                            trip2.SetText(simulator.getTrip2km().ToString("F1"));
+                            trip1.SetText(simulator.getTrip1().ToString());
+                            fuelkm.SetText(simulator.getFuelKM().ToString());
+                            if (this.wsd.isHorizontalMovement())
+                            {
+                                this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                            }
                         }
                     }
                 }
             }
-        }
-        else
-        {
-            if (syncData.doesStatusChanged())
+            else
             {
-                this.statusChange(syncData.getStatus());
+                if (syncData.doesStatusChanged())
+                {
+                    this.statusChange(syncData.getStatus());
+                }
+                steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
+                digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
             }
-            steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
-            digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
-        }
-        if ((Input.anyKeyDown) && ( 
-            !Input.GetMouseButton(0) &&
-            !Input.GetMouseButtonDown(0) &&
-            !Input.GetMouseButtonUp(0))) //Key down or hold Key
-        {
-            if (wsd.isWSDActive() && ((((ushort)GetKeyState(0x90)) & 0xffff) != 0))
+            if ((Input.anyKeyDown) && (
+                !Input.GetMouseButton(0) &&
+                !Input.GetMouseButtonDown(0) &&
+                !Input.GetMouseButtonUp(0))) //Key down or hold Key
             {
-                if (Input.GetKeyDown(KeyCode.Keypad4)
-             || Input.GetKey(KeyCode.Keypad4))
+                if (wsd.isWSDActive() && ((((ushort)GetKeyState(0x90)) & 0xffff) != 0))
                 {
-                    WSDDyn.x += keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad6)
-                    || Input.GetKey(KeyCode.Keypad6))
-                {
-                    WSDDyn.x -= keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad8)
-                    || Input.GetKey(KeyCode.Keypad8))
-                {
-                    WSDDyn.y += keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad2)
-                    || Input.GetKey(KeyCode.Keypad2))
-                {
-                    WSDDyn.y -= keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad7)
-                  || Input.GetKey(KeyCode.Keypad7))
-                {
-                    WSDDyn.z -= keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad1)
-                    || Input.GetKey(KeyCode.Keypad1))
-                {
-                    WSDDyn.z += keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad9)
-                 || Input.GetKey(KeyCode.Keypad9))
-                {
-                    wsdRotationDyn.x -= keypressScale * 10;
-                    wsd.rotateWSD(wsdRotationDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad3)
-                    || Input.GetKey(KeyCode.Keypad3))
-                {
-                    wsdRotationDyn.x += keypressScale*10;
-                    wsd.rotateWSD(wsdRotationDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadPlus) || 
-                    Input.GetKey(KeyCode.KeypadPlus))
-                {
-                    
-                    wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 + keypressScale),
-                        wsdSizeDyn.y * (1 + keypressScale),
-                        wsdSizeDyn.z * (1 + keypressScale));
-                    wsd.setSizeWSD(wsdSizeDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadMinus)||
-                    Input.GetKey(KeyCode.KeypadMinus))
-                {
-                    wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
-                    wsdSizeDyn.y * (1 -keypressScale),
-                    wsdSizeDyn.z * (1 - keypressScale));
-                    wsd.setSizeWSD(wsdSizeDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadEnter))
-                {
-                    WSDDyn = new Vector3(0f, 0f, 0f);
+                    if (Input.GetKeyDown(KeyCode.Keypad4)
+                 || Input.GetKey(KeyCode.Keypad4))
+                    {
+                        WSDDyn.x += keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad6)
+                        || Input.GetKey(KeyCode.Keypad6))
+                    {
+                        WSDDyn.x -= keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad8)
+                        || Input.GetKey(KeyCode.Keypad8))
+                    {
+                        WSDDyn.y += keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad2)
+                        || Input.GetKey(KeyCode.Keypad2))
+                    {
+                        WSDDyn.y -= keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad7)
+                      || Input.GetKey(KeyCode.Keypad7))
+                    {
+                        WSDDyn.z -= keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad1)
+                        || Input.GetKey(KeyCode.Keypad1))
+                    {
+                        WSDDyn.z += keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad9)
+                     || Input.GetKey(KeyCode.Keypad9))
+                    {
+                        wsdRotationDyn.x -= keypressScale * 10;
+                        wsd.rotateWSD(wsdRotationDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad3)
+                        || Input.GetKey(KeyCode.Keypad3))
+                    {
+                        wsdRotationDyn.x += keypressScale * 10;
+                        wsd.rotateWSD(wsdRotationDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.KeypadPlus) ||
+                        Input.GetKey(KeyCode.KeypadPlus))
+                    {
 
-                    wsdRotationDyn = wsdRotationDefault;
-                    wsd.rotateWSD(wsdRotationDefault);
+                        wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 + keypressScale),
+                            wsdSizeDyn.y * (1 + keypressScale),
+                            wsdSizeDyn.z * (1 + keypressScale));
+                        wsd.setSizeWSD(wsdSizeDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.KeypadMinus) ||
+                        Input.GetKey(KeyCode.KeypadMinus))
+                    {
+                        wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
+                        wsdSizeDyn.y * (1 - keypressScale),
+                        wsdSizeDyn.z * (1 - keypressScale));
+                        wsd.setSizeWSD(wsdSizeDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.KeypadEnter))
+                    {
+                        WSDDyn = new Vector3(0f, 0f, 0f);
 
-                    wsdSizeDyn = wsdSizeDefault;
-                    wsd.setSizeWSD(wsdSizeDyn);
+                        wsdRotationDyn = wsdRotationDefault;
+                        wsd.rotateWSD(wsdRotationDefault);
+
+                        wsdSizeDyn = wsdSizeDefault;
+                        wsd.setSizeWSD(wsdSizeDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.P))
+                    {
+                        log.write("WSD Transform  \n "
+                            + "\t\t\tPosition:\t\t\t"
+                            + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                            + "\t\t\tRotation:\t\t"
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                             + "\t\t\tScale:\t\t\t\t"
+                            + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                        log.customRecord("WSD Transform  \n "
+                            + "Position:\t"
+                            + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                            + "Rotation:\t"
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                             + "Scale:\t\t"
+                            + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                    }
+                    if (Input.GetKeyDown(KeyCode.U))
+                    {
+                        buttonStartSimulation.GetComponent<Button>().interactable = true;
+                    }
+                    wsd.updateWSDDefault(wsdDefault + WSDDyn);
+                    sendStatusToClient();
                 }
-                if (Input.GetKeyDown(KeyCode.P))
-                {
-                    log.write("WSD Transform  \n "
-                        + "\t\t\tPosition:\t\t\t"
-                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
-                        + "\t\t\tRotation:\t\t"
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
-                         + "\t\t\tScale:\t\t\t\t"
-                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
-                    log.customRecord("WSD Transform  \n "
-                        + "Position:\t"
-                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
-                        + "Rotation:\t"
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
-                         + "Scale:\t\t"
-                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
-                }
-                if (Input.GetKeyDown(KeyCode.U))
-                {
-                    buttonStartSimulation.GetComponent<Button>().interactable = true;
-                }
-                wsd.updateWSDDefault(wsdDefault + WSDDyn);
-                sendStatusToClient();
+
             }
-            
         }
     }
 
@@ -681,7 +682,7 @@ public class Controller : MonoBehaviour {
             }
         }
 
-    }
+    } 
     private void loadVRSettings()
     {
         oculus.SetActive(true);
@@ -1157,10 +1158,18 @@ public class Controller : MonoBehaviour {
     }
     private void defaultVolumes()
     {
-        changeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
-        changeVolume(DefaultSettings.SliderInCarVolume, (int)sliderInCarVolume.GetComponent<Slider>().value);
-        changeVolume(DefaultSettings.SliderWarnVolume, (int)sliderWarnVolume.GetComponent<Slider>().value);
-        changeVolume(DefaultSettings.SliderWSDVolume, (int)sliderWSDVolume.GetComponent<Slider>().value);
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            sliderVolumeMaster.GetComponent<Slider>().value = DefaultSettings.defaultVolumeMaster;
+            sliderInCarVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeAmbiente;
+            sliderWarnVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWarning;
+            sliderWSDVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWSD;
+        }
+        changeVolume(DefaultSettings.SliderVolumeMaster, DefaultSettings.defaultVolumeAmbiente);
+        changeVolume(DefaultSettings.SliderInCarVolume, DefaultSettings.defaultVolumeAmbiente);
+        changeVolume(DefaultSettings.SliderWarnVolume, DefaultSettings.defaultVolumeWarning);
+        changeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
+
     }
     public void changeVolume(string sourceName, int value)
     {
@@ -1346,7 +1355,7 @@ public class Controller : MonoBehaviour {
         MirrorRight.Play();
         MirrorCameraPlayer.Play();
         navigationScreen.Play();
-        playPauseAudioSources(true);
+        playPauseAudioSources(START);
         guiProtection(false);
         debugInformations(false);
     }
@@ -1368,7 +1377,7 @@ public class Controller : MonoBehaviour {
         MirrorRight.Pause();
         MirrorCameraPlayer.Pause();
         guiProtection(true);
-        playPauseAudioSources(false);
+        playPauseAudioSources(PAUSE);
     }
     public void resetSimulation()
     {
@@ -1384,9 +1393,7 @@ public class Controller : MonoBehaviour {
         Seek(MirrorStraigt, 0);
         Seek(MirrorLeft, 0);
         Seek(MirrorRight, 0);
-        playPauseAudioSources(false);
-        rightMirrorSound.time = 0;
-        leftMirrorSound.time = 0;
+        playPauseAudioSources(INIT);
         frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
@@ -1399,17 +1406,30 @@ public class Controller : MonoBehaviour {
         updateInterface();
         torFired = false;
     }
-    private void playPauseAudioSources(bool isPaused)
+    private void playPauseAudioSources(int pauseCode)
     {
         foreach (var aS in allAudioSources)
         {
-            if (isPaused)
+            switch (pauseCode)
             {
-                aS.Pause();
-            }
-            else
-            {
-                aS.Play();
+                case START:
+                    {
+                        aS.Play();
+                    };break;
+                case PAUSE:
+                    {
+                        aS.Pause();
+                    };break;
+                case INIT:
+                    {
+                        aS.Pause();
+                        aS.time = 0;
+                    };break;
+                default:
+                    {
+                        Debug.Log("Audiosetting not Provided");
+                    };break;
+
             }
         }
     }
@@ -1731,6 +1751,7 @@ public class Controller : MonoBehaviour {
                 };break;
         }
     }
+
     //private IEnumerator AudioSourceLoader(string path, AudioSource player)
     private IEnumerator AudioSourceLoader(string path, int player)
     {
@@ -1858,6 +1879,7 @@ public class Controller : MonoBehaviour {
     // Network Interfaces
     public void shutdownSimulator()
     {
+        shutdown = true;
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             for (int i = 0; i < threadList.Count; i++)
@@ -1884,7 +1906,7 @@ public class Controller : MonoBehaviour {
         Debug.Log("Bye Bye");
         log.writeWarning("Simulator shut down");
         guiProtection(false);
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(2f);
         Application.Quit();
     }
 

@@ -10,6 +10,11 @@
     public const bool checkBoxShutDownNodeDefault  = false;
     public const string syncServerDefault          = "192.168.0.216:1605";
 
+    public const int defaultVolumeMaster = 20;
+    public const int defaultVolumeAmbiente = 20;
+    public const int defaultVolumeWarning = 50;
+    public const int defaultVolumeWSD = 50;
+
 
     //Game Object Names
     public const string CameraMenue                = "CameraMenue";
