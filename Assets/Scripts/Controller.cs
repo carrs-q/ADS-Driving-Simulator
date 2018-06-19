@@ -636,13 +636,12 @@ public class Controller : MonoBehaviour {
             {
                 Destroy(GameObject.FindObjectOfType<AudioListener>());
             }
+            defaultVolumes();
         }
         cameraNodeFront.SetActive(false);
         cameraNodeLeft.SetActive(false);
         cameraNodeRight.SetActive(false);
         cameraNodeMirrors.SetActive(false);
-        cameraWSD.SetActive(false);
-        defaultVolumes();
         hideSeekPanel(false);
 
         oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
@@ -703,8 +702,6 @@ public class Controller : MonoBehaviour {
     }
     private void loadCaveSettings()
     {
-        //Camera wsdCam = cameraWSD.GetComponent<Camera>();
-        //wsdCam.targetDisplay = 1;
         
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -836,15 +833,12 @@ public class Controller : MonoBehaviour {
     private IEnumerator AttemptRecconnect()
     {
         connectionTry = true;
-        yield return new WaitForSeconds(10.0f);
-
-        while (!isConnected) //TODO - Check how connect correct
-        {
-            createClientNode();
-        }
+        yield return new WaitForSeconds(5.0f);
+        createClientNode();
     }
     private void createClientNode()
     {
+        NetworkTransport.Shutdown();
         NetworkTransport.Init();
         ConnectionConfig cc = new ConnectionConfig();
         relChannel = cc.AddChannel(QosType.Reliable);
@@ -853,24 +847,47 @@ public class Controller : MonoBehaviour {
         allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
 
         HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
-        hostID = NetworkTransport.AddHost(topo, (NodeInformation.serverPort+1));
-        if (hostID < 0)
+        try
         {
-            Debug.Log("Client Socket creation failed");
+            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort + 1);
+            if (hostID < 0)
+            {
+                Debug.Log("Client Socket creation failed");
+                this.disconnectNode();
+            }
+            else
+            {
+                connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
+                connectionTime = Time.time;
+                if (error != (byte)NetworkError.Ok)
+                {
+                    this.disconnectNode();
+                    NetworkError nerror = (NetworkError)error;
+                    Debug.Log(nerror);
+                }
+                else
+                { // TODO: IS OK even without Server... Figure out why
+                    isConnected = true;
+                    connectionTry = false;
+                    Debug.Log("Node Successfull connected");
+                }
+            }
         }
-        connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
-        connectionTime = Time.time;
+        catch(Exception e){
+            Network.Disconnect();
 
-        if(error != (byte)NetworkError.Ok)
-        {
-            this.disconnectNode();
-            NetworkError nerror = (NetworkError)error;
-            Debug.Log(nerror);
+            Debug.Log(e);
         }
-        else
-        { // TODO: IS OK even without Server... Figure out why
-            isConnected = true;
-            Debug.Log("Node Successfull connected");
+
+       
+    }
+    private void disconnectNode()
+    {
+        if (isConnected)
+        {
+            //NetworkTransport.RemoveHost(hostID);
+            //NetworkTransport.Shutdown();
+            isConnected = false;
         }
     }
 
@@ -973,7 +990,10 @@ public class Controller : MonoBehaviour {
                             shutdownSimulator();
                         };break;
                     default:
-                        Debug.Log("Unkown Message" + msg); break;
+                        {
+                            Debug.Log("Unkown Message" + msg);
+                        }
+                        ;break;
                 }
                 break;
             case NetworkEventType.DisconnectEvent:
@@ -982,16 +1002,7 @@ public class Controller : MonoBehaviour {
         }
     }
 
-    private void disconnectNode()
-    {
-        if (isConnected)
-        {
-            NetworkTransport.Disconnect(hostID, connectionID, out error);
-            NetworkTransport.RemoveHost(hostID);
-        }
-        isConnected = false;
-        connectionTry = false;
-    }
+   
 
 
     //Network Function Server-Side
@@ -1893,7 +1904,7 @@ public class Controller : MonoBehaviour {
                 string msg = SHUTDOWNSIM + "|" + "byebye";
                 serverToClientListSend(msg, allCostDeliChannel, clients);
             }
-
+            guiProtection(false);
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -1905,7 +1916,6 @@ public class Controller : MonoBehaviour {
     {
         Debug.Log("Bye Bye");
         log.writeWarning("Simulator shut down");
-        guiProtection(false);
         yield return new WaitForSeconds(2f);
         Application.Quit();
     }
@@ -2206,6 +2216,12 @@ public class Controller : MonoBehaviour {
         if (frontWall.isPrepared)
         {
             textTimeRemainingLog.GetComponent<Text>().text = getSimTime(simulator.timeRemaining(videoLengthSeconds));
+            if (simulator.timeRemaining(videoLengthSeconds) <= 0)
+            {
+                buttonStartSimulation.GetComponent<Button>().onClick.Invoke();
+                //Debug.Log("Stop");
+                //stopSimulation();
+            }
         }
         else
         {
