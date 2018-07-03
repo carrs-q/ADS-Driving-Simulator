@@ -11,22 +11,18 @@ with focus on AES Level 3.
 
 ### Questions regarding the research to:
 
-###### Dr. Ronald Schroeter | QUT
-
-r.schroeter@qut.edu.au
-
-internal phone: 84629 -- 
+###### Dr. Ronald Schroeter | QUT  
+r.schroeter@qut.edu.au  
+internal phone: 84629  
 
 
 ###### Michael A. Gerber | QUT
+michaelandreas.gerber@hdr.qut.edu.au  
+internal phone: 82860  
 
-michaelandreas.gerber@hdr.qut.edu.au
-
-internal phone: 82860
-
-### Technical questions to 
-gerberm@qut.edu.au
-mail@gerbermichael.de
+### Technical questions to
+gerberm@qut.edu.au  
+mail@gerbermichael.de  
 
 ---
 ### Licence
