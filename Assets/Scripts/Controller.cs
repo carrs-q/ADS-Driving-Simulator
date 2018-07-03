@@ -1002,9 +1002,6 @@ public class Controller : MonoBehaviour {
         }
     }
 
-   
-
-
     //Network Function Server-Side
     private void serverReqDisplay(int conID)
     { //On Server
@@ -1893,18 +1890,28 @@ public class Controller : MonoBehaviour {
         shutdown = true;
         if (NodeInformation.type.Equals(MASTERNODE))
         {
-            for (int i = 0; i < threadList.Count; i++)
-            {
-                threadList[i].Abort();
-            }
-            this.threadsAlive = false;
-
             if (checkBoxShutdownNodes.GetComponent<Toggle>().isOn)
             {
                 string msg = SHUTDOWNSIM + "|" + "byebye";
                 serverToClientListSend(msg, allCostDeliChannel, clients);
             }
             guiProtection(false);
+            string url;
+            if (this.threadsAlive)
+            {
+                if (this.manualIP)
+                {
+                    url = "http://" + customAddress + "/?event=" + 5;
+                }
+                else
+                {
+                    url = "http://" + getIRIPAddress() + ":" + getPort() + "/?event=" + 5;
+                }
+                WebRequest request = WebRequest.Create(url);
+                request.Method = "POST";
+                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            }
+
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -1912,12 +1919,26 @@ public class Controller : MonoBehaviour {
         }
         StartCoroutine(closeSoftware());
     }
+
     private IEnumerator closeSoftware()
     {
-        Debug.Log("Bye Bye");
-        log.writeWarning("Simulator shut down");
+       
         yield return new WaitForSeconds(2f);
-        Application.Quit();
+        if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
+        {
+            for (int i = 0; i < threadList.Count; i++)
+            {
+                threadList[i].Abort();
+            }
+            this.threadsAlive = false;
+            StartCoroutine(closeSoftware());
+        }
+        else
+        {
+            Debug.Log("Bye Bye");
+            log.writeWarning("Simulator shut down");
+            Application.Quit();
+        }
     }
 
     public void sendMarker(int marker)
@@ -2185,6 +2206,25 @@ public class Controller : MonoBehaviour {
     }
     public void changeWSDDefault(int wsdPos)
     {
+        switch (wsdPos)
+        {
+            case 1:
+                {
+
+                    WSDDyn.x = (-0.1f) - wsdDefault.x;
+                    WSDDyn.y = 2.3f - wsdDefault.y;
+                    WSDDyn.z = 8f - wsdDefault.z;
+                    wsdRotationDyn.x=36;
+                    wsdSizeDyn = new Vector3(0.629f,0.629f,0.354f);
+                }; break;
+            default:
+                {
+
+                };break;
+        }
+        wsd.rotateWSD(wsdRotationDyn);
+        wsd.updateWSDDefault(wsdDefault + WSDDyn);
+        wsd.setSizeWSD(wsdSizeDyn);
         //TODO
     }
     public void writeLog(string logMessage)

@@ -9,8 +9,7 @@ public class WSDPosition : MonoBehaviour
 
     private List<string> defaultList = new List<string>(){
         "Load Setup",
-        "Complete WSD",
-        "Before Car" };
+        "Tetris Position" };
 
     public void Start()
     {
@@ -19,11 +18,15 @@ public class WSDPosition : MonoBehaviour
     }
     private void AttachList()
     {
-        loadVideoDropDown.AddOptions(defaultList);
+        this.GetComponent<Dropdown>().AddOptions(defaultList);
     }
 
     public void changeState(int index)
     {
-        controller.changeWSDDefault(index);
+        if (index != 0)
+        {
+            controller.changeWSDDefault(index);
+            this.GetComponent<Dropdown>().value = 0;
+        }
     }
 }
