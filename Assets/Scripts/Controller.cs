@@ -35,9 +35,9 @@ using System.Runtime.InteropServices;
 public class Controller : MonoBehaviour {
 
     //Needed to have Access of NumLock
-    [DllImport("user32.dll", 
-        CharSet = CharSet.Auto, 
-        ExactSpelling = true, 
+    [DllImport("user32.dll",
+        CharSet = CharSet.Auto,
+        ExactSpelling = true,
         CallingConvention = CallingConvention.Winapi)]
 
     public static extern short GetKeyState(int keyCode);
@@ -55,7 +55,7 @@ public class Controller : MonoBehaviour {
         "soundL.ogg",       //Sound Left
         "soundR.ogg"        //Sound Right
     };
-    
+
     //VideoStates
     public const int INIT = 0;
     public const int START = 1;
@@ -64,11 +64,11 @@ public class Controller : MonoBehaviour {
     public const int OVERTAKE = 4;
 
     //RenderMode
-    public const int CAVEMODE  = 1;
-    public const int VRMODE    = 2;
-    public const int ARMODE    = 3;
+    public const int CAVEMODE = 1;
+    public const int VRMODE = 2;
+    public const int ARMODE = 3;
     public const int MAXDISPLAY = 5; //TODO Change back
-    
+
     public const string MASTERNODE = "master";
     public const string SLAVENODE = "slave";
 
@@ -82,34 +82,35 @@ public class Controller : MonoBehaviour {
     public const int SPEEDOMETER = 6;
 
     //MessageCodes
-    public const int BUFFERSIZE         = 1024;
-    public const int MAX_CONNECTION     = 10;
-    public const string REQDISPLAY      = "RQD";
-    public const string RESDISPLAY      = "RSD";
-    public const string SENDPROJECT     = "PRO";
-    public const string REQPROJECT      = "RPRO";
-    public const string STATUSUPDATE    = "STA";
-    public const string TORMESSAGE      = "TOR";
-    public const string VOLUMECONTROL   = "NVC";
-    public const string EMPTYMESSAGE    = "undefined";
+    public const int BUFFERSIZE = 1024;
+    public const int MAX_CONNECTION = 10;
+    public const string REQDISPLAY = "RQD";
+    public const string RESDISPLAY = "RSD";
+    public const string SENDPROJECT = "PRO";
+    public const string REQPROJECT = "RPRO";
+    public const string STATUSUPDATE = "STA";
+    public const string TORMESSAGE = "TOR";
+    public const string VOLUMECONTROL = "NVC";
+    public const string SHUTDOWNSIM = "ZZZ";
+    public const string EMPTYMESSAGE = "undefined";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
     private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
     private Vector3 WSDDyn = new Vector3(0, 0, 0);
     private const float keypressScale = 0.1f;
 
-    private int hostID=-1, connectionID, clientID;
+    private int hostID = -1, connectionID, clientID;
     private byte relChannel;             // For Connections
     private byte unrelSeqChannel;        // If Streaming is needed
     private byte allCostDeliChannel;     // For Simulator States
     private byte relFragSecChannel;     //Content Delivery
-    private bool serverStarted = false, isConnected = false, isStarted=false;
+    private bool serverStarted = false, isConnected = false, isStarted = false;
     private byte error;
     private float connectionTime;
     private List<ClientNode> clients;
     private string[] projectList;
 
-    
+
     private static Controller instance = null;
     public OBDData obdData;
     private SimulationContent simulationContent;
@@ -140,7 +141,7 @@ public class Controller : MonoBehaviour {
     private List<Thread> threadList;
     private bool manualIP;
     private string customAddress;
-    private string lastMessage="";
+    private string lastMessage = "";
 
     private Int64 timedifference;
     private Vector3 videoWallDefault;
@@ -150,13 +151,13 @@ public class Controller : MonoBehaviour {
     private Vector3 wsdSizeDefault;
     private Vector3 wsdSizeDyn;
     private NetworkClient networkClient;
- 
+
     private bool videoPlayerAttached;
     private string project;
     private bool cdnLoaded = false;
     private bool cdnProject = false;
 
-                                               //Main Menue
+    //Main Menue
     public VideoPlayer frontWall;              //Player 1
     public VideoPlayer leftWall;               //Player 2
     public VideoPlayer rightWall;              //Player 3
@@ -205,6 +206,7 @@ public class Controller : MonoBehaviour {
     private GameObject checkBoxWindshieldDisplay;
     private GameObject checkBoxHorizontalMovement;
     private GameObject checkBoxWSDTinting;
+    private GameObject checkBoxShutdownNodes;
 
     private GameObject textTimeCurrentLog;
     private GameObject textTimeRemainingLog;
@@ -234,18 +236,18 @@ public class Controller : MonoBehaviour {
     private GameObject cameraWSD;
 
     private GameObject oculus;
-
     private GameObject pannelResearch;
     private GameObject pannelSimulation;
     private GameObject pannelWSD;
-
     private GameObject lightMovingSun;
 
     private Toggle toggleSyncServer;
     private Toggle toggleIndicateTOR;
     public Text LogText;
     public DateTime lastTOR;
+    private AudioSource[] allAudioSources;
     private double videoLengthSeconds = 0;
+    private bool connectionTry = false, shutdown = false;
 
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
@@ -284,6 +286,8 @@ public class Controller : MonoBehaviour {
         checkBoxWindshieldDisplay = GameObject.Find(DefaultSettings.CheckBoxWindshieldDisplay);
         checkBoxHorizontalMovement = GameObject.Find(DefaultSettings.CheckBoxHorizontalMovement);
         checkBoxWSDTinting = GameObject.Find(DefaultSettings.CheckBoxWSDTinting);
+        checkBoxShutdownNodes = GameObject.Find(DefaultSettings.CheckBoxShutdownNodes);
+
 
         toggleSyncServer = checkBoxsyncSensors.GetComponent<Toggle>();
         toggleIndicateTOR = checkBoxTOR.GetComponent<Toggle>();
@@ -318,6 +322,8 @@ public class Controller : MonoBehaviour {
         //Light
         lightMovingSun = GameObject.Find(DefaultSettings.lightMovingsun);
 
+        //AllAudiosources
+        allAudioSources = FindObjectsOfType<AudioSource>();
     }
     private void writeLabels()
     {
@@ -378,7 +384,7 @@ public class Controller : MonoBehaviour {
             actualMode = CAVEMODE;
             renderMode = NodeInformation.screen;
             windshieldDisplay.transform.localPosition = WSDINFRONT;
-
+            shutdown = false;
             Cursor.visible = false;
             
             if (NodeInformation.debug != 1)
@@ -395,181 +401,196 @@ public class Controller : MonoBehaviour {
         manualIP = false;
     }
     void Update () {
-        if (cdnLoaded && cdnProject)
+        if (!shutdown)
         {
-            if (simulationContent.areFilesReady())
+            if (cdnLoaded && cdnProject)
             {
-                cdnProject = false;
-                prepareSimulator();
-            }
-        }
-        if(serverStarted)
-        {
-            serverRecieve();
-        }
-        else if(isConnected)
-        {
-            nodeRecieve();
-        }
-        //TODO distinguish if Master or Slave
-        if (renderMode == MASTER)
-        {
-            sendStatusToClient();
-        }
-        if (renderMode == MASTER && syncData.getStatus()==START)
-        {
-            updateInterface();
-            syncData.setSpeed(obdData.getSpeed());
-            syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
-
-            if (videoPlayerAttached)
-            {
-                if (this.simulator.isStarted())
+                if (simulationContent.areFilesReady())
                 {
-                    timedifference = simulator.getTimeDifference();
-                    // Just if an new Dataset in OBD
-                    if (!obdData.calcIterrator((int)timedifference))
+                    cdnProject = false;
+                    prepareSimulator();
+                }
+            }
+            if (serverStarted)
+            {
+                serverRecieve();
+            }
+            else if (isConnected)
+            {
+                nodeRecieve();
+            }
+            else if (!connectionTry)
+            {
+                if (NodeInformation.type.Equals(SLAVENODE))
+                {
+                    if (!simulationContent.isProjectLoaded() || simulationContent.areFilesReady())
                     {
-                        lightMovingSun.transform.position = new Vector3((float)(0.3 * obdData.getSpeed()), 6.6f, 8.1f);
-                        steeringWheel.transform.localEulerAngles = new Vector3(0f, this.obdData.getSteeringWheelAngle(), 0f);
-                        digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
-                        currTime.SetText(simulator.getCurrTime());
-                        temp.SetText(simulator.getCurrTemp());
-                        gear.SetText(simulator.getGear().ToString());
-                        simulator.calcDistance(obdData.getSpeed());
-                        trip2.SetText(simulator.getTrip2km().ToString("F1"));
-                        trip1.SetText(simulator.getTrip1().ToString());
-                        fuelkm.SetText(simulator.getFuelKM().ToString());
-                        if (this.wsd.isHorizontalMovement())
+                        Debug.Log("Reconnect");
+                        changeMode(CAVEMODE);
+                        StartCoroutine(AttemptRecconnect());
+                    }
+                }
+            }
+            //TODO distinguish if Master or Slave
+            if (renderMode == MASTER)
+            {
+                sendStatusToClient();
+            }
+            if (renderMode == MASTER && syncData.getStatus() == START)
+            {
+                updateInterface();
+                syncData.setSpeed(obdData.getSpeed());
+                syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
+
+                if (videoPlayerAttached)
+                {
+                    if (this.simulator.isStarted())
+                    {
+                        timedifference = simulator.getTimeDifference();
+                        // Just if an new Dataset in OBD
+                        if (!obdData.calcIterrator((int)timedifference))
                         {
-                            this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                            lightMovingSun.transform.position = new Vector3((float)(0.3 * obdData.getSpeed()), 6.6f, 8.1f);
+                            steeringWheel.transform.localEulerAngles = new Vector3(0f, this.obdData.getSteeringWheelAngle(), 0f);
+                            digitalSpeedoMeter.SetText(obdData.getSpeed().ToString());
+                            currTime.SetText(simulator.getCurrTime());
+                            temp.SetText(simulator.getCurrTemp());
+                            gear.SetText(simulator.getGear().ToString());
+                            simulator.calcDistance(obdData.getSpeed());
+                            trip2.SetText(simulator.getTrip2km().ToString("F1"));
+                            trip1.SetText(simulator.getTrip1().ToString());
+                            fuelkm.SetText(simulator.getFuelKM().ToString());
+                            if (this.wsd.isHorizontalMovement())
+                            {
+                                this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                            }
                         }
                     }
                 }
             }
-        }
-        else
-        {
-            if (syncData.doesStatusChanged())
+            else
             {
-                this.statusChange(syncData.getStatus());
+                if (syncData.doesStatusChanged())
+                {
+                    this.statusChange(syncData.getStatus());
+                }
+                steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
+                digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
             }
-            steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
-            digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
-        }
-        if ((Input.anyKeyDown) && ( 
-            !Input.GetMouseButton(0) &&
-            !Input.GetMouseButtonDown(0) &&
-            !Input.GetMouseButtonUp(0))) //Key down or hold Key
-        {
-            if (wsd.isWSDActive() && ((((ushort)GetKeyState(0x90)) & 0xffff) != 0))
+            if ((Input.anyKeyDown) && (
+                !Input.GetMouseButton(0) &&
+                !Input.GetMouseButtonDown(0) &&
+                !Input.GetMouseButtonUp(0))) //Key down or hold Key
             {
-                if (Input.GetKeyDown(KeyCode.Keypad4)
-             || Input.GetKey(KeyCode.Keypad4))
+                if (wsd.isWSDActive() && ((((ushort)GetKeyState(0x90)) & 0xffff) != 0))
                 {
-                    WSDDyn.x += keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad6)
-                    || Input.GetKey(KeyCode.Keypad6))
-                {
-                    WSDDyn.x -= keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad8)
-                    || Input.GetKey(KeyCode.Keypad8))
-                {
-                    WSDDyn.y += keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad2)
-                    || Input.GetKey(KeyCode.Keypad2))
-                {
-                    WSDDyn.y -= keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad7)
-                  || Input.GetKey(KeyCode.Keypad7))
-                {
-                    WSDDyn.z -= keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad1)
-                    || Input.GetKey(KeyCode.Keypad1))
-                {
-                    WSDDyn.z += keypressScale;
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad9)
-                 || Input.GetKey(KeyCode.Keypad9))
-                {
-                    wsdRotationDyn.x -= keypressScale * 10;
-                    wsd.rotateWSD(wsdRotationDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.Keypad3)
-                    || Input.GetKey(KeyCode.Keypad3))
-                {
-                    wsdRotationDyn.x += keypressScale*10;
-                    wsd.rotateWSD(wsdRotationDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadPlus) || 
-                    Input.GetKey(KeyCode.KeypadPlus))
-                {
-                    
-                    wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 + keypressScale),
-                        wsdSizeDyn.y * (1 + keypressScale),
-                        wsdSizeDyn.z * (1 + keypressScale));
-                    wsd.setSizeWSD(wsdSizeDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadMinus)||
-                    Input.GetKey(KeyCode.KeypadMinus))
-                {
-                    wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
-                    wsdSizeDyn.y * (1 -keypressScale),
-                    wsdSizeDyn.z * (1 - keypressScale));
-                    wsd.setSizeWSD(wsdSizeDyn);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadEnter))
-                {
-                    WSDDyn = new Vector3(0f, 0f, 0f);
+                    if (Input.GetKeyDown(KeyCode.Keypad4)
+                 || Input.GetKey(KeyCode.Keypad4))
+                    {
+                        WSDDyn.x += keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad6)
+                        || Input.GetKey(KeyCode.Keypad6))
+                    {
+                        WSDDyn.x -= keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad8)
+                        || Input.GetKey(KeyCode.Keypad8))
+                    {
+                        WSDDyn.y += keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad2)
+                        || Input.GetKey(KeyCode.Keypad2))
+                    {
+                        WSDDyn.y -= keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad7)
+                      || Input.GetKey(KeyCode.Keypad7))
+                    {
+                        WSDDyn.z -= keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad1)
+                        || Input.GetKey(KeyCode.Keypad1))
+                    {
+                        WSDDyn.z += keypressScale;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad9)
+                     || Input.GetKey(KeyCode.Keypad9))
+                    {
+                        wsdRotationDyn.x -= keypressScale * 10;
+                        wsd.rotateWSD(wsdRotationDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.Keypad3)
+                        || Input.GetKey(KeyCode.Keypad3))
+                    {
+                        wsdRotationDyn.x += keypressScale * 10;
+                        wsd.rotateWSD(wsdRotationDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.KeypadPlus) ||
+                        Input.GetKey(KeyCode.KeypadPlus))
+                    {
 
-                    wsdRotationDyn = wsdRotationDefault;
-                    wsd.rotateWSD(wsdRotationDefault);
+                        wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 + keypressScale),
+                            wsdSizeDyn.y * (1 + keypressScale),
+                            wsdSizeDyn.z * (1 + keypressScale));
+                        wsd.setSizeWSD(wsdSizeDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.KeypadMinus) ||
+                        Input.GetKey(KeyCode.KeypadMinus))
+                    {
+                        wsdSizeDyn = new Vector3(wsdSizeDyn.x * (1 - keypressScale),
+                        wsdSizeDyn.y * (1 - keypressScale),
+                        wsdSizeDyn.z * (1 - keypressScale));
+                        wsd.setSizeWSD(wsdSizeDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.KeypadEnter))
+                    {
+                        WSDDyn = new Vector3(0f, 0f, 0f);
 
-                    wsdSizeDyn = wsdSizeDefault;
-                    wsd.setSizeWSD(wsdSizeDyn);
+                        wsdRotationDyn = wsdRotationDefault;
+                        wsd.rotateWSD(wsdRotationDefault);
+
+                        wsdSizeDyn = wsdSizeDefault;
+                        wsd.setSizeWSD(wsdSizeDyn);
+                    }
+                    if (Input.GetKeyDown(KeyCode.P))
+                    {
+                        log.write("WSD Transform  \n "
+                            + "\t\t\tPosition:\t\t\t"
+                            + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                            + "\t\t\tRotation:\t\t"
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                             + "\t\t\tScale:\t\t\t\t"
+                            + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                        log.customRecord("WSD Transform  \n "
+                            + "Position:\t"
+                            + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
+                            + "Rotation:\t"
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
+                             + "Scale:\t\t"
+                            + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
+                            + Math.Round(windshieldDisplay.transform.localScale.z, 4));
+                    }
+                    if (Input.GetKeyDown(KeyCode.U))
+                    {
+                        buttonStartSimulation.GetComponent<Button>().interactable = true;
+                    }
+                    wsd.updateWSDDefault(wsdDefault + WSDDyn);
+                    sendStatusToClient();
                 }
-                if (Input.GetKeyDown(KeyCode.P))
-                {
-                    log.write("WSD Transform  \n "
-                        + "\t\t\tPosition:\t\t\t"
-                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
-                        + "\t\t\tRotation:\t\t"
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
-                         + "\t\t\tScale:\t\t\t\t"
-                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
-                    log.customRecord("WSD Transform  \n "
-                        + "Position:\t"
-                        + Math.Round(windshieldDisplay.transform.position.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.position.z, 4) + " \n "
-                        + "Rotation:\t"
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.eulerAngles.z, 4) + " \n "
-                         + "Scale:\t\t"
-                        + Math.Round(windshieldDisplay.transform.localScale.x, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.y, 4) + " : "
-                        + Math.Round(windshieldDisplay.transform.localScale.z, 4));
-                }
-                if (Input.GetKeyDown(KeyCode.U))
-                {
-                    buttonStartSimulation.GetComponent<Button>().interactable = true;
-                }
-                wsd.updateWSDDefault(wsdDefault + WSDDyn);
-                sendStatusToClient();
+
             }
-            
         }
     }
 
@@ -581,10 +602,7 @@ public class Controller : MonoBehaviour {
         {
             case CAVEMODE:
                 {
-                    if (NodeInformation.type.Equals(MASTERNODE))
-                    {
-                        actualMode = CAVEMODE;
-                    }
+                    actualMode = CAVEMODE;
                     loadCaveSettings();
                     hideSeekPanel(true);
                 }
@@ -612,17 +630,18 @@ public class Controller : MonoBehaviour {
     }
     private void initSettings()
     {
-
-        if(GameObject.FindObjectOfType<AudioListener>() != null)
+        if (NodeInformation.type.Equals(MASTERNODE))
         {
-            Destroy(GameObject.FindObjectOfType<AudioListener>());
+            if (GameObject.FindObjectOfType<AudioListener>() != null)
+            {
+                Destroy(GameObject.FindObjectOfType<AudioListener>());
+            }
+            defaultVolumes();
         }
         cameraNodeFront.SetActive(false);
         cameraNodeLeft.SetActive(false);
         cameraNodeRight.SetActive(false);
         cameraNodeMirrors.SetActive(false);
-        cameraWSD.SetActive(false);
-        defaultVolumes();
         hideSeekPanel(false);
 
         oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
@@ -631,6 +650,7 @@ public class Controller : MonoBehaviour {
         checkBoxTOR.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxTORDefault;
         checkBoxSafety.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxSafetyDefault;
         checkBoxRecording.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxRecordDefault;
+        checkBoxShutdownNodes.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxShutDownNodeDefault;
         toggleSyncServer.isOn = DefaultSettings.checkBoxSyncSensorsDefault;
 
         inputSyncServer.GetComponent<InputField>().text = DefaultSettings.syncServerDefault;
@@ -661,7 +681,7 @@ public class Controller : MonoBehaviour {
             }
         }
 
-    }
+    } 
     private void loadVRSettings()
     {
         oculus.SetActive(true);
@@ -682,8 +702,6 @@ public class Controller : MonoBehaviour {
     }
     private void loadCaveSettings()
     {
-        //Camera wsdCam = cameraWSD.GetComponent<Camera>();
-        //wsdCam.targetDisplay = 1;
         
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -694,8 +712,11 @@ public class Controller : MonoBehaviour {
                 case FRONT: {
                         cameraNodeFront.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-                        cameraNodeFront.AddComponent(typeof(AudioListener));
-                        AudioListener.pause = true;
+                        if (cameraNodeFront.GetComponent<AudioListener>() == null)
+                        {
+                            cameraNodeFront.AddComponent(typeof(AudioListener));
+                        }
+                        AudioListener.pause = false;
                     } break;
                 case LEFT: {
                         cameraNodeLeft.SetActive(true);
@@ -722,7 +743,7 @@ public class Controller : MonoBehaviour {
             if (isMasterAndCave())
             {
                 cameraMenue.AddComponent(typeof(AudioListener));
-                AudioListener.pause = true;
+                AudioListener.pause = false;
                 changeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
             }
         }
@@ -767,7 +788,7 @@ public class Controller : MonoBehaviour {
         sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
     }
-
+    
     //Network Init
     private void createMasterServer()
     {
@@ -811,15 +832,13 @@ public class Controller : MonoBehaviour {
     // Sub Init TODO Reconnecter
     private IEnumerator AttemptRecconnect()
     {
-        yield return new WaitForSeconds(10.0f);
-
-        while (!isConnected) //TODO - Check how connect correct
-        {
-            createClientNode();
-        }
+        connectionTry = true;
+        yield return new WaitForSeconds(5.0f);
+        createClientNode();
     }
     private void createClientNode()
     {
+        NetworkTransport.Shutdown();
         NetworkTransport.Init();
         ConnectionConfig cc = new ConnectionConfig();
         relChannel = cc.AddChannel(QosType.Reliable);
@@ -828,23 +847,47 @@ public class Controller : MonoBehaviour {
         allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
 
         HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
-        hostID = NetworkTransport.AddHost(topo, (NodeInformation.serverPort+1));
-        if (hostID < 0)
+        try
         {
-            Debug.Log("Client Socket creation failed");
+            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort + 1);
+            if (hostID < 0)
+            {
+                Debug.Log("Client Socket creation failed");
+                this.disconnectNode();
+            }
+            else
+            {
+                connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
+                connectionTime = Time.time;
+                if (error != (byte)NetworkError.Ok)
+                {
+                    this.disconnectNode();
+                    NetworkError nerror = (NetworkError)error;
+                    Debug.Log(nerror);
+                }
+                else
+                { // TODO: IS OK even without Server... Figure out why
+                    isConnected = true;
+                    connectionTry = false;
+                    Debug.Log("Node Successfull connected");
+                }
+            }
         }
-        connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
-        connectionTime = Time.time;
+        catch(Exception e){
+            Network.Disconnect();
 
-        if(error != (byte)NetworkError.Ok)
-        {
-            NetworkError nerror = (NetworkError)error;
-            Debug.Log(nerror);
+            Debug.Log(e);
         }
-        else
-        { // TODO: IS OK even without Server... Figure out why
-            isConnected = true;
-            Debug.Log("Node Successfull connected");
+
+       
+    }
+    private void disconnectNode()
+    {
+        if (isConnected)
+        {
+            //NetworkTransport.RemoveHost(hostID);
+            //NetworkTransport.Shutdown();
+            isConnected = false;
         }
     }
 
@@ -886,8 +929,10 @@ public class Controller : MonoBehaviour {
                         Debug.Log("Unkown Message" + msg); break;
                 }
                 break;
-            case NetworkEventType.DisconnectEvent: //4
-                this.disconnectMessage(outConnectionId);
+            case NetworkEventType.DisconnectEvent: {  //4
+
+                    this.disconnectMessage(outConnectionId);
+                }
                 break;
         }
     }
@@ -903,6 +948,7 @@ public class Controller : MonoBehaviour {
         NetworkEventType recData = NetworkTransport.Receive(out outHostId, out outConnectionId, out outChannelId, recBuffer, BUFFERSIZE, out dataSize, out error);
         if ((NetworkError)error != NetworkError.Ok)
         {
+            this.disconnectNode();
             NetworkError nerror = (NetworkError)error;
             Debug.Log("Recieve Error: " + nerror);
         }
@@ -939,12 +985,19 @@ public class Controller : MonoBehaviour {
                         {
                             clientRecieveVolume(splitData[1], splitData[2], splitData[3], splitData[4]);
                         } break;
+                    case SHUTDOWNSIM:
+                        {
+                            shutdownSimulator();
+                        };break;
                     default:
-                        Debug.Log("Unkown Message" + msg); break;
+                        {
+                            Debug.Log("Unkown Message" + msg);
+                        }
+                        ;break;
                 }
                 break;
             case NetworkEventType.DisconnectEvent:
-                shutdownSimulator(); //Close Programm after closing Master
+                this.disconnectNode();
                 break;
         }
     }
@@ -1025,11 +1078,14 @@ public class Controller : MonoBehaviour {
     }
     public void disconnectMessage(int conID)
     {
-        foreach (ClientNode cN in clients)
+        int connectedClientCount = clients.Count;
+        for (int i = 0; i <= connectedClientCount; i++)
         {
-            if (cN.getConnectionID() == conID)
+            if (clients[i].getConnectionID() == conID)
             {
-                log.write(getNodeName(cN.getDisplayID()) + " has been disconnected");
+                log.write(getNodeName(clients[i].getDisplayID()) + " has been disconnected");
+                clients.RemoveAt(i);
+                break;
             }
         }
     }
@@ -1052,8 +1108,6 @@ public class Controller : MonoBehaviour {
     private void clientRecieveUpdate(string msg)
     {
         string[] data = msg.Split('|');
-        Debug.Log(msg);
-        Debug.Log(data.Length);
         syncData.setSimState(int.Parse(data[1]));
         if (syncData.doesStatusChanged())
         {
@@ -1112,10 +1166,18 @@ public class Controller : MonoBehaviour {
     }
     private void defaultVolumes()
     {
-        changeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
-        changeVolume(DefaultSettings.SliderInCarVolume, (int)sliderInCarVolume.GetComponent<Slider>().value);
-        changeVolume(DefaultSettings.SliderWarnVolume, (int)sliderWarnVolume.GetComponent<Slider>().value);
-        changeVolume(DefaultSettings.SliderWSDVolume, (int)sliderWSDVolume.GetComponent<Slider>().value);
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            sliderVolumeMaster.GetComponent<Slider>().value = DefaultSettings.defaultVolumeMaster;
+            sliderInCarVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeAmbiente;
+            sliderWarnVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWarning;
+            sliderWSDVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWSD;
+        }
+        changeVolume(DefaultSettings.SliderVolumeMaster, DefaultSettings.defaultVolumeAmbiente);
+        changeVolume(DefaultSettings.SliderInCarVolume, DefaultSettings.defaultVolumeAmbiente);
+        changeVolume(DefaultSettings.SliderWarnVolume, DefaultSettings.defaultVolumeWarning);
+        changeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
+
     }
     public void changeVolume(string sourceName, int value)
     {
@@ -1185,7 +1247,7 @@ public class Controller : MonoBehaviour {
     {
         clientToServerSend(REQPROJECT, channelId);
     }
-
+   
     //Send to specific client
     private void serverToClientSend(string message, int channelID, int conID)
     {
@@ -1301,9 +1363,7 @@ public class Controller : MonoBehaviour {
         MirrorRight.Play();
         MirrorCameraPlayer.Play();
         navigationScreen.Play();
-        AudioListener.pause = false;
-        leftMirrorSound.Play();
-        rightMirrorSound.Play();
+        playPauseAudioSources(START);
         guiProtection(false);
         debugInformations(false);
     }
@@ -1324,8 +1384,8 @@ public class Controller : MonoBehaviour {
         MirrorLeft.Pause();
         MirrorRight.Pause();
         MirrorCameraPlayer.Pause();
-        AudioListener.pause = true;
         guiProtection(true);
+        playPauseAudioSources(PAUSE);
     }
     public void resetSimulation()
     {
@@ -1341,8 +1401,7 @@ public class Controller : MonoBehaviour {
         Seek(MirrorStraigt, 0);
         Seek(MirrorLeft, 0);
         Seek(MirrorRight, 0);
-        rightMirrorSound.time = 0;
-        leftMirrorSound.time = 0;
+        playPauseAudioSources(INIT);
         frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
@@ -1354,6 +1413,33 @@ public class Controller : MonoBehaviour {
         buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
         updateInterface();
         torFired = false;
+    }
+    private void playPauseAudioSources(int pauseCode)
+    {
+        foreach (var aS in allAudioSources)
+        {
+            switch (pauseCode)
+            {
+                case START:
+                    {
+                        aS.Play();
+                    };break;
+                case PAUSE:
+                    {
+                        aS.Pause();
+                    };break;
+                case INIT:
+                    {
+                        aS.Pause();
+                        aS.time = 0;
+                    };break;
+                default:
+                    {
+                        Debug.Log("Audiosetting not Provided");
+                    };break;
+
+            }
+        }
     }
     public void takeOverRequest()
     {
@@ -1673,6 +1759,7 @@ public class Controller : MonoBehaviour {
                 };break;
         }
     }
+
     //private IEnumerator AudioSourceLoader(string path, AudioSource player)
     private IEnumerator AudioSourceLoader(string path, int player)
     {
@@ -1800,16 +1887,60 @@ public class Controller : MonoBehaviour {
     // Network Interfaces
     public void shutdownSimulator()
     {
+        shutdown = true;
         if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            if (checkBoxShutdownNodes.GetComponent<Toggle>().isOn)
+            {
+                string msg = SHUTDOWNSIM + "|" + "byebye";
+                serverToClientListSend(msg, allCostDeliChannel, clients);
+            }
+            guiProtection(false);
+            string url;
+            if (this.threadsAlive)
+            {
+                if (this.manualIP)
+                {
+                    url = "http://" + customAddress + "/?event=" + 5;
+                }
+                else
+                {
+                    url = "http://" + getIRIPAddress() + ":" + getPort() + "/?event=" + 5;
+                }
+                WebRequest request = WebRequest.Create(url);
+                request.Method = "POST";
+                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            }
+
+        }
+        if (NodeInformation.type.Equals(SLAVENODE))
+        {
+            disconnectNode();
+        }
+        StartCoroutine(closeSoftware());
+    }
+
+    private IEnumerator closeSoftware()
+    {
+       
+        yield return new WaitForSeconds(2f);
+        if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
         {
             for (int i = 0; i < threadList.Count; i++)
             {
                 threadList[i].Abort();
             }
             this.threadsAlive = false;
+            StartCoroutine(closeSoftware());
         }
-        Application.Quit();
+        else
+        {
+            Debug.Log("Bye Bye");
+            log.writeWarning("Simulator shut down");
+            Application.Quit();
+        }
     }
+
     public void sendMarker(int marker)
     {
         if (NodeInformation.type.Equals(MASTERNODE))
@@ -2075,6 +2206,25 @@ public class Controller : MonoBehaviour {
     }
     public void changeWSDDefault(int wsdPos)
     {
+        switch (wsdPos)
+        {
+            case 1:
+                {
+
+                    WSDDyn.x = (-0.1f) - wsdDefault.x;
+                    WSDDyn.y = 2.3f - wsdDefault.y;
+                    WSDDyn.z = 8f - wsdDefault.z;
+                    wsdRotationDyn.x=36;
+                    wsdSizeDyn = new Vector3(0.629f,0.629f,0.354f);
+                }; break;
+            default:
+                {
+
+                };break;
+        }
+        wsd.rotateWSD(wsdRotationDyn);
+        wsd.updateWSDDefault(wsdDefault + WSDDyn);
+        wsd.setSizeWSD(wsdSizeDyn);
         //TODO
     }
     public void writeLog(string logMessage)
@@ -2106,6 +2256,12 @@ public class Controller : MonoBehaviour {
         if (frontWall.isPrepared)
         {
             textTimeRemainingLog.GetComponent<Text>().text = getSimTime(simulator.timeRemaining(videoLengthSeconds));
+            if (simulator.timeRemaining(videoLengthSeconds) <= 0)
+            {
+                buttonStartSimulation.GetComponent<Button>().onClick.Invoke();
+                //Debug.Log("Stop");
+                //stopSimulation();
+            }
         }
         else
         {

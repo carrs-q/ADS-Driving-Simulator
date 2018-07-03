@@ -7,7 +7,13 @@
     public const bool checkBoxRecordDefault        = false;
     public const bool checkBoxSafetyDefault        = false;
     public const bool checkBoxSyncSensorsDefault   = false;
+    public const bool checkBoxShutDownNodeDefault  = false;
     public const string syncServerDefault          = "192.168.0.216:1605";
+
+    public const int defaultVolumeMaster = 20;
+    public const int defaultVolumeAmbiente = 20;
+    public const int defaultVolumeWarning = 50;
+    public const int defaultVolumeWSD = 50;
 
 
     //Game Object Names
@@ -37,6 +43,7 @@
     public const string CheckBoxWindshieldDisplay  = "checkBoxWindshieldDisplay";
     public const string CheckBoxHorizontalMovement = "checkBoxHorizontalMovement";
     public const string CheckBoxWSDTinting         = "checkBoxWSDTinting";
+    public const string CheckBoxShutdownNodes      = "checkBoxShutdownNodes";
 
     public const string TextTimeCurrentLog         = "CurrentTimeLog";
     public const string TextTimeRemainingLog       = "RemainingTimeLog";

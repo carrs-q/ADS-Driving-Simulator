@@ -5,7 +5,7 @@ Shader "Custom/transparent_col" {
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
 		_TransparentColor("Transparent Color", Color) = (1,0,1,1)
         _Color ("Color", Color) = (0.8,0.8,0.8,0.8)
-        _Threshold ("Threshhold", Float) = 0.5
+        _Threshold ("Threshhold", Float) = 0.4
     }
     SubShader {
 	Tags { "Queue"="Overlay" "RenderType"="Overlay" }
