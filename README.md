@@ -46,12 +46,10 @@ except members of CARRS-Q and selected research partner
 ## Config File (possible values)
 If the config files contains  
 node type: **master | slave** (Cluster Master, VR | Cluster Slave)  
-node screen: **1 - 5** rendered Camera  
-node debug: **0 | 1** (OFF|ON) for Cluster
-server ip: **IP.v4** (IP of Cluster Master)
-server port: **PORTNR** (Port of Cluster Master)
-cdn address: **HTTP ADDRESS of CDN** (with Port)
-hdmi video: **Name of Video Capture device** (Hardware name)
-hdmi audio: **Name of Audio Capture device** (Hardware name)
-
-
+node screen: **1 - 5** rendered Camera   
+node debug: **0 | 1** (OFF|ON) for Cluster  
+server ip: **IP.v4** (IP of Cluster Master)  
+server port: **PORTNR** (Port of Cluster Master)  
+cdn address: **HTTP ADDRESS of CDN** (with Port)  
+hdmi video: **Name of Video Capture device** (Hardware name)  
+hdmi audio: **Name of Audio Capture device** (Hardware name)  
