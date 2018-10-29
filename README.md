@@ -26,6 +26,14 @@ mail@gerbermichael.de
 Current: No permition for everyone, 
 except members of CARRS-Q and selected research partner
 
+---
+### Requirements
+* Nvidia GTX1080 or better
+* SSD (~ 10GB per scenario, if local 20GB )
+* 8GB RAM
+* Windows 10
+* VR-Mode requires Oculus Rift
+* [HDMI Video Capture Card](http://www.tnpproducts.com/product/hdmi-to-usb-3-0-capture-card-device-dongle-hdmi-full-hd-1080p-video-audio-to-usb-adapter-converter-compatible-with-windows-mac-linux/) (HDMI to USB3) we are using this one (noname)
 
 ### Setup
 1. Compile with Unity
@@ -35,9 +43,15 @@ except members of CARRS-Q and selected research partner
 5. Run ADS Simulator
 6. Choose Simulator-Type (top left)
 
-### Requirements
-* Nvidia GTX1080 or better
-* SSD (~ 10GB per scenario, if local 20GB )
-* 8GB RAM
-* Windows 10
-* VR-Mode requires Oculus Rift
+## Config File (possible values)
+If the config files contains  
+node type: **master | slave** (Cluster Master, VR | Cluster Slave)  
+node screen: **1 - 5** rendered Camera  
+node debug: **0 | 1** (OFF|ON) for Cluster
+server ip: **IP.v4** (IP of Cluster Master)
+server port: **PORTNR** (Port of Cluster Master)
+cdn address: **HTTP ADDRESS of CDN** (with Port)
+hdmi video: **Name of Video Capture device** (Hardware name)
+hdmi audio: **Name of Audio Capture device** (Hardware name)
+
+
