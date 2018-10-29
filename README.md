@@ -24,7 +24,7 @@ mail@gerbermichael.de
 ---
 ### Licence
 Current: No permition for everyone, 
-except members of CarrsQ
+except members of CARRS-Q and selected research partner
 
 
 ### Setup
