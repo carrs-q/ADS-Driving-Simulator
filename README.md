@@ -2,7 +2,7 @@
 
 ![Main Menue](https://github.com/me89/VideoWall/blob/master/Doc/MainMenue.PNG "CARRSQ ADS Driving Simulator")
 
-This Software is written at CARRSQ to run research studies for autonomous driving vehicles, 
+This Software is written at CARRS-Q to run research studies for autonomous driving vehicles, 
 with focus on AES Level 3. 
 
 ---
