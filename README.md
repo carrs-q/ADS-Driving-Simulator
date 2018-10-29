@@ -43,7 +43,7 @@ except members of CARRS-Q and selected research partner
 5. Run ADS Simulator
 6. Choose Simulator-Type (top left)
 
-## Config File (possible values)
+### Config File (possible values)
 If the config files contains  
 node type: **master | slave** (Cluster Master, VR | Cluster Slave)  
 node screen: **1 - 5** rendered Camera   
