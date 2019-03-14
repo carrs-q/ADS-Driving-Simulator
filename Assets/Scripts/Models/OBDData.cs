@@ -59,10 +59,12 @@ public class OBDData {
     {
         return obdDataCount;
     }
-    public void resetCounter()
+    public void resetCounter(Timing time)
     {
         lastIterator = 0;
+        calcIterrator(time.getMilliseconds());
     }
+
     public bool calcIterrator(int currentTime)
     {
         oldIterator = lastIterator;

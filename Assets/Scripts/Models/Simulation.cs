@@ -30,14 +30,7 @@ public class Simulation
     }
     public void beginnSimulation()
     {
-        if (!wasRunning)
-        {
-            beginningTime = getCurrentUnixMillis();
-        }
-        else
-        {
-            beginningTime = getCurrentUnixMillis() - this.currentMillis;
-        }
+        beginningTime = getCurrentUnixMillis() - this.currentMillis;
         this.gear = 'D';
         isRunning = true;
     }
@@ -47,12 +40,12 @@ public class Simulation
         wasRunning = true;
         this.gear = 'P';
     }
-    public void setDefaults()
+    public void setDefaults(Timing time)
     {
-        beginningTime = getCurrentUnixMillis();
+        beginningTime = getCurrentUnixMillis() - time.getTotalMillis();
         isRunning = false;
         wasRunning = false;
-        currentMillis = 0;
+        currentMillis = time.getTotalMillis();
         trip1KMDefault = 589;
         trip2cm = 0;
         fuelKm = 759;
@@ -125,6 +118,12 @@ public class Simulation
     public int getDifferenceInSecs()
     {
         return (int)currentMillis / 1000;
+    }
+
+    public void setDifferenceInMillis(int newMillis)
+    {
+        this.currentMillis = newMillis;
+
     }
     public int timeRemaining(double videoLengthSeconds)
     {

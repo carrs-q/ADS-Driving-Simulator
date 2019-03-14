@@ -91,6 +91,7 @@ public class Controller : MonoBehaviour {
     public const string STATUSUPDATE = "STA";
     public const string TORMESSAGE = "TOR";
     public const string VOLUMECONTROL = "NVC";
+    public const string SEEKMSG = "SEK";
     public const string SHUTDOWNSIM = "ZZZ";
     public const string EMPTYMESSAGE = "undefined";
 
@@ -171,6 +172,7 @@ public class Controller : MonoBehaviour {
     public AudioSource rightMirrorSound;
     public AudioSource leftMirrorSound;
     private Timing torTime;
+    private Timing seekTime;
 
     public Shader chromaShader;
     public Shader noShader;
@@ -344,13 +346,14 @@ public class Controller : MonoBehaviour {
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
+        seekTime = new Timing();
         log = new Log(LogText);
         log.write("SCC started");
         wsdDefault = WSDINFRONT;
 
         wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
         simulator.setOBDData(obdData);
-        simulator.setDefaults();
+        simulator.setDefaults(seekTime);
 
 
         wsdRotationDefault = windshieldDisplay.transform.localEulerAngles;
@@ -612,7 +615,6 @@ public class Controller : MonoBehaviour {
                     actualMode = VRMODE;
                     loadVRSettings();
                     hideSeekPanel(true);
-
                 }
                 break;
             case ARMODE:
@@ -985,6 +987,10 @@ public class Controller : MonoBehaviour {
                         {
                             clientRecieveVolume(splitData[1], splitData[2], splitData[3], splitData[4]);
                         } break;
+                    case SEEKMSG:
+                        {
+                            clientSeek(splitData[1]);
+                        }; break;
                     case SHUTDOWNSIM:
                         {
                             shutdownSimulator();
@@ -1076,6 +1082,13 @@ public class Controller : MonoBehaviour {
         message += sliderWSDVolume.GetComponent<Slider>().value;
         serverToClientListSend(message, relChannel, clients);
     }
+    public void sendSeekTime()
+    {
+
+        string message = SEEKMSG + "|";
+        message += seekTime.getTotalMillis();
+        serverToClientListSend(message, relChannel, clients);
+    }
     public void disconnectMessage(int conID)
     {
         int connectedClientCount = clients.Count;
@@ -1089,6 +1102,7 @@ public class Controller : MonoBehaviour {
             }
         }
     }
+
     
     //Network function Client-Side
     private void nodeRequestDisplay(string clientID)
@@ -1243,6 +1257,11 @@ public class Controller : MonoBehaviour {
         renderMode = screen;
         changeMode(actualMode);
     }
+    private void clientSeek(string millisString)
+    {
+        Int64 millis = Int64.Parse(millisString);
+        this.networkSeek(new Timing(millis));
+    }
     private void clientRequestProject(int channelId)
     {
         clientToServerSend(REQPROJECT, channelId);
@@ -1389,19 +1408,8 @@ public class Controller : MonoBehaviour {
     }
     public void resetSimulation()
     {
-        sendMarker(RESET);
-        log.write("Simualtion reseted");
-        simulator.setDefaults();
-        obdData.resetCounter();
-        Seek(frontWall, 0);
-        Seek(leftWall, 0);
-        Seek(rightWall, 0);
-        Seek(navigationScreen, 0);
-        Seek(MirrorCameraPlayer, 0);
-        Seek(MirrorStraigt, 0);
-        Seek(MirrorLeft, 0);
-        Seek(MirrorRight, 0);
-        playPauseAudioSources(INIT);
+        //playPauseAudioSources(INIT);
+
         frontWall.Pause();
         leftWall.Pause();
         rightWall.Pause();
@@ -1410,10 +1418,41 @@ public class Controller : MonoBehaviour {
         MirrorStraigt.Pause();
         MirrorLeft.Pause();
         MirrorRight.Pause();
+        leftMirrorSound.Pause();
+        rightMirrorSound.Pause();
+        simulator.setDefaults(seekTime);
+        obdData.resetCounter(seekTime);
+
+        long nTime = seekTime.getTotalSeconds();
+
+
+        if (leftMirrorSound.clip.length > nTime)
+        {
+            leftMirrorSound.time = nTime;
+        }
+        if (rightMirrorSound.clip.length > nTime)
+        {
+            rightMirrorSound.time = nTime;
+        }
+        
+        Seek(frontWall, nTime);
+        Seek(leftWall, nTime);
+        Seek(rightWall, nTime);
+        Seek(navigationScreen, nTime);
+        Seek(MirrorCameraPlayer, nTime);
+        Seek(MirrorStraigt, nTime);
+        Seek(MirrorLeft, nTime);
+        Seek(MirrorRight, nTime);
+
+        
+        sendMarker(RESET);
+        log.write("Simualtion reseted");
+
         buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
         updateInterface();
         torFired = false;
     }
+
     private void playPauseAudioSources(int pauseCode)
     {
         foreach (var aS in allAudioSources)
@@ -1430,9 +1469,13 @@ public class Controller : MonoBehaviour {
                     };break;
                 case INIT:
                     {
+                        if (aS.clip.length > 0)
+                        {
+                            aS.time = this.seekTime.getTotalSeconds();
+                        }
                         aS.Pause();
-                        aS.time = 0;
-                    };break;
+
+                    }; break;
                 default:
                     {
                         Debug.Log("Audiosetting not Provided");
@@ -1791,12 +1834,12 @@ public class Controller : MonoBehaviour {
                 case 1:
                     {
                         leftMirrorSound.clip = clip;
-                        leftMirrorSound.Play();
+                        leftMirrorSound.Pause();
                     }; break;
                 case 2:
                     {
                         rightMirrorSound.clip = clip;
-                        rightMirrorSound.Play();
+                        leftMirrorSound.Pause();
                         log.write("All data loaded");
                         buttonStartSimulation.GetComponent<Button>().interactable = true;
                     }; break;
@@ -1816,19 +1859,50 @@ public class Controller : MonoBehaviour {
 
 
     //Video Controll Helping Method for Seeking
-    private void Seek(VideoPlayer p, float nTime)
+    private void Seek(VideoPlayer p, float additionalTime)
     {
         if (!p.canSetTime)
             return;
         if (!p.isPrepared)
             return;
-        nTime = Mathf.Clamp(nTime, 0, 1);
-        p.time = nTime * (ulong)(p.frameCount / p.frameRate);
+
+        //nTime = Mathf.Clamp(nTime, 0, 1);
+        p.time = seekTime.getTotalSeconds();
+        //p.time = nTime  * (p.frameCount / p.frameRate);
     }
     public bool areVideosAttached()
     {
         return this.videoPlayerAttached;
     }
+
+    public void interfaceSeek()
+    {
+        InputField temp = inputTimeGotTo.GetComponent<InputField>();
+        bool requirements = false;
+
+        if (temp.text != "")
+        {
+            string[] times = temp.text.Split(':');
+            if (times.Length == 3)
+            {
+                this.seekTime = new Timing(times[0], times[1], times[2]);
+                requirements = true;
+                temp.text = seekTime.getTiming();
+            }
+        }
+        if (requirements)
+        {
+            this.resetSimulation();
+            if (renderMode == MASTER)
+                this.sendSeekTime();
+        }
+    }
+    public void networkSeek(Timing time)
+    {
+        this.seekTime = time;
+        this.resetSimulation();
+    }
+
 
     //Operation Overloading for Init OBD Data
     public void loadOBDData(int obdType, Int64[] obdDataCount, int count)
@@ -2209,13 +2283,13 @@ public class Controller : MonoBehaviour {
         switch (wsdPos)
         {
             case 1:
-                {
+                { // ARC Linkage Defaults
 
-                    WSDDyn.x = (-0.1f) - wsdDefault.x;
+                    WSDDyn.x = (0f) - wsdDefault.x;
                     WSDDyn.y = 2.3f - wsdDefault.y;
-                    WSDDyn.z = 8f - wsdDefault.z;
-                    wsdRotationDyn.x=36;
-                    wsdSizeDyn = new Vector3(0.629f,0.629f,0.354f);
+                    WSDDyn.z = 9.7f - wsdDefault.z;
+                    wsdRotationDyn.x=90;
+                    wsdSizeDyn = new Vector3(0.1823f,0.1823f,0.1025f);
                 }; break;
             default:
                 {
@@ -2275,7 +2349,13 @@ public class Controller : MonoBehaviour {
     {
         int curMin = seconds / 60;
         int curSec = seconds % 60;
+
+        int curH = curMin / 60;
+        curMin = curMin % 60;
+
+
         string min, sec;
+
         if (curMin < 10)
         {
             min = "0" + curMin;
@@ -2293,7 +2373,7 @@ public class Controller : MonoBehaviour {
         {
             sec = curSec.ToString();
         }
-        return min + ":" + sec;
+        return curH + ":" + min + ":" + sec;
 
     }
     public void loadProjectList()

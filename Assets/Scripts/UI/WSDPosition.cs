@@ -9,7 +9,7 @@ public class WSDPosition : MonoBehaviour
 
     private List<string> defaultList = new List<string>(){
         "Load Setup",
-        "Tetris Position" };
+        "ARC Linkage" };
 
     public void Start()
     {

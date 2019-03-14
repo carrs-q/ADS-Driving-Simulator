@@ -2,7 +2,7 @@
 {
     //Default Setting
     public const bool buttonResetOculusVisible     = false;
-    public const bool buttonJumpToVisible          = false;
+    public const bool buttonJumpToVisible          = true;
     public const bool checkBoxTORDefault           = false;
     public const bool checkBoxRecordDefault        = false;
     public const bool checkBoxSafetyDefault        = false;

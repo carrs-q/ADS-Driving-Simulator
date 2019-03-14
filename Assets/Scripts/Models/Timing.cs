@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 
 public class Timing {
     private int hours, minutes, seconds, milliseconds;
@@ -53,7 +52,7 @@ public class Timing {
     }
     public int getMilliseconds()
     {
-        return this.getMilliseconds();
+        return this.milliseconds;
     }
 
     public bool isBehind(Timing timing)
@@ -137,14 +136,18 @@ public class Timing {
         }
         return this.getTiming();
     }
-    private Int64 getTotalMillis()
+    public int getTotalMillis()
     {
-        Int64 total = 0;
+        int total = 0;
         total += (this.milliseconds);
         total += (this.seconds * 1000);
         total += (this.minutes * 60000);
         total += (this.hours * 3600000);
         return total;
+    }
+    public int getTotalSeconds()
+    {
+        return getTotalMillis()/1000;
     }
     private int check60(string val)
     {

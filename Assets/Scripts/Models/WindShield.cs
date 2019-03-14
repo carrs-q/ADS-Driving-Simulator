@@ -147,6 +147,7 @@ public class WindShield {
             {
                 for (int i = 0; i < devices.Length; i++)
                 {
+
                     if (devices[i].name == NodeInformation.hdmiVideo)
                     {
                         Debug.Log("Video Input: " + devices[i].name);
@@ -174,6 +175,7 @@ public class WindShield {
     {
         foreach(string device in Microphone.devices)
         {
+            Debug.Log(device.ToString());
             if(device == NodeInformation.hdmiAudio)
             {
                 // Oculus overrides Audio Input
