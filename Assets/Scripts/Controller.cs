@@ -1426,15 +1426,6 @@ public class Controller : MonoBehaviour {
         long nTime = seekTime.getTotalSeconds();
 
 
-        if (leftMirrorSound.clip.length > nTime)
-        {
-            leftMirrorSound.time = nTime;
-        }
-        if (rightMirrorSound.clip.length > nTime)
-        {
-            rightMirrorSound.time = nTime;
-        }
-        
         Seek(frontWall, nTime);
         Seek(leftWall, nTime);
         Seek(rightWall, nTime);
@@ -1444,8 +1435,18 @@ public class Controller : MonoBehaviour {
         Seek(MirrorLeft, nTime);
         Seek(MirrorRight, nTime);
 
-        
+
         sendMarker(RESET);
+
+        if (leftMirrorSound.clip.length > nTime)
+        {
+            leftMirrorSound.time = nTime;
+        }
+        if (rightMirrorSound.clip.length > nTime)
+        {
+            rightMirrorSound.time = nTime;
+        }
+       
         log.write("Simualtion reseted");
 
         buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
@@ -2020,7 +2021,6 @@ public class Controller : MonoBehaviour {
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             syncData.setSimState(marker);
-            if (Network.isServer)
             {
                 if (this.enabledSensorSync)
                 {
@@ -2240,6 +2240,8 @@ public class Controller : MonoBehaviour {
         buttonResetHeadPosition.SetActive(visible);
     }
 
+
+    //Helpers
     private string getNodeName(int displayID)
     {
         string tempName = "";

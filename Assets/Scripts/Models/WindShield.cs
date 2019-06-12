@@ -175,6 +175,7 @@ public class WindShield {
     {
         foreach(string device in Microphone.devices)
         {
+            
             Debug.Log(device.ToString());
             if(device == NodeInformation.hdmiAudio)
             {
