@@ -236,6 +236,7 @@ public class Controller : MonoBehaviour {
     private GameObject cameraNodeRight;
     private GameObject cameraNodeMirrors;
     private GameObject cameraWSD;
+    private GameObject vrCameraDisplay;
 
     private GameObject oculus;
     private GameObject pannelResearch;
@@ -268,6 +269,8 @@ public class Controller : MonoBehaviour {
         cameraNodeMirrors = GameObject.Find(DefaultSettings.CameraMirrors);
         cameraWSD = GameObject.Find(DefaultSettings.CameraWindshieldDisplay);
         cameraWSD.SetActive(false);
+        vrCameraDisplay = GameObject.Find(DefaultSettings.VRCameraDisplay);
+        vrCameraDisplay.SetActive(false);
 
         pannelResearch = GameObject.Find(DefaultSettings.pannelResearch);
         pannelSimulation = GameObject.Find(DefaultSettings.pannelSimulation);
@@ -645,6 +648,7 @@ public class Controller : MonoBehaviour {
         cameraNodeRight.SetActive(false);
         cameraNodeMirrors.SetActive(false);
         hideSeekPanel(false);
+        vrCameraDisplay.SetActive(false);
 
         oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
         buttonJumpTo.SetActive(DefaultSettings.buttonJumpToVisible);
@@ -693,10 +697,16 @@ public class Controller : MonoBehaviour {
         Camera wsdCam = cameraWSD.GetComponent<Camera>();
         wsdCam.targetDisplay = 2;
         oculus.AddComponent(typeof(AudioListener));
-        for (int i = 0; i < Display.displays.Length; i++)
+
+        if (Display.displays.Length < 2)
         {
-            Debug.Log(Display.displays[i].ToString());
+            vrCameraDisplay.SetActive(true);
         }
+
+        //for (int i = 0; i < Display.displays.Length; i++)
+        //{
+        //    Debug.Log(Display.displays[i].ToString());
+        //}
     }
     private void loadARSettings()
     {

@@ -24,6 +24,7 @@
     public const string CameraMirrors              = "CameraNodeMirrors";
     public const string CameraWindshieldDisplay    = "CameraWSD";
     public const string Oculus                     = "Oculus";
+    public const string VRCameraDisplay            = "ParticipantCameraDisplay";
 
     public const string ButtonResetOculus          = "ButtonOculusRecalibrate";
     public const string ButtonResetSimulation      = "ButtonResetSimulation";
