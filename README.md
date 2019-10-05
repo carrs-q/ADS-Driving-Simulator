@@ -51,7 +51,7 @@ server ip: **IP.v4** (IP of Cluster Master)
 server port: **PORTNR** (Port of Cluster Master)  
 cdn address: **HTTP ADDRESS of CDN** (with Port)  
 hdmi video: **Name of Video Capture device** (Hardware name)  
-hdmi audio: **Name of Audio Capture device** (Hardware name)
+hdmi audio: **Name of Audio Capture device** (Hardware name)  
 setup side: **Side on Road** (Drive on left or right side of the road)
 
 ---
