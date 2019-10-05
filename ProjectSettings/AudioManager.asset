@@ -6,7 +6,7 @@ AudioManager:
   m_Volume: 1
   Rolloff Scale: 1
   Doppler Factor: 1
-  Default Speaker Mode: 5
+  Default Speaker Mode: 2
   m_SampleRate: 1
   m_DSPBufferSize: 1024
   m_VirtualVoiceCount: 512

@@ -8,7 +8,7 @@ namespace MyNetwork
     {
         private static XmlDocument xmlDocument;
 
-        public static string type, serverIp, cdn, hdmiVideo, hdmiAudio;
+        public static string type, serverIp, cdn, hdmiVideo, hdmiAudio, streetside;
         public static int id, serverPort, screen, debug;
 
         static NodeInformation()
@@ -59,6 +59,9 @@ namespace MyNetwork
                             case "hdmi":
                                 hdmiVideo = xmlNodeReader.GetAttribute("video");
                                 hdmiAudio = xmlNodeReader.GetAttribute("audio");
+                                break;
+                            case "setup":
+                                streetside = xmlNodeReader.GetAttribute("side");
                                 break;
                         }
                     }

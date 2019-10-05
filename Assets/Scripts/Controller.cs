@@ -42,7 +42,7 @@ public class Controller : MonoBehaviour {
 
     public static extern short GetKeyState(int keyCode);
 
-    //CDN FileNames
+    //CDN FileNames //TODO: bring in Config file
     public static string[] filenames ={
         "wf.mp4",   //Wall Front
         "wl.mp4",   //Wall Left
@@ -66,7 +66,6 @@ public class Controller : MonoBehaviour {
     //RenderMode
     public const int CAVEMODE = 1;
     public const int VRMODE = 2;
-    public const int ARMODE = 3;
     public const int MAXDISPLAY = 5; //TODO Change back
 
     public const string MASTERNODE = "master";
@@ -135,7 +134,6 @@ public class Controller : MonoBehaviour {
     private int port;
     private IPAddress irIPAddress;
     private string path;
-    private string configJson;
     private bool enabledSensorSync;
     private static TcpListener listener;
     private Stream stream;
@@ -352,6 +350,15 @@ public class Controller : MonoBehaviour {
         seekTime = new Timing();
         log = new Log(LogText);
         log.write("SCC started");
+
+        if (NodeInformation.streetside.Equals("left"))
+        {
+            log.write("The Simulator is set to drive on the left side");
+        }
+        else
+        {
+            log.write("The Simulator is set to drive on the right side");
+        }
         wsdDefault = WSDINFRONT;
 
         wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
@@ -375,11 +382,11 @@ public class Controller : MonoBehaviour {
             renderMode = MASTER;
             actualMode = INIT; //default
             clients = new List<ClientNode>();
-            path = Application.streamingAssetsPath + "/config/config.json";
-            configJson = File.ReadAllText(path);
-            config = JsonUtility.FromJson<Config>(configJson);
-            irIPAddress = IPAddress.Parse(config.irIPAddress);
-            port = config.port;
+
+            //Changed from JSON to XML to reduce files
+            irIPAddress = IPAddress.Parse(NodeInformation.serverIp);
+            port = NodeInformation.serverPort;
+            
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             threadList = new List<Thread>();
             threadsAlive = true;
@@ -620,12 +627,6 @@ public class Controller : MonoBehaviour {
                     hideSeekPanel(true);
                 }
                 break;
-            case ARMODE:
-                {
-                    actualMode = ARMODE;
-                    loadARSettings();
-                }
-                break;
             default:
                 {
                     actualMode = INIT;
@@ -708,10 +709,7 @@ public class Controller : MonoBehaviour {
         //    Debug.Log(Display.displays[i].ToString());
         //}
     }
-    private void loadARSettings()
-    {
-        log.write("AR is not supported at the moment, please change mode");
-    }
+    
     private void loadCaveSettings()
     {
         
@@ -2206,6 +2204,44 @@ public class Controller : MonoBehaviour {
 
         }
     }
+    private string getNodeName(int displayID)
+    {
+        string tempName = "";
+        switch (displayID)
+        {
+            case 1:
+                {
+                    tempName = "Visual Center";
+                }
+                break;
+            case 2:
+                {
+                    tempName = "Visual Left";
+                }
+                break;
+            case 3:
+                {
+                    tempName = "Visual Right";
+                }
+                break;
+            case 4:
+                {
+                    tempName = "Highmounted Display";
+                }
+                break;
+            case 5:
+                {
+                    tempName = "Mirrors";
+                }
+                break;
+            case 6:
+                {
+                    tempName = "Driver Display ";
+                }
+                break;
+        }
+        return tempName;
+    }
 
     public bool isNewLogEntry()
     {
@@ -2250,67 +2286,7 @@ public class Controller : MonoBehaviour {
         buttonResetHeadPosition.SetActive(visible);
     }
 
-    private string getNodeName(int displayID)
-    {
-        string tempName = "";
-        switch (displayID)
-        {
-            case 1:
-                {
-                    tempName = "Visual Center";
-                }
-                break;
-            case 2:
-                {
-                    tempName = "Visual Left";
-                }
-                break;
-            case 3:
-                {
-                    tempName = "Visual Right";
-                }
-                break;
-            case 4:
-                {
-                    tempName = "Highmounted Display";
-                }
-                break;
-            case 5:
-                {
-                    tempName = "Mirrors";
-                }
-                break;
-            case 6:
-                {
-                    tempName = "Driver Display ";
-                }
-                break;
-        }
-        return tempName;
-    }
-    public void changeWSDDefault(int wsdPos)
-    {
-        switch (wsdPos)
-        {
-            case 1:
-                { // ARC Linkage Defaults
-
-                    WSDDyn.x = (0f) - wsdDefault.x;
-                    WSDDyn.y = 2.3f - wsdDefault.y;
-                    WSDDyn.z = 9.7f - wsdDefault.z;
-                    wsdRotationDyn.x=90;
-                    wsdSizeDyn = new Vector3(0.1823f,0.1823f,0.1025f);
-                }; break;
-            default:
-                {
-
-                };break;
-        }
-        wsd.rotateWSD(wsdRotationDyn);
-        wsd.updateWSDDefault(wsdDefault + WSDDyn);
-        wsd.setSizeWSD(wsdSizeDyn);
-        //TODO
-    }
+    //Log
     public void writeLog(string logMessage)
     {
         log.write(logMessage);
@@ -2324,6 +2300,29 @@ public class Controller : MonoBehaviour {
         log.writeError(logMessage);
     }
 
+    public void changeWSDDefault(int wsdPos)
+    {
+        switch (wsdPos)
+        {
+            case 1:
+                { // ARC Linkage Defaults
+
+                    WSDDyn.x = (0f) - wsdDefault.x;
+                    WSDDyn.y = 2.3f - wsdDefault.y;
+                    WSDDyn.z = 9.7f - wsdDefault.z;
+                    wsdRotationDyn.x = 90;
+                    wsdSizeDyn = new Vector3(0.1823f, 0.1823f, 0.1025f);
+                }; break;
+            default:
+                {
+
+                }; break;
+        }
+        wsd.rotateWSD(wsdRotationDyn);
+        wsd.updateWSDDefault(wsdDefault + WSDDyn);
+        wsd.setSizeWSD(wsdSizeDyn);
+        //TODO
+    }
     private void updateInterface()
     {
         if (!torFired)

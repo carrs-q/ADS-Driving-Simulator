@@ -8,7 +8,7 @@ public class SimulatorDropdown : MonoBehaviour {
     public Dropdown loadVideoDropDown;
     private Controller controller;
 
-    private List<string> modes = new List<string>() { "Choose Destination", "Main Simulator", "Virtual Reality", "Augmented Reality"};
+    private List<string> modes = new List<string>() { "Choose Destination", "Main Simulator", "Virtual Reality"};
 
     public void Start()
     {
@@ -22,7 +22,7 @@ public class SimulatorDropdown : MonoBehaviour {
 
     public void changeSimulatorMode(int index)
     {
-        if (index != 0 && index < 4)
+        if (index != 0 && index < 3)
         {
             controller.changeMode(index);
             controller.writeLog("Destination " + modes[index]);
