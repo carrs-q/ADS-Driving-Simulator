@@ -1,6 +1,7 @@
+
 # CARRS-Q ADS Driving Simulator
 
-![Main Menue](https://github.com/me89/VideoWall/blob/master/Doc/MainMenue.PNG "CARRSQ ADS Driving Simulator")
+![Main Menue](https://github.com/carrs-q/IVAD-Simulator/blob/master/Documentation/MainMenue.png "CARRSQ ADS Driving Simulator")
 
 This Software is written at CARRS-Q to run research studies for autonomous driving vehicles, 
 with focus on AES Level 3. 
@@ -11,34 +12,32 @@ with focus on AES Level 3.
 ### Questions regarding the research to:
 **Dr. Ronald Schroeter | QUT**    
 r.schroeter@qut.edu.au  
-internal phone: 84629  
-
 **Michael A. Gerber | QUT**  
 michaelandreas.gerber@hdr.qut.edu.au  
-internal phone: 82860  
 
 ### Technical questions to
 gerberm@qut.edu.au  
-mail@gerbermichael.de  
 
 ---
-### Licence
-Current: No permition for everyone, 
-except members of CARRS-Q and selected research partner
+
+### Publications
+Gerber, M. A., Schroeter, R., & Vehns, J. (2019). A Video-Based Automated Driving Simulator for Automotive UI Prototyping, UX and Behaviour Research. _In Proceedings of the 11th International Conference on Automotive User Interfaces and Interactive Vehicular Applications_. Presented at the International Conference on Automotive User Interfaces and Interactive Vehicular Applications, Utrecht, Netherlands. https://doi.org/10.1145/3342197.3344533
+
+Schroeter, R., & Gerber, M. A. (2018). A Low-Cost VR-Based Automated Driving Simulator for Rapid Automotive UI Prototyping. _Adjunct Proceedings of the 10th International Conference on Automotive User Interfaces and Interactive Vehicular Applications_, 248–251. https://doi.org/10.1145/3239092.3267418
 
 ---
 ### Requirements
 * Nvidia GTX1080 or better
-* SSD (~ 10GB per scenario, if local 20GB )
+* SSD or NVMe (~ 10GB per scenario, if local 20GB )
 * 8GB RAM
 * Windows 10
 * VR-Mode requires Oculus Rift
-* [HDMI Video Capture Card](http://www.tnpproducts.com/product/hdmi-to-usb-3-0-capture-card-device-dongle-hdmi-full-hd-1080p-video-audio-to-usb-adapter-converter-compatible-with-windows-mac-linux/) (HDMI to USB3) we are using this one (noname)
+* HDMI Video Capture Card - (HDMI to USB3)
 
 ### Setup
-1. Compile with Unity
-2. Install NodeJs with NPM
-3. Run [CDN](https://github.com/me89/VideoWallCDN) (If not installed, install dependencies with ```npm install```)
+1. Compile with Unity 2017
+2. Install NPM and NodeJS
+3. Run CDN (If not installed, install dependencies with ```npm install```)
 4. Check config-file for Simulator in ```/ADS Simulator_Data/StreamingAssets/node-config.xml```
 5. Run ADS Simulator
 6. Choose Simulator-Type (top left)
@@ -52,4 +51,9 @@ server ip: **IP.v4** (IP of Cluster Master)
 server port: **PORTNR** (Port of Cluster Master)  
 cdn address: **HTTP ADDRESS of CDN** (with Port)  
 hdmi video: **Name of Video Capture device** (Hardware name)  
-hdmi audio: **Name of Audio Capture device** (Hardware name)  
+hdmi audio: **Name of Audio Capture device** (Hardware name)
+setup side: **Side on Road** (Drive on left or right side of the road)
+
+---
+### Licence
+Apache 2.0
