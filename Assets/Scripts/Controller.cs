@@ -1970,6 +1970,7 @@ public class Controller : MonoBehaviour {
     public void shutdownSimulator()
     {
         shutdown = true;
+        
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             if (checkBoxShutdownNodes.GetComponent<Toggle>().isOn)
@@ -1991,7 +1992,8 @@ public class Controller : MonoBehaviour {
                 }
                 WebRequest request = WebRequest.Create(url);
                 request.Method = "POST";
-                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                //This line causes crashing the shutdown process
+                //HttpWebResponse response = request.GetResponse() as HttpWebResponse;
             }
 
         }
@@ -1999,13 +2001,23 @@ public class Controller : MonoBehaviour {
         {
             disconnectNode();
         }
+        
+        if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
+        {
+            for (int i = 0; i < threadList.Count; i++)
+            {
+                threadList[i].Abort();
+            }
+            this.threadsAlive = false;
+        }
+        
         StartCoroutine(closeSoftware());
     }
 
     private IEnumerator closeSoftware()
     {
        
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(0.1f);
         if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
         {
             for (int i = 0; i < threadList.Count; i++)
