@@ -1,4 +1,6 @@
-﻿class DefaultSettings
+﻿using UnityEngine;
+
+class DefaultSettings
 {
     //Default Setting
     public const bool buttonResetOculusVisible     = false;
@@ -16,6 +18,38 @@
     public const int defaultVolumeWSD = 50;
 
 
+    //Default Positions  //Z + 1.5
+    //Steering Wheel Left 
+    public static Vector3 steeringWheelLeftPivotPoint = new Vector3(-0.7518f, 1.4723f, 10.445f);
+    public static Vector3 navigationLeftPosition = new Vector3(-0.107f, 1.596f, 10.1645f);
+    public static Vector3 navigationLeftRotation = new Vector3(-0.66f, -6.68f, 0f);
+    public static Vector3 dashboardLeftPosition = new Vector3(-0.9119f, 1.551001f, 10.125f);
+
+    public static Vector3 backMirrorLeftPosition = new Vector3(-0.12f, 2.1332f, 10.5395f);
+    public static Vector3 leftMirrorLeftPosition = new Vector3(1.486f, 1.782f, 10.319f); 
+    public static Vector3 rightMirrorLeftPosition = new Vector3(-1.737f, 1.785f, 10.275f);
+
+    public static Vector3 cameraMenueLeftPosition = new Vector3(0.2f, 1.91f, 13.1f);
+    public static Vector3 cameraMenueLeftRotation = new Vector3(-1.1f, -180f, 0f);
+    public static Vector3 oculusLeftPosition = new Vector3(-0.7f, 2.042f, 11.481f);
+
+
+    //Steering Wheel Right
+    public static Vector3 steeringWheelRightPivotPoint = new Vector3(0.759f, 1.4723f, 10.445f);
+    public static Vector3 navigationRightPosition = new Vector3(0.109f, 1.596f, 10.165f);
+    public static Vector3 navigationRightRotation = new Vector3(-0.79f, 6.8f, 0f);
+    public static Vector3 dashboardRightPosition = new Vector3(0.6099f, 1.5514f, 10.125f);
+
+
+    public static Vector3 backMirrorRightPosition = new Vector3(0.1188f, 2.1332f, 10.5395f);
+    public static Vector3 leftMirrorRightPosition = new Vector3(1.727f, 1.782f, 10.319f);
+    public static Vector3 rightMirrorRightPosition = new Vector3(-1.498f, 1.785f, 10.275f);
+
+    public static Vector3 cameraMenueRightPosition = new Vector3(0.018f, 1.91f, 13.1f);
+    public static Vector3 cameraMenueRightRotation = new Vector3(-1.87f, -188.31f, 0f);
+    public static Vector3 oculusRightPosition = new Vector3(0.88f, 2.042f, 11.481f); //0.77
+
+
     //Game Object Names
     public const string CameraMenue                = "CameraMenue";
     public const string CameraFrontWall            = "CameraNodeFront";
@@ -26,6 +60,16 @@
     public const string Oculus                     = "Oculus";
     public const string VRCameraDisplay            = "ParticipantCameraDisplay";
 
+    public const string VehicleSteerRight          = "car_right";
+    public const string VehicleSteerLeft           = "car_left";
+    public const string SteeringWheelPivot         = "SteeringFixation";
+    public const string SteeringWheel              = "SteeringWheel";
+    public const string Navigation                 = "Navigation";
+    public const string BackMirrorPivot            = "BackMirror";
+    public const string LeftMirrorPivot            = "LeftMirror";
+    public const string RightMirrorPivot           = "RightMirror";
+    public const string Dashboard                  = "Dashboard";
+        
     public const string ButtonResetOculus          = "ButtonOculusRecalibrate";
     public const string ButtonResetSimulation      = "ButtonResetSimulation";
     public const string ButtonStartSimulation      = "ButtonStartSimulation";

@@ -186,7 +186,6 @@ public class Controller : MonoBehaviour {
     public Component windshieldDisplay;
     public Component wsdDynTint;
 
-    public GameObject steeringWheel;
     public GameObject videoWalls;
     public bool sendSync = false;
     private bool torFired = false;
@@ -236,6 +235,17 @@ public class Controller : MonoBehaviour {
     private GameObject cameraWSD;
     private GameObject vrCameraDisplay;
 
+    private GameObject vehicleSteerLeft;
+    private GameObject vehicleSteerRight;
+    private GameObject steeringWheelPivot;
+    private GameObject steeringWheel;
+    private GameObject navigation;
+    private GameObject mirrorBackPivot;
+    private GameObject mirrorLeftPivot;
+    private GameObject mirrorRightPivot;
+    private GameObject dashboard;
+
+
     private GameObject oculus;
     private GameObject pannelResearch;
     private GameObject pannelSimulation;
@@ -273,6 +283,23 @@ public class Controller : MonoBehaviour {
         pannelResearch = GameObject.Find(DefaultSettings.pannelResearch);
         pannelSimulation = GameObject.Find(DefaultSettings.pannelSimulation);
         pannelWSD = GameObject.Find(DefaultSettings.pannelWSD);
+
+        //Vehicle
+        vehicleSteerLeft = GameObject.Find(DefaultSettings.VehicleSteerLeft);
+        vehicleSteerLeft.SetActive(false);
+        vehicleSteerRight = GameObject.Find(DefaultSettings.VehicleSteerRight);
+        vehicleSteerRight.SetActive(false);
+
+        //Interior
+        steeringWheelPivot = GameObject.Find(DefaultSettings.SteeringWheelPivot);
+        steeringWheel = GameObject.Find(DefaultSettings.SteeringWheel);
+        navigation = GameObject.Find(DefaultSettings.Navigation);
+        dashboard = GameObject.Find(DefaultSettings.Dashboard);
+
+        //Mirrors
+        mirrorBackPivot = GameObject.Find(DefaultSettings.BackMirrorPivot);
+        mirrorLeftPivot = GameObject.Find(DefaultSettings.LeftMirrorPivot);
+        mirrorRightPivot = GameObject.Find(DefaultSettings.RightMirrorPivot);
 
         //Buttons
         buttonResetHeadPosition = GameObject.Find(DefaultSettings.ButtonResetOculus);
@@ -350,15 +377,7 @@ public class Controller : MonoBehaviour {
         seekTime = new Timing();
         log = new Log(LogText);
         log.write("SCC started");
-
-        if (NodeInformation.streetside.Equals("left"))
-        {
-            log.write("The Simulator is set to drive on the left side");
-        }
-        else
-        {
-            log.write("The Simulator is set to drive on the right side");
-        }
+        
         wsdDefault = WSDINFRONT;
 
         wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
@@ -376,6 +395,7 @@ public class Controller : MonoBehaviour {
 
         windshieldDisplay.transform.localPosition = wsdDefault;
         videoWallDefault = videoWalls.transform.position;
+        initDrivingSide();
 
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -636,6 +656,7 @@ public class Controller : MonoBehaviour {
     }
     private void initSettings()
     {
+
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             if (GameObject.FindObjectOfType<AudioListener>() != null)
@@ -688,7 +709,71 @@ public class Controller : MonoBehaviour {
             }
         }
 
-    } 
+    }
+    private void initDrivingSide()
+    {
+
+        // TODO:
+        // - Vehicle (done)
+        // - Oculus Camera Position
+        // - Menue Position
+
+        log.write("WSD Transform  \n "
+                            + "\t\t\tPosition:\t\t\t"
+                            + Math.Round(oculus.transform.position.x, 4) + " : "
+                            + Math.Round(oculus.transform.position.y, 4) + " : "
+                            + Math.Round(oculus.transform.position.z, 4) + " \n "
+                            + "\t\t\tRotation:\t\t");
+        if (NodeInformation.streetside.Equals("left"))
+        {
+            //Steer right (GB, Australia, Inida etc)
+            log.write("The Simulator is set to drive on the left side");
+            vehicleSteerRight.SetActive(true);
+            vehicleSteerLeft.SetActive(false);
+
+            steeringWheelPivot.transform.position = DefaultSettings.steeringWheelLeftPivotPoint;
+
+            navigation.transform.position = DefaultSettings.navigationLeftPosition;
+            navigation.transform.rotation = Quaternion.Euler(DefaultSettings.navigationLeftRotation);
+
+            dashboard.transform.position = DefaultSettings.dashboardLeftPosition;
+
+            mirrorBackPivot.transform.position = DefaultSettings.backMirrorLeftPosition;
+            mirrorLeftPivot.transform.position = DefaultSettings.leftMirrorLeftPosition;
+            mirrorRightPivot.transform.position = DefaultSettings.rightMirrorLeftPosition;
+
+            cameraMenue.transform.position = DefaultSettings.cameraMenueLeftPosition;
+            cameraMenue.transform.rotation = Quaternion.Euler(DefaultSettings.cameraMenueLeftRotation);
+
+            oculus.transform.position = DefaultSettings.oculusLeftPosition;
+            
+        }
+        else
+        {
+            //Steer left (Rest of the World)
+            log.write("The Simulator is set to drive on the right side");
+            vehicleSteerLeft.SetActive(true);
+            vehicleSteerRight.SetActive(false);
+
+            steeringWheelPivot.transform.position = DefaultSettings.steeringWheelRightPivotPoint;
+
+            navigation.transform.position = DefaultSettings.navigationRightPosition;
+            navigation.transform.rotation = Quaternion.Euler(DefaultSettings.navigationRightRotation);
+
+            dashboard.transform.position = DefaultSettings.dashboardRightPosition;
+
+            mirrorBackPivot.transform.position = DefaultSettings.backMirrorRightPosition;
+            mirrorLeftPivot.transform.position = DefaultSettings.leftMirrorRightPosition;
+            mirrorRightPivot.transform.position = DefaultSettings.rightMirrorRightPosition;
+
+            cameraMenue.transform.position = DefaultSettings.cameraMenueRightPosition;
+            cameraMenue.transform.rotation = Quaternion.Euler(DefaultSettings.cameraMenueRightRotation);
+
+            oculus.transform.position = DefaultSettings.oculusRightPosition;
+
+        }
+    }
+
     private void loadVRSettings()
     {
         oculus.SetActive(true);
@@ -709,7 +794,6 @@ public class Controller : MonoBehaviour {
         //    Debug.Log(Display.displays[i].ToString());
         //}
     }
-    
     private void loadCaveSettings()
     {
         
