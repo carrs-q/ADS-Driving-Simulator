@@ -95,21 +95,21 @@ public class Controller : MonoBehaviour {
     public const string SHUTDOWNSIM = "ZZZ";
     public const string EMPTYMESSAGE = "undefined";
 
-    private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
-    private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
-    private Vector3 WSDDyn = new Vector3(0, 0, 0);
+    private Vector3 WSDINCAR =      new Vector3(-0.8f, 2.0f, 10f);
+    private Vector3 WSDINFRONT =    new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
+    private Vector3 WSDDyn =        new Vector3(0, 0, 0);
     private const float keypressScale = 0.1f;
    
     private string[] projectList;
 
-    private static Controller instance = null;
-    public OBDData obdData;
-    private SimulationContent simulationContent;
-    private Simulation simulator;
-    private WindShield wsd;
-    private SyncData syncData;
-    private Log log;
-    private int oldStatus;
+    private static Controller   instance = null;
+    public  OBDData             obdData;
+    private SimulationContent   simulationContent;
+    private Simulation          simulator;
+    private WindShield          wsd;
+    private SyncData            syncData;
+    private Log                 log;
+    private int                 oldStatus;
 
     public static Controller getController()
     {
@@ -202,12 +202,12 @@ public class Controller : MonoBehaviour {
     public Component windshieldDisplay;
     public Component wsdDynTint;
 
-    public GameObject videoWalls;
-    public bool sendSync = false;
+    public  bool sendSync = false;
     private bool torFired = false;
     private bool sendTOR = false;
     private string torTimeRemaining = "";
 
+    public GameObject videoWalls;
     private GameObject buttonResetHeadPosition;
     private GameObject buttonResetSimulation;
     private GameObject buttonStartSimulation;
@@ -260,7 +260,6 @@ public class Controller : MonoBehaviour {
     private GameObject mirrorLeftPivot;
     private GameObject mirrorRightPivot;
     private GameObject dashboard;
-
 
     private GameObject oculus;
     private GameObject pannelResearch;
@@ -445,6 +444,7 @@ public class Controller : MonoBehaviour {
             windshieldDisplay.transform.localPosition = WSDINFRONT;
             shutdown = false;
             Cursor.visible = false;
+            createClientNode();
 
             if (NodeInformation.debug != 1)
             {
@@ -701,6 +701,7 @@ public class Controller : MonoBehaviour {
         
         if (NodeInformation.type.Equals(SLAVENODE))
         {
+
             if (oculus != null)
             {
                 Destroy(oculus);
@@ -708,7 +709,8 @@ public class Controller : MonoBehaviour {
             if (NodeInformation.screen == 1)
             {
                 //Update Later with outside renderer
-                //WSDCamera.SetActive(true); 
+                //WSDCamera.SetActive(true);
+                
                 windshieldDisplay.transform.localPosition = WSDINFRONT;
                 
             }
@@ -938,11 +940,11 @@ public class Controller : MonoBehaviour {
                 //TextWindow.text += string.Format("{0}", cache);
                 if (NodeInformation.type.Equals(MASTERNODE))
                 {
-                    Debug.Log("Master: " + string.Format("{0}"));
+                    Debug.Log("Master: " + string.Format(cache));
                 }
                 else
                 {
-                    Debug.Log("Slave: " + string.Format("{0}"));
+                    Debug.Log("Slave: " + string.Format(cache));
                 }
                 cache = null;
             }
@@ -1022,12 +1024,13 @@ public class Controller : MonoBehaviour {
         {
             if (string.IsNullOrEmpty(cache))
             {
-                //cache = string.Format("<color=green>{0}</color>\n", finalMessage);
+                cache = string.Format(finalMessage);
             }
             else
             {
-                //cache += string.Format("<color=green>{0}</color>\n", finalMessage);
+                cache += string.Format( finalMessage);
             }
+            log.write(cache);
         }
     }
     private void OnClientLog(string message)
@@ -1087,13 +1090,13 @@ public class Controller : MonoBehaviour {
     }
 
 
-    private void OnClientConnected(Client client)
-    {
+    private void OnClientConnected(Client client){
         clients.Add(client);
+        Debug.Log("new client connected");
         log.write("Client has been connected");
     }
-    private void OnClientDisconnected(Client client)
-    {
+
+    private void OnClientDisconnected(Client client){
         clients.Remove(client);
         log.write("Client has been disconnected");
     }
