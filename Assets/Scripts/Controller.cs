@@ -7,12 +7,13 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using UnityEngine.Networking;
 using TMPro;
 using System.Collections;
 using MyNetwork;
-using UnityEngine.Networking;
 using System.Text;
 using System.Runtime.InteropServices;
+
 
 //TODO
 /*
@@ -81,8 +82,8 @@ public class Controller : MonoBehaviour {
     public const int SPEEDOMETER = 6;
 
     //MessageCodes
-    public const int BUFFERSIZE = 1024;
-    public const int MAX_CONNECTION = 10;
+    public const int    BUFFERSIZE = 1024;
+    public const int    MAX_CONNECTION = 10;
     public const string REQDISPLAY = "RQD";
     public const string RESDISPLAY = "RSD";
     public const string SENDPROJECT = "PRO";
@@ -98,18 +99,8 @@ public class Controller : MonoBehaviour {
     private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
     private Vector3 WSDDyn = new Vector3(0, 0, 0);
     private const float keypressScale = 0.1f;
-
-    private int hostID = -1, connectionID, clientID;
-    private byte relChannel;             // For Connections
-    private byte unrelSeqChannel;        // If Streaming is needed
-    private byte allCostDeliChannel;     // For Simulator States
-    private byte relFragSecChannel;     //Content Delivery
-    private bool serverStarted = false, isConnected = false, isStarted = false;
-    private byte error;
-    private float connectionTime;
-    private List<ClientNode> clients;
+   
     private string[] projectList;
-
 
     private static Controller instance = null;
     public OBDData obdData;
@@ -129,14 +120,40 @@ public class Controller : MonoBehaviour {
     private int actualMode;             //Cave, VR or AR
     private int actualStatus = INIT;    //Actual Status (START, PAUSE etc)
 
+
+    //new Network
+    private List<Client> clients = new List<Client>();
+    private Server _server;
+    private Client _client;
+
+    private object cacheLock = new object();
+    private string cache;
+
+    private TcpListener tcpListener;
+    private Thread tcpListenerThread;
+
+
+
+    //old Network
+    /*
+    private int hostID = -1, connectionID, clientID;
+    private byte relChannel;             // For Connections
+    private byte unrelSeqChannel;        // If Streaming is needed
+    private byte allCostDeliChannel;     // For Simulator States
+    private byte relFragSecChannel;     //Content Delivery
+    private bool isStarted = false;
+    private byte error;
+    private float connectionTime;
+    //private List<ClientNode> clients;
+    */
+
     private Config config;
     private IPAddress serverIP;
-    private int port;
     private IPAddress irIPAddress;
+    private int port;
+
     private string path;
     private bool enabledSensorSync;
-    private static TcpListener listener;
-    private Stream stream;
     private List<Thread> threadList;
     private bool manualIP;
     private string customAddress;
@@ -149,7 +166,6 @@ public class Controller : MonoBehaviour {
     private Vector3 wsdRotationDyn;
     private Vector3 wsdSizeDefault;
     private Vector3 wsdSizeDyn;
-    private NetworkClient networkClient;
 
     private bool videoPlayerAttached;
     private string project;
@@ -370,7 +386,7 @@ public class Controller : MonoBehaviour {
         lastTOR = DateTime.Now;
         StartCoroutine(getProjectList());
         this.gameObject.SetActive(true);
-        //Network.sendRate = 50;
+
         wsd = new WindShield();
         simulator = new Simulation();
         obdData = new OBDData();
@@ -397,11 +413,21 @@ public class Controller : MonoBehaviour {
         videoWallDefault = videoWalls.transform.position;
         initDrivingSide();
 
+        //Network init
+        _server = new Server();
+        _server.OnLog += OnServerReceivedMessage;
+        _client = new Client();
+        _client.OnConnected += OnClientConnected;
+        _client.OnDisconnected += OnClientDisconnected;
+        _client.OnMessageReceived += OnClientReceivedMessage;
+        _client.OnLog += OnClientLog;
+
+
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             renderMode = MASTER;
             actualMode = INIT; //default
-            clients = new List<ClientNode>();
+            //clients = new List<ClientNode>();
 
             //Changed from JSON to XML to reduce files
             irIPAddress = IPAddress.Parse(NodeInformation.serverIp);
@@ -419,7 +445,7 @@ public class Controller : MonoBehaviour {
             windshieldDisplay.transform.localPosition = WSDINFRONT;
             shutdown = false;
             Cursor.visible = false;
-            
+
             if (NodeInformation.debug != 1)
             {
                 debugInformations(false);
@@ -433,6 +459,7 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         manualIP = false;
     }
+    
     void Update () {
         if (!shutdown)
         {
@@ -444,30 +471,18 @@ public class Controller : MonoBehaviour {
                     prepareSimulator();
                 }
             }
-            if (serverStarted)
+
+
+            if (_server.IsConnected || _client.IsConnected)
             {
-                serverRecieve();
+                receive();
             }
-            else if (isConnected)
-            {
-                nodeRecieve();
-            }
-            else if (!connectionTry)
-            {
-                if (NodeInformation.type.Equals(SLAVENODE))
-                {
-                    if (!simulationContent.isProjectLoaded() || simulationContent.areFilesReady())
-                    {
-                        Debug.Log("Reconnect");
-                        changeMode(CAVEMODE);
-                        StartCoroutine(AttemptRecconnect());
-                    }
-                }
-            }
+
             //TODO distinguish if Master or Slave
             if (renderMode == MASTER)
             {
-                sendStatusToClient();
+                //TODO
+                //sendStatusToClient();
             }
             if (renderMode == MASTER && syncData.getStatus() == START)
             {
@@ -505,7 +520,8 @@ public class Controller : MonoBehaviour {
             {
                 if (syncData.doesStatusChanged())
                 {
-                    this.statusChange(syncData.getStatus());
+                    //TODO
+                    //this.statusChange(syncData.getStatus());
                 }
                 steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
                 digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
@@ -620,7 +636,7 @@ public class Controller : MonoBehaviour {
                         buttonStartSimulation.GetComponent<Button>().interactable = true;
                     }
                     wsd.updateWSDDefault(wsdDefault + WSDDyn);
-                    sendStatusToClient();
+                    //sendStatusToClient();
                 }
 
             }
@@ -827,7 +843,6 @@ public class Controller : MonoBehaviour {
                 default: { this.GetComponent<Camera>().targetDisplay = 0;
                     } break;
             }
-            StartCoroutine(AttemptRecconnect());
         }
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -845,6 +860,8 @@ public class Controller : MonoBehaviour {
         videoWalls.transform.localPosition = videoWallDefault;
         wsd.updateWSDDefault(new Vector3(wsdDefault.x + WSDDyn.x, wsdDefault.y + WSDDyn.y, wsdDefault.z + WSDDyn.z));
     }
+
+
     IEnumerator getProjectList()
     {
         UnityWebRequest www = UnityWebRequest.Get(NodeInformation.cdn+"/getprojectlist");
@@ -879,115 +896,59 @@ public class Controller : MonoBehaviour {
         log.write("Project " + project + " loaded");
         this.project = project;
         cdnProject = true;
-        sendProjectToClient(project);
+        //sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
     }
     
     //Network Init
     private void createMasterServer()
     {
-        if (!serverStarted)
+        if (!_server.IsConnected)
         {
-            //IP Configurations
-            NetworkTransport.Init();
-            Network.proxyIP = NodeInformation.serverIp;
-            bool useNat = Network.HavePublicAddress();
-
-            //Channel
-            ConnectionConfig cc = new ConnectionConfig();
-            relChannel = cc.AddChannel(QosType.Reliable);
-            unrelSeqChannel = cc.AddChannel(QosType.UnreliableSequenced);
-            relFragSecChannel = cc.AddChannel(QosType.ReliableFragmentedSequenced);
-            allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
-            
-            //Start
-            HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
-            NetworkTransport.Init();
-
-            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort, null);
-            if (hostID < 0)
-            {
-                Debug.Log("Server creation failed");
-            }
-
-            if (error != (byte)NetworkError.Ok)
-            {
-                NetworkError nerror = (NetworkError)error;
-                Debug.Log(nerror);
-            }
-            else
-            {
-                serverStarted = true;
-                Debug.Log("Network Master started");
-            }
+            _server.IPAddress = NodeInformation.serverIp;
+            int.TryParse(NodeInformation.serverIp, out NodeInformation.serverPort);
+            _server.StartServer();
         }
     }
-    
-    // Sub Init TODO Reconnecter
-    private IEnumerator AttemptRecconnect()
-    {
-        connectionTry = true;
-        yield return new WaitForSeconds(5.0f);
-        createClientNode();
-    }
+
     private void createClientNode()
     {
-        NetworkTransport.Shutdown();
-        NetworkTransport.Init();
-        ConnectionConfig cc = new ConnectionConfig();
-        relChannel = cc.AddChannel(QosType.Reliable);
-        unrelSeqChannel = cc.AddChannel(QosType.UnreliableSequenced);
-        relFragSecChannel = cc.AddChannel(QosType.ReliableFragmentedSequenced);
-        allCostDeliChannel = cc.AddChannel(QosType.AllCostDelivery);
-
-        HostTopology topo = new HostTopology(cc, MAX_CONNECTION);
-        try
+        if (!_client.IsConnected)
         {
-            hostID = NetworkTransport.AddHost(topo, NodeInformation.serverPort + 1);
-            if (hostID < 0)
-            {
-                Debug.Log("Client Socket creation failed");
-                this.disconnectNode();
-            }
-            else
-            {
-                connectionID = NetworkTransport.Connect(hostID, NodeInformation.serverIp, NodeInformation.serverPort, 0, out error);
-                connectionTime = Time.time;
-                if (error != (byte)NetworkError.Ok)
-                {
-                    this.disconnectNode();
-                    NetworkError nerror = (NetworkError)error;
-                    Debug.Log(nerror);
-                }
-                else
-                { // TODO: IS OK even without Server... Figure out why
-                    isConnected = true;
-                    connectionTry = false;
-                    Debug.Log("Node Successfull connected");
-                }
-            }
+            int.TryParse(NodeInformation.serverIp, out NodeInformation.serverPort);
+            _client.ConnectToTcpServer();
         }
-        catch(Exception e){
-            Network.Disconnect();
-
-            Debug.Log(e);
-        }
-
-       
     }
     private void disconnectNode()
     {
-        if (isConnected)
+        if (_client.IsConnected)
         {
-            //NetworkTransport.RemoveHost(hostID);
-            //NetworkTransport.Shutdown();
-            isConnected = false;
+            _client.CloseConnection();
         }
     }
 
     //Network Recieve
-    private void serverRecieve()
+    private void receive()
     {
+        lock (cacheLock)
+        {
+            if (!string.IsNullOrEmpty(cache))
+            {
+                //TODO: receive data
+                //TextWindow.text += string.Format("{0}", cache);
+                if (NodeInformation.type.Equals(MASTERNODE))
+                {
+                    Debug.Log("Master: " + string.Format("{0}"));
+                }
+                else
+                {
+                    Debug.Log("Slave: " + string.Format("{0}"));
+                }
+                cache = null;
+            }
+        }
+
+        /*
         int outHostId;
         int outConnectionId;
         int outChannelId;
@@ -1029,379 +990,115 @@ public class Controller : MonoBehaviour {
                 }
                 break;
         }
+        */
     }
-    private void nodeRecieve()
-    {
-        int outHostId;
-        int outConnectionId;
-        int outChannelId;
 
-        byte[] recBuffer = new byte[BUFFERSIZE];
-        int dataSize;
-        byte error;
-        NetworkEventType recData = NetworkTransport.Receive(out outHostId, out outConnectionId, out outChannelId, recBuffer, BUFFERSIZE, out dataSize, out error);
-        if ((NetworkError)error != NetworkError.Ok)
+
+    //New Network functions
+    public void SendMessageToServer()
+    {
+        if (_client.IsConnected)
         {
-            this.disconnectNode();
-            NetworkError nerror = (NetworkError)error;
-            Debug.Log("Recieve Error: " + nerror);
-        }
-        switch (recData)
-        {
-            case NetworkEventType.ConnectEvent: 
-                clientRequestProject(outChannelId);
-                break;
-            case NetworkEventType.DataEvent:       //3
-                string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
-                string[] splitData = msg.Split('|');
-                switch (splitData[0])
+            string message = "test";
+            if (message.StartsWith("!ping"))
+            {
+                message += " " + (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
+            }
+
+            if (!string.IsNullOrEmpty(message))
+            {
+                if (_client.SendMessage(message))
                 {
-                    case REQDISPLAY:
-                        nodeRequestDisplay(splitData[1]);
-                        break;
-                    case SENDPROJECT:
-                        clientLoadProject(splitData[1], splitData[2]);
-                        break;
-                    case REQPROJECT:
-                        Debug.Log(msg);
-                        if (splitData[1] != EMPTYMESSAGE)
-                        {
-                            clientLoadProject(splitData[1], splitData[2]);
-                        }
-                        break;
-                    case STATUSUPDATE:
-                        clientRecieveUpdate(msg);
-                        break;
-                    case TORMESSAGE:
-                        //TODO TOR Client functions
-                        ; break;
-                    case VOLUMECONTROL:
-                        {
-                            clientRecieveVolume(splitData[1], splitData[2], splitData[3], splitData[4]);
-                        } break;
-                    case SEEKMSG:
-                        {
-                            clientSeek(splitData[1]);
-                        }; break;
-                    case SHUTDOWNSIM:
-                        {
-                            shutdownSimulator();
-                        };break;
-                    default:
-                        {
-                            Debug.Log("Unkown Message" + msg);
-                        }
-                        ;break;
+                   // MessageInputField.text = string.Empty;
                 }
-                break;
-            case NetworkEventType.DisconnectEvent:
-                this.disconnectNode();
-                break;
-        }
-    }
-
-    //Network Function Server-Side
-    private void serverReqDisplay(int conID)
-    { //On Server
-        clients.Add(new ClientNode(conID, 0));
-        string msg = REQDISPLAY + "|" + conID;
-        serverToClientSend(msg, relChannel, conID);
-        sendVolume();
-    }
-    private void serverUpdateDisplay(int conID, int displayID)
-    {
-        foreach(ClientNode cN in clients)
-        {
-            if (cN.getConnectionID() == conID)
-            {
-                cN.setdisplayID(displayID);
-                log.write(getNodeName(displayID) + " has been connected");
-            }
-        }
-    }
-    private void sendProjectToClient(string project)
-    {
-        //TODO addIP
-        string msg = SENDPROJECT + "|" + project +"|"+ NodeInformation.cdn;
-        serverToClientListSend(msg, relChannel, clients);
-    }
-    private void sendStatusToClient()
-    {
-        string msg = STATUSUPDATE + "|" + syncData.getStat();
-        if (wsd.isWSDActive())
-        {
-            msg += wsd.wsdMessageString(obdData.getSteeringWheelAngle());
-        }
-        if (syncData.doesStatusChanged())
-        {
-            this.sendSync = true;
-            serverToClientListSend(msg, allCostDeliChannel, clients);
-        }
-        else if(syncData.getStatus() == START)
-        {
-            if(lastMessage != msg)
-            {
-                lastMessage = msg;
-                serverToClientListSend(msg, unrelSeqChannel, clients);
-            }
-        }
-    }
-    private void serverProjectRequest(int conID)
-    {
-        string message = REQPROJECT + "|";
-        if (simulationContent.isProjectLoaded())
-        {
-            message += simulationContent.getProjectName() +"|"+ simulationContent.getProjecturl();
-        }
-        else
-        {
-            message += EMPTYMESSAGE;
-        }
-        serverToClientSend(message, relChannel, conID);
-    }
-    public void serverTakeOverRequest()
-    {
-        this.sendTOR = true;
-        string message = TORMESSAGE + "|";
-        serverToClientListSend(message, relChannel, clients);
-    }
-    public void sendVolume()
-    {
-        string message = VOLUMECONTROL + "|";
-        message += sliderVolumeMaster.GetComponent<Slider>().value + "|";
-        message += sliderInCarVolume.GetComponent<Slider>().value + "|";
-        message += sliderWarnVolume.GetComponent<Slider>().value + "|";
-        message += sliderWSDVolume.GetComponent<Slider>().value;
-        serverToClientListSend(message, relChannel, clients);
-    }
-    public void sendSeekTime()
-    {
-
-        string message = SEEKMSG + "|";
-        message += seekTime.getTotalMillis();
-        serverToClientListSend(message, relChannel, clients);
-    }
-    public void disconnectMessage(int conID)
-    {
-        int connectedClientCount = clients.Count;
-        for (int i = 0; i <= connectedClientCount; i++)
-        {
-            if (clients[i].getConnectionID() == conID)
-            {
-                log.write(getNodeName(clients[i].getDisplayID()) + " has been disconnected");
-                clients.RemoveAt(i);
-                break;
             }
         }
     }
 
-    
-    //Network function Client-Side
-    private void nodeRequestDisplay(string clientID)
+    private void OnClientReceivedMessage(Server.ServerMessage message)
     {
-        //Store client ID
-        this.clientID = int.Parse(clientID);
-
-        //Send Displaynr back  NodeInformation.screen
-        clientToServerSend(RESDISPLAY + "|" + NodeInformation.screen, relChannel);
-    }
-    private void clientLoadProject(string project, string address)
-    {
-        cdnProject = true;
-        this.project = project;
-        loadSimulatorSetup(address, project);
-    }
-    private void clientRecieveUpdate(string msg)
-    {
-        string[] data = msg.Split('|');
-        syncData.setSimState(int.Parse(data[1]));
-        if (syncData.doesStatusChanged())
+        string finalMessage = ProcessServerMessage(message);
+        lock (cacheLock)
         {
-            statusChange(syncData.getStatus());
-        }
-        syncData.updateOBD(
-               int.Parse(data[2]),
-               int.Parse(data[3]),
-               int.Parse(data[4]),
-               int.Parse(data[5]),
-               bool.Parse(data[6]),
-               bool.Parse(data[7]));
-
-        if (data.Length >= 18)
-        {
-
-            wsd.setWSD(
-                new Vector3(float.Parse(data[8]), float.Parse(data[9]), float.Parse(data[10])),
-                new Vector3(float.Parse(data[11]), float.Parse(data[12]), float.Parse(data[13])),
-                new Vector3(float.Parse(data[14]), float.Parse(data[15]), float.Parse(data[16])));
-            wsd.setWSDChroma(bool.Parse((data[17])));
-            if (!wsd.isWSDActive())
+            if (string.IsNullOrEmpty(cache))
             {
-                wsd.enableWSD();
+                //cache = string.Format("<color=green>{0}</color>\n", finalMessage);
             }
-        }
-        else
-        {
-            if (wsd.isWSDActive())
+            else
             {
-                wsd.disableWSD();
-            }
-        }
-        if (data.Length == 19 || data.Length == 9)
-        {
-            if (!wsd.isTiningActive())
-            {
-                wsd.setWSDTinting(true);
-            }
-            wsd.setTintingTransparency(float.Parse(data[data.Length - 1]));
-        }
-        else
-        {
-            if (wsd.isTiningActive())
-            {
-                wsd.setWSDTinting(false);
-            };
-        }
-    }
-    private void clientRecieveVolume(string volMaster, string volAmb, string volTOR, string volWSD)
-    {
-        changeVolume(DefaultSettings.SliderVolumeMaster, int.Parse(volMaster));
-        changeVolume(DefaultSettings.SliderInCarVolume, int.Parse(volAmb));
-        changeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
-        changeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
-    }
-    private void defaultVolumes()
-    {
-        if (NodeInformation.type.Equals(MASTERNODE))
-        {
-            sliderVolumeMaster.GetComponent<Slider>().value = DefaultSettings.defaultVolumeMaster;
-            sliderInCarVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeAmbiente;
-            sliderWarnVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWarning;
-            sliderWSDVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWSD;
-        }
-        changeVolume(DefaultSettings.SliderVolumeMaster, DefaultSettings.defaultVolumeAmbiente);
-        changeVolume(DefaultSettings.SliderInCarVolume, DefaultSettings.defaultVolumeAmbiente);
-        changeVolume(DefaultSettings.SliderWarnVolume, DefaultSettings.defaultVolumeWarning);
-        changeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
-
-    }
-    public void changeVolume(string sourceName, int value)
-    {
-        if(isMasterAndCave())
-        {
-            sendVolume();
-        }
-        float volume = ((float)value)/ 100;
-        //Network Send
-        switch (sourceName)
-        {
-            case DefaultSettings.SliderVolumeMaster:
-                {
-                    if (GameObject.FindObjectOfType<AudioListener>() != null)
-                    {
-                        AudioListener.volume = volume;
-                        AudioListener.pause = false;
-                    }
-                }; break;
-            case DefaultSettings.SliderInCarVolume:
-                {
-                    leftMirrorSound.volume = volume;
-                    rightMirrorSound.volume = volume;
-                }; break;
-            case DefaultSettings.SliderWarnVolume:
-                {
-                    // This is a Android Setting
-                }; break;
-            case DefaultSettings.SliderWSDVolume:
-                {
-                    windShieldSound.volume = volume;
-                }; break;
-            default:
-                {
-
-                };break;
-        }
-    }
-    private void statusChange(int status)
-    {
-        switch (status)
-        {
-            case START:
-                {
-                    startSimulation();
-                }
-                break;
-            case PAUSE:
-                {
-                    stopSimulation();
-                }
-                break;
-            case RESET:
-                {
-                    resetSimulation();
-                }
-                break;
-        }
-    }
-    private void changeScreen(int screen)
-    {
-        //TODO Test, but should work
-        renderMode = screen;
-        changeMode(actualMode);
-    }
-    private void clientSeek(string millisString)
-    {
-        Int64 millis = Int64.Parse(millisString);
-        this.networkSeek(new Timing(millis));
-    }
-    private void clientRequestProject(int channelId)
-    {
-        clientToServerSend(REQPROJECT, channelId);
-    }
-   
-    //Send to specific client
-    private void serverToClientSend(string message, int channelID, int conID)
-    {
-        List<ClientNode> c = new List<ClientNode>();
-        c.Add(clients.Find(x => x.getConnectionID() == conID));
-        serverToClientListSend(message, channelID, c);
-    }
-   
-    //Send to all clients
-    private void serverToClientListSend(string message, int channelID, List<ClientNode> c)
-    {
-        byte[] msg = Encoding.Unicode.GetBytes(message);
-        foreach(ClientNode cN in c)
-        {
-            if( !NetworkTransport.Send(hostID, cN.getConnectionID(), channelID, msg, message.Length * sizeof(char), out error)){
-                NetworkError nerror = (NetworkError)error;
-                Debug.Log("Message not sended because: " + nerror);
-                if(channelID==relChannel || channelID == relFragSecChannel)
-                    StartCoroutine(tryAgain(message, channelID, c));
+                //cache += string.Format("<color=green>{0}</color>\n", finalMessage);
             }
         }
     }
-    
-    //If Message is important not sended try again in 5 seconds
-    private IEnumerator tryAgain(string message, int channelID, List<ClientNode> c)
+    private void OnClientLog(string message)
     {
-        yield return new WaitForSeconds(5.0f);
-        this.serverToClientListSend(message, channelID, c);
+        lock (cacheLock)
+        {
+            if (string.IsNullOrEmpty(cache))
+            {
+                cache = string.Format(message);
+            }
+            else
+            {
+                cache += string.Format(message);
+            }
+        }
     }
-    private void clientToServerSend(string message, int channelID)
-    {
-        byte[] msg = Encoding.Unicode.GetBytes(message);
 
-        if (NetworkTransport.Send(hostID, connectionID, channelID, msg, (message.Length * sizeof(char)), out error))
+    private void OnServerReceivedMessage(string message)
+    {
+        lock (cacheLock)
         {
-            Debug.Log("Sended to Server: " + message);
-        }
-        else
-        {
-            NetworkError nerror = (NetworkError)error;
-            Debug.Log("Message not sended because: " + nerror);
+            if (string.IsNullOrEmpty(cache))
+            {
+                cache = string.Format(message);
+            }
+            else
+            {
+                cache += string.Format(message);
+            }
         }
     }
+    private string ProcessServerMessage(Server.ServerMessage message)
+    {
+        string data = message.Data;
+
+        if (message.Data.StartsWith("!"))
+        {
+            string[] split = data.Split(' ');
+            switch (split[0])
+            {
+                case "!ping":
+                    double sentTimeStamp = double.Parse(split[1]);
+                    double recTimeStamp = double.Parse(split[2]);
+                    double nowTimeStamp = (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
+                    double toServerTime = recTimeStamp - sentTimeStamp;
+                    double fromServerTime = nowTimeStamp - recTimeStamp;
+                    double totalTime = nowTimeStamp - sentTimeStamp;
+                    data = string.Format("!ping To Server: ({2}ms) {0}ms From Server: {1}",
+                        toServerTime.ToString("F2"),
+                        fromServerTime.ToString("F2"),
+                        totalTime.ToString("F2"));
+                    break;
+            }
+        }
+
+        return string.Format("{0}: {1}", message.SenderData.Name, data);
+    }
+
+
+    private void OnClientConnected(Client client)
+    {
+        clients.Add(client);
+        log.write("Client has been connected");
+    }
+    private void OnClientDisconnected(Client client)
+    {
+        clients.Remove(client);
+        log.write("Client has been disconnected");
+    }
+
+
 
     // Core Functions for Simulator
     public bool requestSimStart()
@@ -1582,7 +1279,8 @@ public class Controller : MonoBehaviour {
         {
             log.recordedStart(Labels.torFired);
         }
-        serverTakeOverRequest();
+        //TODO
+        //serverTakeOverRequest();
         if (checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn)
         {
             checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn = false;
@@ -1948,7 +1646,58 @@ public class Controller : MonoBehaviour {
         }
 
     }
+    private void defaultVolumes()
+    {
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            sliderVolumeMaster.GetComponent<Slider>().value = DefaultSettings.defaultVolumeMaster;
+            sliderInCarVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeAmbiente;
+            sliderWarnVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWarning;
+            sliderWSDVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWSD;
+        }
+        //changeVolume(DefaultSettings.SliderVolumeMaster, DefaultSettings.defaultVolumeAmbiente);
+        //changeVolume(DefaultSettings.SliderInCarVolume, DefaultSettings.defaultVolumeAmbiente);
+        //changeVolume(DefaultSettings.SliderWarnVolume, DefaultSettings.defaultVolumeWarning);
+        //changeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
 
+    }
+    public void changeVolume(string sourceName, int value)
+    {
+        if (isMasterAndCave())
+        {
+            //sendVolume();
+        }
+        float volume = ((float)value) / 100;
+        //Network Send
+        switch (sourceName)
+        {
+            case DefaultSettings.SliderVolumeMaster:
+                {
+                    if (GameObject.FindObjectOfType<AudioListener>() != null)
+                    {
+                        AudioListener.volume = volume;
+                        AudioListener.pause = false;
+                    }
+                }; break;
+            case DefaultSettings.SliderInCarVolume:
+                {
+                    leftMirrorSound.volume = volume;
+                    rightMirrorSound.volume = volume;
+                }; break;
+            case DefaultSettings.SliderWarnVolume:
+                {
+                    // This is a Android Setting
+                }; break;
+            case DefaultSettings.SliderWSDVolume:
+                {
+                    windShieldSound.volume = volume;
+                }; break;
+            default:
+                {
+
+                }; break;
+        }
+    }
 
     //Video Controll Helping Method for Seeking
     private void Seek(VideoPlayer p, float additionalTime)
@@ -1986,7 +1735,11 @@ public class Controller : MonoBehaviour {
         {
             this.resetSimulation();
             if (renderMode == MASTER)
-                this.sendSeekTime();
+            {
+
+                //TODO
+                //this.sendSeekTime();
+            }
         }
     }
     public void networkSeek(Timing time)
@@ -2060,7 +1813,7 @@ public class Controller : MonoBehaviour {
             if (checkBoxShutdownNodes.GetComponent<Toggle>().isOn)
             {
                 string msg = SHUTDOWNSIM + "|" + "byebye";
-                serverToClientListSend(msg, allCostDeliChannel, clients);
+                //serverToClientListSend(msg, allCostDeliChannel, clients);
             }
             guiProtection(false);
             string url;
@@ -2123,7 +1876,9 @@ public class Controller : MonoBehaviour {
     {
         if (NodeInformation.type.Equals(MASTERNODE))
         {
+            //TODO
             syncData.setSimState(marker);
+            /*
             if (Network.isServer)
             {
                 if (this.enabledSensorSync)
@@ -2131,6 +1886,7 @@ public class Controller : MonoBehaviour {
                     this.actualStatus = marker;
                 }
             }
+            */
         }
     }
     public Config getConfig()
