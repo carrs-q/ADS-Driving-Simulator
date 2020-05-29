@@ -19,9 +19,10 @@ public class Client : MonoBehaviour
     private IPAddress ipAddress;
     private int port;
     private IPEndPoint remoteEndpoint;
-    private Socket client;
+    private static Socket client;
     private ProtocolType protocolType;
     private SocketType socketType;
+    private Thread socketListener;
     #endregion
 
     // ManualResetEvent instances signal completion.  
@@ -75,6 +76,22 @@ public class Client : MonoBehaviour
             // Connect to the remote endpoint.  
             client.BeginConnect(remoteEndpoint, new AsyncCallback(ConnectCallback), client);
 
+            socketListener = new Thread(new ThreadStart(Listen));
+            socketListener.Start();
+           
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+        }
+    }
+
+    private static void Listen()
+    {
+        Debug.Log("Server is now listening");
+        try
+        {
+            //Create threads from here as well
             connectDone.WaitOne();
 
             // Send test data to the remote device.  
@@ -87,16 +104,19 @@ public class Client : MonoBehaviour
 
             // Write the response to the console.  
             Console.WriteLine("Response received : {0}", response);
-
-            // Release the socket.  
-            client.Shutdown(SocketShutdown.Both);
-            client.Close();
-
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.ToString());
+            Debug.Log(e.ToString());
         }
+    }
+
+    private void StopClient()
+    {
+        // Release the socket.  
+        client.Shutdown(SocketShutdown.Both);
+        client.Close();
+        socketListener.Abort();
     }
 
     private static void ConnectCallback(IAsyncResult ar)
@@ -206,4 +226,14 @@ public class Client : MonoBehaviour
         }
     }
 
+
+    void OnApplicationQuit()
+    {
+        StopClient();
+    }
+
+    void OnDestroy()
+    {
+        StopClient();
+    }
 }

@@ -908,15 +908,12 @@ public class Controller : MonoBehaviour {
     //Network Init
     private void createMasterServer()
     {
-        //Thread server = new Thread(_server.CreateServer(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort));
         _server.CreateServer(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort);
     }
 
     private void createClientNode()
     {
-        //TODO
         _client.CreateClient(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort);
-
     }
     private void disconnectNode()
     {

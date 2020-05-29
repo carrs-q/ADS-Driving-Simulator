@@ -84,10 +84,9 @@ public class Server : MonoBehaviour
         }
     }
 
-    private void ServerStop()
+    private void StopServer()
     {
         //Shutdown Socket
-        Debug.Log("Halt Stopp");
         try
         {
             socket.Shutdown(SocketShutdown.Both);
@@ -210,10 +209,10 @@ public class Server : MonoBehaviour
 
     void OnApplicationQuit()
     {
-        ServerStop();
+        StopServer();
     }
     void OnDestroy()
     {
-        ServerStop();
+        StopServer();
     }
 }
