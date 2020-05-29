@@ -416,8 +416,9 @@ public class Controller : MonoBehaviour {
         _server = new Server();
         _server.OnLog += OnServerReceivedMessage;
 
-        /*
+        
         _client = new Client();
+        /*
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
         _client.OnMessageReceived += OnClientReceivedMessage;
@@ -914,6 +915,8 @@ public class Controller : MonoBehaviour {
     private void createClientNode()
     {
         //TODO
+        _client.CreateClient(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort);
+
     }
     private void disconnectNode()
     {
