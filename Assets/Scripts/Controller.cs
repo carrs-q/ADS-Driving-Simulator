@@ -384,7 +384,7 @@ public class Controller : MonoBehaviour {
         torTime = new Timing();
         lastTOR = DateTime.Now;
         StartCoroutine(getProjectList());
-        this.gameObject.SetActive(true);
+        gameObject.SetActive(true);
 
         wsd = new WindShield();
         simulator = new Simulation();
@@ -415,12 +415,14 @@ public class Controller : MonoBehaviour {
         //Network init
         _server = new Server();
         _server.OnLog += OnServerReceivedMessage;
+
+        /*
         _client = new Client();
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
         _client.OnMessageReceived += OnClientReceivedMessage;
         _client.OnLog += OnClientLog;
-
+        */
 
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -444,7 +446,6 @@ public class Controller : MonoBehaviour {
             windshieldDisplay.transform.localPosition = WSDINFRONT;
             shutdown = false;
             Cursor.visible = false;
-            createClientNode();
 
             if (NodeInformation.debug != 1)
             {
@@ -459,7 +460,6 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         manualIP = false;
     }
-    
     void Update () {
         if (!shutdown)
         {
@@ -472,11 +472,12 @@ public class Controller : MonoBehaviour {
                 }
             }
 
-
+            /*
             if (_server.IsConnected || _client.IsConnected)
             {
                 receive();
             }
+            */
 
             //TODO distinguish if Master or Slave
             if (renderMode == MASTER)
@@ -817,6 +818,7 @@ public class Controller : MonoBehaviour {
         
         if (NodeInformation.type.Equals(SLAVENODE))
         {
+            createClientNode();
             wsdDefault = WSDINFRONT;
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
@@ -905,28 +907,17 @@ public class Controller : MonoBehaviour {
     //Network Init
     private void createMasterServer()
     {
-        if (!_server.IsConnected)
-        {
-            _server.IPAddress = NodeInformation.serverIp;
-            int.TryParse(NodeInformation.serverIp, out NodeInformation.serverPort);
-            _server.StartServer();
-        }
+        //Thread server = new Thread(_server.CreateServer(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort));
+        _server.CreateServer(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort);
     }
 
     private void createClientNode()
     {
-        if (!_client.IsConnected)
-        {
-            int.TryParse(NodeInformation.serverIp, out NodeInformation.serverPort);
-            _client.ConnectToTcpServer();
-        }
+        //TODO
     }
     private void disconnectNode()
     {
-        if (_client.IsConnected)
-        {
-            _client.CloseConnection();
-        }
+        //TODO
     }
 
     //Network Recieve
@@ -997,6 +988,28 @@ public class Controller : MonoBehaviour {
 
 
     //New Network functions
+
+    private void onServerOnServerStarted()
+    {
+
+    }
+
+    private void OnServerClosed()
+    {
+
+    }
+
+    private void OnClientConnected()
+    {
+
+    }
+
+    private void OnServerReceivedMessage(string message)
+    {
+
+    }
+
+    /*
     public void SendMessageToServer()
     {
         if (_client.IsConnected)
@@ -1092,7 +1105,7 @@ public class Controller : MonoBehaviour {
 
     private void OnClientConnected(Client client){
         clients.Add(client);
-        Debug.Log("new client connected");
+        Debug.Log("new client");
         log.write("Client has been connected");
     }
 
@@ -1100,7 +1113,7 @@ public class Controller : MonoBehaviour {
         clients.Remove(client);
         log.write("Client has been disconnected");
     }
-
+    */
 
 
     // Core Functions for Simulator
