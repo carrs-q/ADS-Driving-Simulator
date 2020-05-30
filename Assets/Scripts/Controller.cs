@@ -529,6 +529,12 @@ public class Controller : MonoBehaviour
                 steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
                 digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
             }
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                //TODO Remove T est Key
+                Debug.Log("sendMessage to all clients");
+                _server.sendMessageToAllClients("!ping");
+            }
             if ((Input.anyKeyDown) && (
                 !Input.GetMouseButton(0) &&
                 !Input.GetMouseButtonDown(0) &&
@@ -1033,9 +1039,10 @@ public class Controller : MonoBehaviour
         string finalMessage = ProcessServerMessage(message);
         lock (cacheLock)
         {
+            Debug.Log(finalMessage);
             if (string.IsNullOrEmpty(cache))
             {
-                //cache = string.Format("<color=green>{0}</color>\n", finalMessage);
+                //cache = string.Format("<colr=green>{0}</color>\n", finalMessage);
             }
             else
             {
@@ -1047,6 +1054,7 @@ public class Controller : MonoBehaviour
     {
         lock (cacheLock)
         {
+            Debug.Log(message);
             if (string.IsNullOrEmpty(cache))
             {
                 cache = string.Format(message);
@@ -1062,6 +1070,7 @@ public class Controller : MonoBehaviour
     {
         lock (cacheLock)
         {
+            Debug.Log(message);
             if (string.IsNullOrEmpty(cache))
             {
                 cache = string.Format(message);
@@ -1103,12 +1112,12 @@ public class Controller : MonoBehaviour
     private void OnClientConnected(Client client)
     {
         clients.Add(client);
-        log.write("Client has been connected");
+        Debug.Log("Client has been connected");
     }
     private void OnClientDisconnected(Client client)
     {
         clients.Remove(client);
-        log.write("Client has been disconnected");
+        Debug.Log("Client has been disconnected");
     }
 
 

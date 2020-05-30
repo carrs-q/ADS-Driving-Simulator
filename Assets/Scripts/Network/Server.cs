@@ -28,6 +28,7 @@ public class Server : MonoBehaviour
             ClientData = data;
             Client = client;
         }
+
     }
 
     [Serializable]
@@ -73,10 +74,13 @@ public class Server : MonoBehaviour
     {
         this.IPAddress = IPAddress;
         this.Port = Port;
+
         // Start TcpServer background thread 		
         tcpListenerThread = new Thread(ListenForIncomingRequests);
         tcpListenerThread.IsBackground = true;
         tcpListenerThread.Start();
+        Debug.Log("Server started at: " + this.IPAddress + ":" + this.Port);
+
     }
 
     /// <summary> 	
@@ -91,11 +95,11 @@ public class Server : MonoBehaviour
             tcpListener.Start();
 
             ThreadPool.QueueUserWorkItem(ListenerWorker, null);
-            OnLog("Server is listening");
+            Debug.Log("Server is listening");
         }
         catch (SocketException socketException)
         {
-            OnLog("SocketException " + socketException);
+            Debug.Log("SocketException " + socketException);
         }
     }
 
@@ -115,11 +119,12 @@ public class Server : MonoBehaviour
         {
             ClientData data = new ClientData();
             data.ID = ++ClientData.MAX_ID;
+            //ToDo autoassign Name
             data.Name = "User" + data.ID;
 
             ConnectedClient connectedClient = new ConnectedClient(data, client);
             connectedClients.Add(connectedClient);
-            OnLog(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
+            Debug.Log(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
             DispatchMessage(new ServerMessage(data, "Client Connected"));
 
             // Get a stream object for reading
@@ -157,7 +162,7 @@ public class Server : MonoBehaviour
             }
             catch (SocketException e)
             {
-                OnLog(e.ToString());
+                Debug.Log(e.ToString());
             }
         }
     }
@@ -171,7 +176,7 @@ public class Server : MonoBehaviour
         {
             case "!disconnect":
                 response = (string.Format("{0} has Disconnected", connectedClient.ClientData.Name));
-                OnLog(response);
+                Debug.Log(response);
                 DisconnectClient(connectedClient);
                 break;
             case "!ping":
@@ -195,7 +200,8 @@ public class Server : MonoBehaviour
             TcpClient client = connection.Client;
             if (!SendMessage(client, serverMessage))
             {
-                OnLog(string.Format("Lost connection with {0}", connection.ClientData.Name));
+                Debug.Log("Client Disconnected");
+                //Debug.Log(string.Format("Lost connection with {0}", connection.ClientData.Name));
                 DisconnectClient(connection);
                 i--;
             }
@@ -229,21 +235,43 @@ public class Server : MonoBehaviour
             }
             catch (SocketException socketException)
             {
-                OnLog("Socket exception: " + socketException);
+                Debug.Log("Socket exception: " + socketException);
             }
         }
 
         return false;
     }
 
+    public void sendMessageToAllClients(string message)
+    {
+        ServerMessage tmp;
+        connectedClients.ForEach(delegate (ConnectedClient c)
+        {
+            tmp = new ServerMessage(c.ClientData, message);
+            DispatchMessage(tmp);
+        });
+    }
+
+    private void StopServer()
+    {
+        Debug.Log("Stop server");
+        tcpListener.Stop();
+
+        //Disconnect all clients
+        connectedClients.ForEach(delegate(ConnectedClient c){
+            DisconnectClient(c);
+        });
+
+        tcpListenerThread.Abort();
+
+    }
+
     void OnApplicationQuit()
     {
-        //TODO
-        //StopServer();
+        StopServer();
     }
     void OnDestroy()
     {
-        //TODO
-        //StopServer();
+        StopServer();
     }
 }

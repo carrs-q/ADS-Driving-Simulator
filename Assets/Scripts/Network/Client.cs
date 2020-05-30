@@ -151,4 +151,26 @@ public class Client : MonoBehaviour
     {
 
     }
+
+
+    private void StopClient()
+    {
+        if (running)
+        {
+            SendMessage("!disconnect");
+            running = false;
+            stream.Close();
+
+        }
+      
+    }
+
+    void OnApplicationQuit()
+    {
+        StopClient();
+    }
+    void OnDestroy()
+    {
+        StopClient();
+    }
 }
