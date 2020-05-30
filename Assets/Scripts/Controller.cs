@@ -33,7 +33,8 @@ using System.Runtime.InteropServices;
  *          #  Chroma Shader activate
  */
 
-public class Controller : MonoBehaviour {
+public class Controller : MonoBehaviour
+{
 
     //Needed to have Access of NumLock
     [DllImport("user32.dll",
@@ -82,8 +83,8 @@ public class Controller : MonoBehaviour {
     public const int SPEEDOMETER = 6;
 
     //MessageCodes
-    public const int    BUFFERSIZE = 1024;
-    public const int    MAX_CONNECTION = 10;
+    public const int BUFFERSIZE = 1024;
+    public const int MAX_CONNECTION = 10;
     public const string REQDISPLAY = "RQD";
     public const string RESDISPLAY = "RSD";
     public const string SENDPROJECT = "PRO";
@@ -95,21 +96,21 @@ public class Controller : MonoBehaviour {
     public const string SHUTDOWNSIM = "ZZZ";
     public const string EMPTYMESSAGE = "undefined";
 
-    private Vector3 WSDINCAR =      new Vector3(-0.8f, 2.0f, 10f);
-    private Vector3 WSDINFRONT =    new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
-    private Vector3 WSDDyn =        new Vector3(0, 0, 0);
+    private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
+    private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
+    private Vector3 WSDDyn = new Vector3(0, 0, 0);
     private const float keypressScale = 0.1f;
-   
+
     private string[] projectList;
 
-    private static Controller   instance = null;
-    public  OBDData             obdData;
-    private SimulationContent   simulationContent;
-    private Simulation          simulator;
-    private WindShield          wsd;
-    private SyncData            syncData;
-    private Log                 log;
-    private int                 oldStatus;
+    private static Controller instance = null;
+    public OBDData obdData;
+    private SimulationContent simulationContent;
+    private Simulation simulator;
+    private WindShield wsd;
+    private SyncData syncData;
+    private Log log;
+    private int oldStatus;
 
     public static Controller getController()
     {
@@ -202,12 +203,12 @@ public class Controller : MonoBehaviour {
     public Component windshieldDisplay;
     public Component wsdDynTint;
 
-    public  bool sendSync = false;
+    public GameObject videoWalls;
+    public bool sendSync = false;
     private bool torFired = false;
     private bool sendTOR = false;
     private string torTimeRemaining = "";
 
-    public GameObject videoWalls;
     private GameObject buttonResetHeadPosition;
     private GameObject buttonResetSimulation;
     private GameObject buttonStartSimulation;
@@ -261,6 +262,7 @@ public class Controller : MonoBehaviour {
     private GameObject mirrorRightPivot;
     private GameObject dashboard;
 
+
     private GameObject oculus;
     private GameObject pannelResearch;
     private GameObject pannelSimulation;
@@ -277,7 +279,7 @@ public class Controller : MonoBehaviour {
 
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
-    
+
     private void findAllGameObjects()
     {
 
@@ -375,8 +377,9 @@ public class Controller : MonoBehaviour {
 
     }
 
-// Should be before Start
-    void Awake () {
+    // Should be before Start
+    void Awake()
+    {
         Application.runInBackground = true;
         findAllGameObjects();
         syncData = new SyncData();
@@ -384,7 +387,7 @@ public class Controller : MonoBehaviour {
         torTime = new Timing();
         lastTOR = DateTime.Now;
         StartCoroutine(getProjectList());
-        gameObject.SetActive(true);
+        this.gameObject.SetActive(true);
 
         wsd = new WindShield();
         simulator = new Simulation();
@@ -392,7 +395,7 @@ public class Controller : MonoBehaviour {
         seekTime = new Timing();
         log = new Log(LogText);
         log.write("SCC started");
-        
+
         wsdDefault = WSDINFRONT;
 
         wsd.setDefaults(windshieldDisplay, wsdDynTint, chromaShader, noShader, windShieldSound, wsdDefault);
@@ -415,15 +418,12 @@ public class Controller : MonoBehaviour {
         //Network init
         _server = new Server();
         _server.OnLog += OnServerReceivedMessage;
-
-        
         _client = new Client();
-        /*
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
         _client.OnMessageReceived += OnClientReceivedMessage;
         _client.OnLog += OnClientLog;
-        */
+
 
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -434,7 +434,7 @@ public class Controller : MonoBehaviour {
             //Changed from JSON to XML to reduce files
             irIPAddress = IPAddress.Parse(NodeInformation.serverIp);
             port = NodeInformation.serverPort;
-            
+
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             threadList = new List<Thread>();
             threadsAlive = true;
@@ -461,7 +461,9 @@ public class Controller : MonoBehaviour {
         this.actualStatus = INIT;
         manualIP = false;
     }
-    void Update () {
+
+    void Update()
+    {
         if (!shutdown)
         {
             if (cdnLoaded && cdnProject)
@@ -473,12 +475,11 @@ public class Controller : MonoBehaviour {
                 }
             }
 
-            /*
+
             if (_server.IsConnected || _client.IsConnected)
             {
                 receive();
             }
-            */
 
             //TODO distinguish if Master or Slave
             if (renderMode == MASTER)
@@ -512,7 +513,7 @@ public class Controller : MonoBehaviour {
                             fuelkm.SetText(simulator.getFuelKM().ToString());
                             if (this.wsd.isHorizontalMovement())
                             {
-                                this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());
+                                this.wsd.moveWSD(this.obdData.getSteeringWheelAngle());  
                             }
                         }
                     }
@@ -700,10 +701,10 @@ public class Controller : MonoBehaviour {
         toggleSyncServer.isOn = DefaultSettings.checkBoxSyncSensorsDefault;
 
         inputSyncServer.GetComponent<InputField>().text = DefaultSettings.syncServerDefault;
-        
+
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-
+            createClientNode();
             if (oculus != null)
             {
                 Destroy(oculus);
@@ -711,14 +712,13 @@ public class Controller : MonoBehaviour {
             if (NodeInformation.screen == 1)
             {
                 //Update Later with outside renderer
-                //WSDCamera.SetActive(true);
-                
+                //WSDCamera.SetActive(true); 
                 windshieldDisplay.transform.localPosition = WSDINFRONT;
-                
+
             }
         }
         else
-        {
+        { 
             oculus.SetActive(false);
             for (int i = 1; i < MAXDISPLAY; i++)
             {
@@ -766,7 +766,7 @@ public class Controller : MonoBehaviour {
             cameraMenue.transform.rotation = Quaternion.Euler(DefaultSettings.cameraMenueLeftRotation);
 
             oculus.transform.position = DefaultSettings.oculusLeftPosition;
-            
+
         }
         else
         {
@@ -816,15 +816,15 @@ public class Controller : MonoBehaviour {
     }
     private void loadCaveSettings()
     {
-        
+
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-            createClientNode();
             wsdDefault = WSDINFRONT;
             this.GetComponent<Camera>().targetDisplay = 1;
             switch (NodeInformation.screen)
             {
-                case FRONT: {
+                case FRONT:
+                    {
                         cameraNodeFront.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
                         if (cameraNodeFront.GetComponent<AudioListener>() == null)
@@ -832,21 +832,31 @@ public class Controller : MonoBehaviour {
                             cameraNodeFront.AddComponent(typeof(AudioListener));
                         }
                         AudioListener.pause = false;
-                    } break;
-                case LEFT: {
+                    }
+                    break;
+                case LEFT:
+                    {
                         cameraNodeLeft.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-                    } break;
-                case RIGHT: {
+                    }
+                    break;
+                case RIGHT:
+                    {
                         cameraNodeRight.SetActive(true);
                         Screen.SetResolution(1400, 1050, true, 60);
-                    } break;
-                case MIRRORS: {
+                    }
+                    break;
+                case MIRRORS:
+                    {
                         cameraNodeMirrors.SetActive(true);
                         Screen.SetResolution(2400, 600, true, 60);
-                    } break;
-                default: { this.GetComponent<Camera>().targetDisplay = 0;
-                    } break;
+                    }
+                    break;
+                default:
+                    {
+                        this.GetComponent<Camera>().targetDisplay = 0;
+                    }
+                    break;
             }
         }
         if (NodeInformation.type.Equals(MASTERNODE))
@@ -869,11 +879,12 @@ public class Controller : MonoBehaviour {
 
     IEnumerator getProjectList()
     {
-        UnityWebRequest www = UnityWebRequest.Get(NodeInformation.cdn+"/getprojectlist");
+        UnityWebRequest www = UnityWebRequest.Get(NodeInformation.cdn + "/getprojectlist");
 
         yield return www.SendWebRequest();
 
-        if (www.isNetworkError || www.isHttpError) {
+        if (www.isNetworkError || www.isHttpError)
+        {
             if (www.error == "Cannot connect to destination host")
             {
                 writeError("NodeJs Project Server is not running");
@@ -904,20 +915,29 @@ public class Controller : MonoBehaviour {
         //sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
     }
-    
+
     //Network Init
     private void createMasterServer()
     {
-        _server.CreateServer(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort);
+        if (!_server.IsConnected)
+        {
+            _server.StartServer(NodeInformation.serverIp, NodeInformation.serverPort);
+        }
     }
 
     private void createClientNode()
     {
-        _client.CreateClient(IPAddress.Parse(NodeInformation.serverIp), NodeInformation.serverPort);
+        if (!_client.IsConnected)
+        {
+            _client.ConnectToTcpServer(NodeInformation.serverIp, NodeInformation.serverPort);
+        }
     }
     private void disconnectNode()
     {
-        //TODO
+        if (_client.IsConnected)
+        {
+            _client.CloseConnection();
+        }
     }
 
     //Network Recieve
@@ -931,11 +951,11 @@ public class Controller : MonoBehaviour {
                 //TextWindow.text += string.Format("{0}", cache);
                 if (NodeInformation.type.Equals(MASTERNODE))
                 {
-                    Debug.Log("Master: " + string.Format(cache));
+                    Debug.Log("Master: " + cache);
                 }
                 else
                 {
-                    Debug.Log("Slave: " + string.Format(cache));
+                    Debug.Log("Slave: " + cache);
                 }
                 cache = null;
             }
@@ -988,28 +1008,6 @@ public class Controller : MonoBehaviour {
 
 
     //New Network functions
-
-    private void onServerOnServerStarted()
-    {
-
-    }
-
-    private void OnServerClosed()
-    {
-
-    }
-
-    private void OnClientConnected()
-    {
-
-    }
-
-    private void OnServerReceivedMessage(string message)
-    {
-
-    }
-
-    /*
     public void SendMessageToServer()
     {
         if (_client.IsConnected)
@@ -1024,7 +1022,7 @@ public class Controller : MonoBehaviour {
             {
                 if (_client.SendMessage(message))
                 {
-                   // MessageInputField.text = string.Empty;
+                    // MessageInputField.text = string.Empty;
                 }
             }
         }
@@ -1037,13 +1035,12 @@ public class Controller : MonoBehaviour {
         {
             if (string.IsNullOrEmpty(cache))
             {
-                cache = string.Format(finalMessage);
+                //cache = string.Format("<color=green>{0}</color>\n", finalMessage);
             }
             else
             {
-                cache += string.Format( finalMessage);
+                //cache += string.Format("<color=green>{0}</color>\n", finalMessage);
             }
-            log.write(cache);
         }
     }
     private void OnClientLog(string message)
@@ -1103,17 +1100,17 @@ public class Controller : MonoBehaviour {
     }
 
 
-    private void OnClientConnected(Client client){
+    private void OnClientConnected(Client client)
+    {
         clients.Add(client);
-        Debug.Log("new client");
         log.write("Client has been connected");
     }
-
-    private void OnClientDisconnected(Client client){
+    private void OnClientDisconnected(Client client)
+    {
         clients.Remove(client);
         log.write("Client has been disconnected");
     }
-    */
+
 
 
     // Core Functions for Simulator
@@ -1122,8 +1119,8 @@ public class Controller : MonoBehaviour {
         if (log.isRecording())
         {
             if (toggleSyncServer.isOn)
-            { 
-                if(inputParticipantCode.GetComponent<InputField>().text != "")
+            {
+                if (inputParticipantCode.GetComponent<InputField>().text != "")
                 {
                     log.setParticipantCode(inputParticipantCode.GetComponent<InputField>().text);
                     Debug.Log(project);
@@ -1132,10 +1129,11 @@ public class Controller : MonoBehaviour {
                     {
                         log.setScenario(simulationContent.getProjectName());
                     }
-                    else{
+                    else
+                    {
                         log.setScenario(Labels.noScenarioLoaded);
                     }
-                    
+
                     if (log.isSafety())
                     {
                         return true;
@@ -1239,7 +1237,7 @@ public class Controller : MonoBehaviour {
         {
             rightMirrorSound.time = nTime;
         }
-        
+
         Seek(frontWall, nTime);
         Seek(leftWall, nTime);
         Seek(rightWall, nTime);
@@ -1249,7 +1247,7 @@ public class Controller : MonoBehaviour {
         Seek(MirrorLeft, nTime);
         Seek(MirrorRight, nTime);
 
-        
+
         sendMarker(RESET);
         log.write("Simualtion reseted");
 
@@ -1267,11 +1265,11 @@ public class Controller : MonoBehaviour {
                 case START:
                     {
                         aS.Play();
-                    };break;
+                    }; break;
                 case PAUSE:
                     {
                         aS.Pause();
-                    };break;
+                    }; break;
                 case INIT:
                     {
                         if (aS.clip.length > 0)
@@ -1284,7 +1282,7 @@ public class Controller : MonoBehaviour {
                 default:
                     {
                         Debug.Log("Audiosetting not Provided");
-                    };break;
+                    }; break;
 
             }
         }
@@ -1356,7 +1354,7 @@ public class Controller : MonoBehaviour {
         {
             temp.text = torTime.getTiming();
         }
-        
+
     }
     private void guiProtection(bool isInteractable)
     {
@@ -1367,7 +1365,7 @@ public class Controller : MonoBehaviour {
 
         inputTimeGotTo.GetComponent<InputField>().interactable = isInteractable;
         inputParticipantCode.GetComponent<InputField>().interactable = isInteractable;
-        
+
         dropDownChangeProject.GetComponent<Dropdown>().interactable = isInteractable;
         dropDownChangeSimulatorMode.GetComponent<Dropdown>().interactable = isInteractable;
         dropDownLoadVideoManual.GetComponent<Dropdown>().interactable = isInteractable;
@@ -1431,63 +1429,82 @@ public class Controller : MonoBehaviour {
         int temp = 0;
         string temppath;
         cdnLoaded = false;
-        foreach(string file in filenames)
+        foreach (string file in filenames)
         {
             temppath = simulationContent.getFilePath(file);
             if (temppath != null)
             {
                 switch (temp)
                 {
-                    case 0:{
+                    case 0:
+                        {
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
                                 loadVideo(frontWall, temppath);
 
-                    }break;
-                    case 1:{
+                        }
+                        break;
+                    case 1:
+                        {
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
                                 loadVideo(leftWall, temppath);
-                    }break;
-                    case 2:{
+                        }
+                        break;
+                    case 2:
+                        {
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
                                 loadVideo(rightWall, temppath);
-                    }break;
-                    case 3:{
-                        if (NodeInformation.type.Equals(MASTERNODE))
-                        {
-                            loadVideo(navigationScreen, temppath);
                         }
-                    }break;
-                    case 4:{ //Mirror All
-                        if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen==5)
+                        break;
+                    case 3:
                         {
+                            if (NodeInformation.type.Equals(MASTERNODE))
+                            {
+                                loadVideo(navigationScreen, temppath);
+                            }
+                        }
+                        break;
+                    case 4:
+                        { //Mirror All
+                            if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 5)
+                            {
                                 loadVideo(MirrorCameraPlayer, temppath);
+                            }
                         }
-                    }break;
-                    case 5: { // Mirror Back
-                        if (NodeInformation.type.Equals(MASTERNODE))
-                        {
+                        break;
+                    case 5:
+                        { // Mirror Back
+                            if (NodeInformation.type.Equals(MASTERNODE))
+                            {
                                 loadVideo(MirrorStraigt, temppath);
+                            }
                         }
-                    }break;
-                    case 6:{ // Mirror Left
-                        if (NodeInformation.type.Equals(MASTERNODE))
+                        break;
+                    case 6:
+                        { // Mirror Left
+                            if (NodeInformation.type.Equals(MASTERNODE))
+                            {
+                                loadVideo(MirrorLeft, temppath);
+                            }
+                        }
+                        break;
+                    case 7:
+                        { // Mirror Right
+                            if (NodeInformation.type.Equals(MASTERNODE))
+                            {
+                                loadVideo(MirrorRight, temppath);
+                            }
+                        }
+                        break;
+                    case 8:
                         {
-                            loadVideo(MirrorLeft, temppath);
-                        }
-                    } break;
-                    case 7:{ // Mirror Right
-                        if (NodeInformation.type.Equals(MASTERNODE))
-                        {
-                            loadVideo(MirrorRight, temppath);
-                        }
-                    }break;
-                    case 8:{
-                        if((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
+                            if ((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
                                 loadAudioSource(2, temppath);
                             }
-                    }break;
-                    case 9:{
+                        }
+                        break;
+                    case 9:
+                        {
                             if ((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
                                 loadAudioSource(1, temppath);
@@ -1497,7 +1514,8 @@ public class Controller : MonoBehaviour {
                     default:
                         {
 
-                        } break;
+                        }
+                        break;
                 }
             }
             ++temp;
@@ -1506,11 +1524,11 @@ public class Controller : MonoBehaviour {
     public void loadSimulatorSetup(string cdnAddress, string project)
     {
         simulationContent = new SimulationContent(project, Application.persistentDataPath, cdnAddress);
-        foreach(string filename in filenames)
+        foreach (string filename in filenames)
         {
-            StartCoroutine(simulationContent.addFile(cdnAddress+"/cdn/"+project+"/"+filename).downloadFile());
+            StartCoroutine(simulationContent.addFile(cdnAddress + "/cdn/" + project + "/" + filename).downloadFile());
         }
-     
+
         cdnLoaded = true;
     }
 
@@ -1534,7 +1552,7 @@ public class Controller : MonoBehaviour {
         if (video.url == temp || temp == null)
         {
             log.write("Video error");
-            
+
         }
         video.url = temp;
         video.Prepare(); // after Prepairing prepare Completed will be Executed
@@ -1550,7 +1568,7 @@ public class Controller : MonoBehaviour {
         {
             case 0:
                 {
-                   loadVideo(frontWall, path);
+                    loadVideo(frontWall, path);
                 }
                 break;
             case 1:
@@ -1560,12 +1578,12 @@ public class Controller : MonoBehaviour {
                 break;
             case 2:
                 {
-                   loadVideo(rightWall, path);
+                    loadVideo(rightWall, path);
                 }
                 break;
             case 3:
                 {
-                   loadVideo(navigationScreen, path);
+                    loadVideo(navigationScreen, path);
                 }
                 break;
             case 4:
@@ -1580,7 +1598,7 @@ public class Controller : MonoBehaviour {
                 break;
             case 6:
                 {
-                   loadVideo(MirrorRight, path);
+                    loadVideo(MirrorRight, path);
                 }
                 break;
             default:
@@ -1590,14 +1608,14 @@ public class Controller : MonoBehaviour {
                 break;
         }
     }
-    public void loadAudioSource (int player, string path)
+    public void loadAudioSource(int player, string path)
     {
         switch (player)
         {
             case 1:
                 { //Right Mirror
-                   StartCoroutine(AudioSourceLoader(path, 2));
-                };break;
+                    StartCoroutine(AudioSourceLoader(path, 2));
+                }; break;
             case 2:
                 { //Left Mirror
                     StartCoroutine(AudioSourceLoader(path, 1));
@@ -1605,7 +1623,7 @@ public class Controller : MonoBehaviour {
             default:
                 {
 
-                };break;
+                }; break;
         }
     }
 
@@ -1633,7 +1651,7 @@ public class Controller : MonoBehaviour {
     }
     private void attachAudioClip(AudioClip clip, int player)
     {
-        if(clip.length != 0)
+        if (clip.length != 0)
         {
             switch (player)
             {
@@ -1654,7 +1672,7 @@ public class Controller : MonoBehaviour {
                         Debug.Log("This should not happen");
                     }; break;
             }
-            
+
         }
         else
         {
@@ -1777,15 +1795,18 @@ public class Controller : MonoBehaviour {
             case 0:
                 {
                     obdData.setBrakePedal(obdDataSet);
-                }break;
+                }
+                break;
             case 2:
                 {
                     obdData.setGasPedal(obdDataSet);
-                }break;
+                }
+                break;
             default:
                 {
                     log.write("Problem in operationoverloading by Float");
-                }break;
+                }
+                break;
         }
     }
     public void loadOBDData(int obdType, bool[] obdDataSet)
@@ -1823,7 +1844,7 @@ public class Controller : MonoBehaviour {
     public void shutdownSimulator()
     {
         shutdown = true;
-        
+
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             if (checkBoxShutdownNodes.GetComponent<Toggle>().isOn)
@@ -1854,7 +1875,7 @@ public class Controller : MonoBehaviour {
         {
             disconnectNode();
         }
-        
+
         if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
         {
             for (int i = 0; i < threadList.Count; i++)
@@ -1863,13 +1884,13 @@ public class Controller : MonoBehaviour {
             }
             this.threadsAlive = false;
         }
-        
+
         StartCoroutine(closeSoftware());
     }
 
     private IEnumerator closeSoftware()
     {
-       
+
         yield return new WaitForSeconds(0.1f);
         if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
         {
@@ -1921,7 +1942,7 @@ public class Controller : MonoBehaviour {
             return false;
         }
     }
-   
+
     public IPAddress getIRIPAddress()
     {
         return this.irIPAddress;
@@ -1962,7 +1983,8 @@ public class Controller : MonoBehaviour {
     }
     public void runNetworkservice()
     {
-        if (NodeInformation.type.Equals(MASTERNODE)){
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
             if (inputSyncServer.GetComponent<InputField>().text != "")
             {
                 customAddress = inputSyncServer.GetComponent<InputField>().text;
@@ -1978,7 +2000,7 @@ public class Controller : MonoBehaviour {
             t.Start();
             threadList.Add(t);
         }
-       
+
     }
     public static void netWorkService()
     {
@@ -1989,7 +2011,7 @@ public class Controller : MonoBehaviour {
             {
                 if (controller.sendSync || controller.isTor())
                 {
-                    int code = 0; 
+                    int code = 0;
                     if (controller.sendSync)
                     {
                         controller.sendSync = false;
@@ -2119,7 +2141,7 @@ public class Controller : MonoBehaviour {
     {
         return this.log.getUnstoredLog();
     }
-   
+
     public void startRecording(bool recordingState)
     {
         log.recordingStatus(recordingState);
@@ -2128,7 +2150,7 @@ public class Controller : MonoBehaviour {
     {
         log.safetyRequirements(requirementsSet);
     }
-    
+
     public int getSyncStatus()
     {
         return this.syncData.getStatus();
@@ -2281,7 +2303,7 @@ public class Controller : MonoBehaviour {
             tmp = cameraNodeRight.GetComponentInChildren<TextMeshPro>();
             tmp.text = "Screen 3";
         }
-       
+
     }
 
 }
@@ -2361,7 +2383,7 @@ public class Controller : MonoBehaviour {
     private void createSocket()
     {
         try
-        {
+        {O
             string name = (Dns.GetHostName());
             IPAddress[] addrs = Dns.GetHostEntry(name).AddressList;
             foreach (IPAddress addr in addrs)

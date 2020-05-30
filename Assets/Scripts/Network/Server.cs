@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -7,212 +9,241 @@ using UnityEngine;
 
 public class Server : MonoBehaviour
 {
-    public static string data = null;
-
-    #region Network Variables
-        private IPAddress ipAddress;
-        private int port;
-        private ProtocolType protocolType;
-        private SocketType socketType;
-        private IPHostEntry ipHostInfo;
-        private IPEndPoint localEndPoint;
-        private static Socket socket;
-        private static bool listen = false;
-        private Thread socketListener;
-    #endregion
-
-    #region Delegate Variables
-    protected Action OnServerStarted    = null;  //Delegate triggered when server start
-        protected Action OnServerClosed     = null;  //Delegate triggered when server close
-        protected Action OnClientConnected  = null;  //Delegate triggered when the server stablish connection with client
-        public Action<string> OnLog = delegate { };
-    #endregion
-
-    public static ManualResetEvent allDone = new ManualResetEvent(false);
-
-    public Server()
+    [Serializable]
+    public class ClientData
     {
-        ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());       // Set Default Hostname
-        ipAddress = ipHostInfo.AddressList[0];                  // Set Default IP
-        port = 25000;                                           // Set Default Port
-        protocolType = ProtocolType.Tcp;                        // Set default to TCP
-        socketType = SocketType.Stream;                         // Set default to Stream Socket  
-        Debug.Log("Default Network settings.\nHost name" + ipHostInfo.HostName.ToString());
+        public static int MAX_ID;
 
+        public int ID;
+        public string Name;
     }
 
-    public void CreateServer()
+    public class ConnectedClient
     {
-        StartServer();
+        public ClientData ClientData;
+        public TcpClient Client;
+
+        public ConnectedClient(ClientData data, TcpClient client)
+        {
+            ClientData = data;
+            Client = client;
+        }
     }
 
-    public void CreateServer(IPAddress ipAddress, int port)
+    [Serializable]
+    public class ServerMessage
     {
-        this.ipAddress = ipAddress;
-        this.port = port;
-        StartServer();
+        public ClientData SenderData;
+        public string Data;
+
+        public ServerMessage(ClientData client, string message)
+        {
+            SenderData = client;
+            Data = message;
+        }
     }
 
-    public void CreateServer(IPAddress ipAddress, int port, ProtocolType protocolType, SocketType socketType)
+    public Action<string> OnLog = delegate { };
+
+    public bool IsConnected
     {
-        this.ipAddress = ipAddress;
-        this.port = port;
-        this.protocolType = protocolType;
-        this.socketType = socketType;
-        StartServer();
+        get { return tcpListenerThread != null && tcpListenerThread.IsAlive; }
     }
 
-    private void StartServer()
-    {
-        //Define IP and Port for Server and bind
-        localEndPoint = new IPEndPoint(ipAddress, port);            
-        socket = new Socket(ipAddress.AddressFamily, socketType, protocolType);
+    public string IPAddress = "127.0.0.1";
 
+
+    public int Port = 8052;
+
+    /// <summary> 	
+    /// TCPListener to listen for incoming TCP connection 	
+    /// requests. 	
+    /// </summary> 	
+    private TcpListener tcpListener;
+
+    /// <summary> 
+    /// Background thread for TcpServer workload. 	
+    /// </summary> 	
+    private Thread tcpListenerThread;
+
+    private List<ConnectedClient> connectedClients = new List<ConnectedClient>();
+
+    // Use this for initialization
+    public void StartServer(string IPAddress, int Port)
+    {
+        this.IPAddress = IPAddress;
+        this.Port = Port;
+        // Start TcpServer background thread 		
+        tcpListenerThread = new Thread(ListenForIncomingRequests);
+        tcpListenerThread.IsBackground = true;
+        tcpListenerThread.Start();
+    }
+
+    /// <summary> 	
+    /// Runs in background TcpServerThread; Handles incoming TcpClient requests 	
+    /// </summary> 	
+    private void ListenForIncomingRequests()
+    {
         try
         {
-            socket.Bind(localEndPoint);
-            socket.Listen(100);
-            listen = true;
-            socketListener = new Thread(new ThreadStart(Listen));
-            socketListener.Start();
+            // Create listener on localhost port 8052. 			
+            tcpListener = new TcpListener(System.Net.IPAddress.Any, Port);
+            tcpListener.Start();
 
-            OnServerStarted?.Invoke();
+            ThreadPool.QueueUserWorkItem(ListenerWorker, null);
+            OnLog("Server is listening");
         }
-        catch (Exception e)
+        catch (SocketException socketException)
         {
-            Console.WriteLine(e.ToString());
+            OnLog("SocketException " + socketException);
         }
     }
 
-    private void StopServer()
+    private void ListenerWorker(object token)
     {
-        //Shutdown Socket
-        try
+        while (tcpListener != null)
         {
-            socket.Shutdown(SocketShutdown.Both);
-            listen = false;
-        }
-        finally
-        {
-            socket.Close();
-            OnServerClosed?.Invoke();
+            var client = tcpListener.AcceptTcpClient();
+            ThreadPool.QueueUserWorkItem(HandleClientWorker, client);
         }
     }
 
-    public static void Listen()
+    private void HandleClientWorker(object token)
     {
-        Debug.Log("Server is now listening");
-        try
+        Byte[] bytes = new Byte[1024];
+        using (TcpClient client = token as TcpClient)
         {
-            while (listen)
+            ClientData data = new ClientData();
+            data.ID = ++ClientData.MAX_ID;
+            data.Name = "User" + data.ID;
+
+            ConnectedClient connectedClient = new ConnectedClient(data, client);
+            connectedClients.Add(connectedClient);
+            OnLog(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
+            DispatchMessage(new ServerMessage(data, "Client Connected"));
+
+            // Get a stream object for reading
+            try
             {
-                // Set the event to nonsignaled state.  
-                allDone.Reset();
+                using (NetworkStream stream = client.GetStream())
+                {
+                    int length;
+                    // Read incoming stream into byte array. 						
+                    while (stream.CanRead && (length = stream.Read(bytes, 0, bytes.Length)) != 0)
+                    {
+                        var incomingData = new byte[length];
+                        Array.Copy(bytes, 0, incomingData, 0, length);
+                        // Convert byte array to string message. 							
+                        string clientMessage = Encoding.ASCII.GetString(incomingData);
+                        //OnLog("Server received: " + clientMessage);
 
-                // Start an asynchronous socket to listen for connections.  
-                socket.BeginAccept(new AsyncCallback(AcceptCallback), socket);
+                        if (clientMessage == "!disconnect")
+                        { 
+                            stream.Close();
+                            client.Close();
+                        }
 
-                // Wait until a connection is made before continuing.  
-                allDone.WaitOne();
+                        ServerMessage serverMessage = new ServerMessage(data, clientMessage);
+                        if (clientMessage.StartsWith("!"))
+                        {
+                            ProcessMessage(connectedClient, clientMessage);
+                        }
+                        else
+                        {
+                            DispatchMessage(serverMessage);
+                        }
+                    }
+                }
             }
-        }
-        catch (Exception e)
-        {
-            Debug.Log(e.ToString());
-        }
-    }
-
-    public static void AcceptCallback(IAsyncResult ar)
-    {
-        // Signal the main thread to continue.  
-        allDone.Set();
-
-        // Get the socket that handles the client request.  
-        Socket listener = (Socket)ar.AsyncState;
-        Socket handler = listener.EndAccept(ar);
-
-        // Create the state object.  
-        StateObject state = new StateObject();
-        state.workSocket = handler;
-        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-    }  
-
-    public static void ReadCallback(IAsyncResult ar)
-    {
-        String content = String.Empty;
-
-        // Retrieve the state object and the handler socket  
-        // from the asynchronous state object.  
-        StateObject state = (StateObject)ar.AsyncState;
-        Socket handler = state.workSocket;
-
-        // Read data from the client socket.
-        int bytesRead = handler.EndReceive(ar);
-
-        if (bytesRead > 0)
-        {
-            // There  might be more data, so store the data received so far.  
-            state.sb.Append(Encoding.ASCII.GetString(
-                state.buffer, 0, bytesRead));
-
-            // Check for end-of-file tag. If it is not there, read
-            // more data.  
-            content = state.sb.ToString();
-            if (content.IndexOf("<EOF>") > -1)
+            catch (SocketException e)
             {
-                // All the data has been read from the
-                // client. Display it on the console.  
-                Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-                    content.Length, content);
-                // Echo the data back to the client.  
-                Send(handler, content);
-            }
-            else
-            {
-                // Not all data received. Get more.  
-                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                new AsyncCallback(ReadCallback), state);
+                OnLog(e.ToString());
             }
         }
     }
 
-    private static void Send(Socket handler, String data)
+    private void ProcessMessage(ConnectedClient connectedClient, string command)
     {
-        // Convert the string data to byte data using ASCII encoding.  
-        byte[] byteData = Encoding.ASCII.GetBytes(data);
-
-        // Begin sending the data to the remote device.  
-        handler.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), handler);
-    }
-
-    private static void SendCallback(IAsyncResult ar)
-    {
-        try
+        string[] split = command.Split(' ');
+        string response = string.Empty;
+        ServerMessage serverMessage = null;
+        switch (split[0])
         {
-            // Retrieve the socket from the state object.  
-            Socket handler = (Socket)ar.AsyncState;
-
-            // Complete sending the data to the remote device.  
-            int bytesSent = handler.EndSend(ar);
-            Console.WriteLine("Sent {0} bytes to client.", bytesSent);
-
-            handler.Shutdown(SocketShutdown.Both);
-            handler.Close();
-
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.ToString());
+            case "!disconnect":
+                response = (string.Format("{0} has Disconnected", connectedClient.ClientData.Name));
+                OnLog(response);
+                DisconnectClient(connectedClient);
+                break;
+            case "!ping":
+                response = String.Join(" ", split) + " " + (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
+                serverMessage = new ServerMessage(connectedClient.ClientData, response);
+                SendMessage(connectedClient.Client, serverMessage);
+                break;
+            default:
+                response = "Unknown Command '" + command + "'";
+                serverMessage = new ServerMessage(connectedClient.ClientData, response);
+                SendMessage(connectedClient.Client, serverMessage);
+                break;
         }
     }
 
+    private void DispatchMessage(ServerMessage serverMessage)
+    {
+        for (int i = 0; i < connectedClients.Count; i++)
+        {
+            ConnectedClient connection = connectedClients[i];
+            TcpClient client = connection.Client;
+            if (!SendMessage(client, serverMessage))
+            {
+                OnLog(string.Format("Lost connection with {0}", connection.ClientData.Name));
+                DisconnectClient(connection);
+                i--;
+            }
+        }
+    }
+
+    private void DisconnectClient(ConnectedClient connection)
+    {
+        connectedClients.Remove(connection);
+    }
+
+    /// <summary> 	
+    /// Send message to client using socket connection. 	
+    /// </summary> 	
+    private bool SendMessage(TcpClient client, ServerMessage serverMessage)
+    {
+        if (client != null && client.Connected)
+        {
+            try
+            {
+                // Get a stream object for writing. 			
+                NetworkStream stream = client.GetStream();
+                if (stream.CanWrite)
+                {
+                    // Convert string message to byte array.                 
+                    byte[] serverMessageAsByteArray = Encoding.ASCII.GetBytes(JsonUtility.ToJson(serverMessage));
+                    // Write byte array to socketConnection stream.               
+                    stream.Write(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
+                    return true;
+                }
+            }
+            catch (SocketException socketException)
+            {
+                OnLog("Socket exception: " + socketException);
+            }
+        }
+
+        return false;
+    }
 
     void OnApplicationQuit()
     {
-        StopServer();
+        //TODO
+        //StopServer();
     }
     void OnDestroy()
     {
-        StopServer();
+        //TODO
+        //StopServer();
     }
 }
