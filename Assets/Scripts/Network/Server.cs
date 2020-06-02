@@ -119,11 +119,12 @@ public class Server : MonoBehaviour
         {
             ClientData data = new ClientData();
             data.ID = ++ClientData.MAX_ID;
-            data.Name = "User" + data.ID;      //ToDo autoassign Name
+            data.Name = "User-" + data.ID; 
 
             ConnectedClient connectedClient = new ConnectedClient(data, client);
             connectedClients.Add(connectedClient);
             //Debug.Log(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
+
             DispatchMessage(new ServerMessage(data, "Client Connected"));
 
             // Get a stream object for reading
@@ -170,6 +171,7 @@ public class Server : MonoBehaviour
     {
         string[] split = command.Split('|');
         string response = string.Empty;
+        Debug.Log(command);
         ServerMessage serverMessage = null;
         switch (split[0])
         {
@@ -177,7 +179,6 @@ public class Server : MonoBehaviour
                 connectedClient.ClientData.Name = split[1]; //Assign correct name
                 OnLog(split[0]+"|"+connectedClient.ClientData.ID);
                 break;
-
             case "!disconnect":
                 response = (string.Format("{0} has Disconnected", connectedClient.ClientData.Name));
                 Debug.Log(response);
@@ -225,7 +226,7 @@ public class Server : MonoBehaviour
         {
             if (c.ClientData.ID == clientID) {
                 tmp = new ServerMessage(c.ClientData, message);
-                DispatchMessage(tmp);
+                SendMessage(c.Client, tmp);
             }
         });
     }
@@ -265,7 +266,7 @@ public class Server : MonoBehaviour
         connectedClients.ForEach(delegate (ConnectedClient c)
         {
             tmp = new ServerMessage(c.ClientData, message);
-            DispatchMessage(tmp);
+            SendMessage(c.Client, tmp);
         });
     }
 

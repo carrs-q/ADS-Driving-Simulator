@@ -524,7 +524,7 @@ public class Controller : MonoBehaviour
                 if (syncData.doesStatusChanged())
                 {
                     //TODO
-                    //this.statusChange(syncData.getStatus());
+                    this.statusChange(syncData.getStatus());
                 }
                 steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
                 digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
@@ -967,49 +967,6 @@ public class Controller : MonoBehaviour
             }
         }
 
-        /*
-        int outHostId;
-        int outConnectionId;
-        int outChannelId;
-
-        byte[] recBuffer = new byte[BUFFERSIZE];
-        int dataSize;
-        byte error;
-        NetworkEventType recData = NetworkTransport.Receive(out outHostId, out outConnectionId, out outChannelId, recBuffer, BUFFERSIZE, out dataSize, out error);
-        if((NetworkError)error != NetworkError.Ok)
-        {
-            NetworkError nerror = (NetworkError)error;
-            Debug.Log("Recieve Error: " + nerror);
-        }
-        switch (recData)
-        {
-            case NetworkEventType.Nothing:         //1
-                break;
-            case NetworkEventType.ConnectEvent:    //2
-                serverReqDisplay(outConnectionId);
-                break;
-            case NetworkEventType.DataEvent:       //3 
-                string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
-                string[] splitData = msg.Split('|');
-                switch (splitData[0])
-                {
-                    case RESDISPLAY:
-                        serverUpdateDisplay(outConnectionId, int.Parse(splitData[1]));
-                        break;
-                    case REQPROJECT:
-                        serverProjectRequest(outConnectionId);
-                        break;
-                    default:
-                        Debug.Log("Unkown Message" + msg); break;
-                }
-                break;
-            case NetworkEventType.DisconnectEvent: {  //4
-
-                    this.disconnectMessage(outConnectionId);
-                }
-                break;
-        }
-        */
     }
 
 
@@ -1022,6 +979,10 @@ public class Controller : MonoBehaviour
             if (message.StartsWith("!ping"))
             {
                 message += " " + (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
+            }
+            if (true)
+            {
+                message+=(RESDISPLAY + "|" + NodeInformation.screen);
             }
 
             if (!string.IsNullOrEmpty(message))
@@ -1063,7 +1024,7 @@ public class Controller : MonoBehaviour
                     case STATUSUPDATE:
                         clientRecieveUpdate(finalMessage);
                         break;
-                    case RESDISPLAY:
+                    case REQDISPLAY:
                         serverUpdateDisplay(int.Parse(split[1]));
                         break;
                     case REQPROJECT:{ 
@@ -1216,7 +1177,6 @@ public class Controller : MonoBehaviour
                         break;
 
                     case REQPROJECT:
-                        //It returns here the ClientID
                         serverProjectRequest(int.Parse(split[1]));
                         break;
                 }
@@ -1229,6 +1189,8 @@ public class Controller : MonoBehaviour
     }
     private void serverUpdateDisplay(int displayID)
     {
+        Debug.Log("Display ID received "+displayID);
+        if(NodeInformation.type.Equals(MASTERNODE))
         switch (displayID)
         {
             case FRONT:{ log.write("Front Screen has been connected"); } break;
@@ -1255,8 +1217,6 @@ public class Controller : MonoBehaviour
         _server.SendMessage(message, conID);
         //serverToClientSend(message, relChannel, conID);
     }
-
-    
     private void sendProjectToClient(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;

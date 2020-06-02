@@ -74,7 +74,7 @@ public class Client : MonoBehaviour
 
             Byte[] bytes = new Byte[Controller.BUFFERSIZE];
             running = true;
-            SendMessage("");
+            SendMessage("Hello");
             while (running)
             {
                 // Get a stream object for reading
