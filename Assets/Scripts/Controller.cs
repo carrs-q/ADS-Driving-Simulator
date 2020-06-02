@@ -79,8 +79,8 @@ public class Controller : MonoBehaviour
     public const int LEFT = 2;
     public const int RIGHT = 3;
     public const int NAV = 4;
-    public const int MIRRORS = 5; // OR Mirror back
-    public const int SPEEDOMETER = 6;
+    public const int MIRRORS = 5;
+    public const int DASHBOARD = 6;
 
     //MessageCodes
     public const int BUFFERSIZE = 1024;
@@ -485,7 +485,7 @@ public class Controller : MonoBehaviour
             if (renderMode == MASTER)
             {
                 //TODO
-                //sendStatusToClient();
+                sendStatusToClient();
             }
             if (renderMode == MASTER && syncData.getStatus() == START)
             {
@@ -645,7 +645,7 @@ public class Controller : MonoBehaviour
                         buttonStartSimulation.GetComponent<Button>().interactable = true;
                     }
                     wsd.updateWSDDefault(wsdDefault + WSDDyn);
-                    //sendStatusToClient();
+                    sendStatusToClient();
                 }
 
             }
@@ -918,7 +918,7 @@ public class Controller : MonoBehaviour
         log.write("Project " + project + " loaded");
         this.project = project;
         cdnProject = true;
-        //sendProjectToClient(project);
+        sendProjectToClient(project);
         loadSimulatorSetup(NodeInformation.cdn, project);
     }
 
@@ -1034,15 +1034,59 @@ public class Controller : MonoBehaviour
         }
     }
 
-    private void OnClientReceivedMessage(Server.ServerMessage message)
+
+    /*
+    public const string REQDISPLAY = "RQD";
+    public const string RESDISPLAY = "RSD";
+    public const string SENDPROJECT = "PRO";
+    public const string REQPROJECT = "RPRO";
+    public const string STATUSUPDATE = "STA";
+    public const string TORMESSAGE = "TOR";
+    public const string VOLUMECONTROL = "NVC";
+    public const string SEEKMSG = "SEK";
+    public const string SHUTDOWNSIM = "ZZZ";
+    public const string EMPTYMESSAGE = "undefined";
+     */
+
+    private void OnClientReceivedMessage(Server.ServerMessage m)
     {
-        string finalMessage = ProcessServerMessage(message);
+        string finalMessage = ProcessServerMessage(m);
+        string[] split = finalMessage.Split('|');
+
         lock (cacheLock)
         {
             Debug.Log(finalMessage);
             if (string.IsNullOrEmpty(cache))
             {
-                //cache = string.Format("<colr=green>{0}</color>\n", finalMessage);
+                switch (split[0])
+                {
+                    case STATUSUPDATE:
+                        clientRecieveUpdate(finalMessage);
+                        break;
+                    case RESDISPLAY:
+                        serverUpdateDisplay(int.Parse(split[1]));
+                        break;
+                    case REQPROJECT:{ 
+                        if (split[1] != EMPTYMESSAGE) {
+                            clientLoadProject(split[1], split[2]);
+                        }}; break;
+                    case SENDPROJECT:
+                        clientLoadProject(split[1], split[2]);
+                        break;
+                    case TORMESSAGE:
+                        //TODO TOR Client functions
+                        ; break;
+                    case VOLUMECONTROL:{
+                            clientRecieveVolume(split[1], split[2], split[3], split[4]);
+                        }
+                        break;
+                    case SEEKMSG:{
+                            clientSeek(split[1]);
+                        }; break;
+                    case SHUTDOWNSIM:{
+                            shutdownSimulator();
+                        }; break;
+                }
             }
             else
             {
@@ -1065,22 +1109,183 @@ public class Controller : MonoBehaviour
             }
         }
     }
-
-    private void OnServerReceivedMessage(string message)
+    private void clientLoadProject(string project, string address)
     {
+        cdnProject = true;
+        this.project = project;
+        loadSimulatorSetup(address, project);
+    }
+    private void clientRecieveUpdate(string msg)
+    {
+        string[] data = msg.Split('|');
+        syncData.setSimState(int.Parse(data[1]));
+        if (syncData.doesStatusChanged())
+        {
+            statusChange(syncData.getStatus());
+        }
+        syncData.updateOBD(
+               int.Parse(data[2]),
+               int.Parse(data[3]),
+               int.Parse(data[4]),
+               int.Parse(data[5]),
+               bool.Parse(data[6]),
+               bool.Parse(data[7]));
+
+        if (data.Length >= 18)
+        {
+
+            wsd.setWSD(
+                new Vector3(float.Parse(data[8]), float.Parse(data[9]), float.Parse(data[10])),
+                new Vector3(float.Parse(data[11]), float.Parse(data[12]), float.Parse(data[13])),
+                new Vector3(float.Parse(data[14]), float.Parse(data[15]), float.Parse(data[16])));
+            wsd.setWSDChroma(bool.Parse((data[17])));
+            if (!wsd.isWSDActive())
+            {
+                wsd.enableWSD();
+            }
+        }
+        else
+        {
+            if (wsd.isWSDActive())
+            {
+                wsd.disableWSD();
+            }
+        }
+        if (data.Length == 19 || data.Length == 9)
+        {
+            if (!wsd.isTiningActive())
+            {
+                wsd.setWSDTinting(true);
+            }
+            wsd.setTintingTransparency(float.Parse(data[data.Length - 1]));
+        }
+        else
+        {
+            if (wsd.isTiningActive())
+            {
+                wsd.setWSDTinting(false);
+            };
+        }
+    }
+    private void clientRecieveVolume(string volMaster, string volAmb, string volTOR, string volWSD)
+    {
+        changeVolume(DefaultSettings.SliderVolumeMaster, int.Parse(volMaster));
+        changeVolume(DefaultSettings.SliderInCarVolume, int.Parse(volAmb));
+        changeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
+        changeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
+    }
+    private void clientSeek(string millisString)
+    {
+        Int64 millis = Int64.Parse(millisString);
+        this.networkSeek(new Timing(millis));
+    }
+    private void statusChange(int status)
+    {
+        switch (status)
+        {
+            case START:
+                {
+                    startSimulation();
+                }
+                break;
+            case PAUSE:
+                {
+                    stopSimulation();
+                }
+                break;
+            case RESET:
+                {
+                    resetSimulation();
+                }
+                break;
+        }
+    }
+
+    private void OnServerReceivedMessage(string m)
+    {
+        string[] split = m.Split('|');
         lock (cacheLock)
         {
-            Debug.Log(message);
+            Debug.Log(m);
             if (string.IsNullOrEmpty(cache))
             {
-                cache = string.Format(message);
+                switch (split[0])
+                {
+                    case RESDISPLAY:
+                        serverUpdateDisplay(int.Parse(split[1]));
+                        break;
+
+                    case REQPROJECT:
+                        //It returns here the ClientID
+                        serverProjectRequest(int.Parse(split[1]));
+                        break;
+                }
             }
             else
             {
-                cache += string.Format(message);
+                cache += string.Format(m);
             }
         }
     }
+    private void serverUpdateDisplay(int displayID)
+    {
+        switch (displayID)
+        {
+            case FRONT:{ log.write("Front Screen has been connected"); } break;
+            case LEFT: { log.write("Left Screen has been connected"); } break;
+            case RIGHT: { log.write("Right Screen has been connected"); } break;
+            case NAV: { log.write("Navigation has been connected"); } break;
+            case MIRRORS: { log.write("Mirrors has been connected"); } break;
+            case DASHBOARD: { log.write("Dashboard has been connected"); } break;
+        }
+    }
+    
+    
+    private void serverProjectRequest(int conID)
+    {
+        string message = REQPROJECT + "|";
+        if (simulationContent.isProjectLoaded())
+        {
+            message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
+        }
+        else
+        {
+            message += EMPTYMESSAGE;
+        }
+        _server.SendMessage(message, conID);
+        //serverToClientSend(message, relChannel, conID);
+    }
+
+    
+    private void sendProjectToClient(string project)
+    {
+        string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
+        _server.sendMessageToAllClients(msg);
+    }
+
+    private void sendStatusToClient()
+    {
+        string msg = STATUSUPDATE + "|" + syncData.getStat();
+        if (wsd.isWSDActive())
+        {
+            msg += wsd.wsdMessageString(obdData.getSteeringWheelAngle());
+        }
+        if (syncData.doesStatusChanged())
+        {
+            this.sendSync = true;
+            _server.sendMessageToAllClients(msg);
+        }
+        else if (syncData.getStatus() == START)
+        {
+            if (lastMessage != msg)
+            {
+                lastMessage = msg;
+                _server.sendMessageToAllClients(msg);
+
+            }
+        }
+    }
+
     private string ProcessServerMessage(Server.ServerMessage message)
     {
         string data = message.Data;
@@ -1111,13 +1316,17 @@ public class Controller : MonoBehaviour
 
     private void OnClientConnected(Client client)
     {
+        //Send Display type to Server
+        client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
         clients.Add(client);
-        Debug.Log("Client has been connected");
     }
     private void OnClientDisconnected(Client client)
     {
         clients.Remove(client);
-        Debug.Log("Client has been disconnected");
+
+        //TODO Reconnect
+        Debug.Log("Client disconnected. Try to reconnect");
+        createClientNode();
     }
 
 

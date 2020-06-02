@@ -114,17 +114,16 @@ public class Server : MonoBehaviour
 
     private void HandleClientWorker(object token)
     {
-        Byte[] bytes = new Byte[1024];
+        Byte[] bytes = new Byte[Controller.BUFFERSIZE];
         using (TcpClient client = token as TcpClient)
         {
             ClientData data = new ClientData();
             data.ID = ++ClientData.MAX_ID;
-            //ToDo autoassign Name
-            data.Name = "User" + data.ID;
+            data.Name = "User" + data.ID;      //ToDo autoassign Name
 
             ConnectedClient connectedClient = new ConnectedClient(data, client);
             connectedClients.Add(connectedClient);
-            Debug.Log(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
+            //Debug.Log(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
             DispatchMessage(new ServerMessage(data, "Client Connected"));
 
             // Get a stream object for reading
@@ -169,11 +168,16 @@ public class Server : MonoBehaviour
 
     private void ProcessMessage(ConnectedClient connectedClient, string command)
     {
-        string[] split = command.Split(' ');
+        string[] split = command.Split('|');
         string response = string.Empty;
         ServerMessage serverMessage = null;
         switch (split[0])
         {
+            case Controller.RESDISPLAY: //Resond Display
+                connectedClient.ClientData.Name = split[1]; //Assign correct name
+                OnLog(split[0]+"|"+connectedClient.ClientData.ID);
+                break;
+
             case "!disconnect":
                 response = (string.Format("{0} has Disconnected", connectedClient.ClientData.Name));
                 Debug.Log(response);
@@ -191,6 +195,7 @@ public class Server : MonoBehaviour
                 break;
         }
     }
+    
 
     private void DispatchMessage(ServerMessage serverMessage)
     {
@@ -211,6 +216,18 @@ public class Server : MonoBehaviour
     private void DisconnectClient(ConnectedClient connection)
     {
         connectedClients.Remove(connection);
+    }
+
+    public void sendMessageToClient(int clientID, string message)
+    {
+        ServerMessage tmp;
+        connectedClients.ForEach(delegate (ConnectedClient c)
+        {
+            if (c.ClientData.ID == clientID) {
+                tmp = new ServerMessage(c.ClientData, message);
+                DispatchMessage(tmp);
+            }
+        });
     }
 
     /// <summary> 	

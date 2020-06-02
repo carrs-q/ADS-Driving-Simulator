@@ -49,7 +49,7 @@ public class Client : MonoBehaviour
         {
             this.IPAddress = IPAddress;
             this.Port = Port;
-            OnLog(string.Format("Connecting to {0}:{1}", IPAddress, Port));
+            Debug.Log(string.Format("Connecting to {0}:{1}", IPAddress, Port));
 
             clientReceiveThread = new Thread(new ThreadStart(ListenForData));
             clientReceiveThread.IsBackground = true;
@@ -57,7 +57,7 @@ public class Client : MonoBehaviour
         }
         catch (Exception e)
         {
-            OnLog("On client connect exception " + e);
+            Debug.Log("On client connect exception " + e);
         }
     }
 
@@ -70,10 +70,11 @@ public class Client : MonoBehaviour
         {
             socketConnection = new TcpClient(IPAddress, Port);
             OnConnected(this);
-            OnLog("Connected");
+            Debug.Log("Connected");
 
-            Byte[] bytes = new Byte[1024];
+            Byte[] bytes = new Byte[Controller.BUFFERSIZE];
             running = true;
+            SendMessage("");
             while (running)
             {
                 // Get a stream object for reading
@@ -97,18 +98,18 @@ public class Client : MonoBehaviour
                 }
             }
             socketConnection.Close();
-            OnLog("Disconnected from server");
+            Debug.Log("Disconnected from server");
             OnDisconnected(this);
         }
         catch (SocketException socketException)
         {
-            OnLog("Socket exception: " + socketException);
+            Debug.Log("Socket exception: " + socketException);
         }
     }
 
     public void CloseConnection()
     {
-        SendMessage("!disconnect"); 
+        SendMessage("bye bye"); 
         running = false;
     }
 
@@ -140,7 +141,7 @@ public class Client : MonoBehaviour
             }
             catch (SocketException socketException)
             {
-                OnLog("Socket exception: " + socketException);
+                Debug.Log("Socket exception: " + socketException);
             }
         }
 
@@ -160,7 +161,6 @@ public class Client : MonoBehaviour
             SendMessage("!disconnect");
             running = false;
             stream.Close();
-
         }
       
     }
