@@ -843,7 +843,6 @@ public class Controller : MonoBehaviour
     }
     private void loadCaveSettings()
     {
-
         if (NodeInformation.type.Equals(SLAVENODE))
         {
             wsdDefault = WSDINFRONT;
