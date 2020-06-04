@@ -276,15 +276,18 @@ public class Controller : MonoBehaviour
     private AudioSource[] allAudioSources;
     private double videoLengthSeconds = 0;
     private bool connectionTry = false, shutdown = false;
-
+    private string persistentDataPath;
+    private bool projectChanged = false;
+   
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
 
     private void findAllGameObjects()
     {
+        persistentDataPath = Application.persistentDataPath;
 
-        //Oculus
-        oculus = GameObject.Find(DefaultSettings.Oculus);
+       //Oculus
+       oculus = GameObject.Find(DefaultSettings.Oculus);
 
         //Cameras
         cameraMenue = GameObject.Find(DefaultSettings.CameraMenue);
@@ -462,6 +465,19 @@ public class Controller : MonoBehaviour
         manualIP = false;
     }
 
+    private void FixedUpdate()
+    {
+        if (!shutdown)
+        {
+            if (syncData.doesStatusChanged())
+            {
+                Debug.Log("I'm first");
+                
+                statusChange(syncData.getStatus());
+            }
+        }
+    }
+
     void Update()
     {
         if (!shutdown)
@@ -473,6 +489,11 @@ public class Controller : MonoBehaviour
                     cdnProject = false;
                     prepareSimulator();
                 }
+            }
+            if (projectChanged)
+            {
+                loadSimulatorSetup(NodeInformation.cdn, project);
+                projectChanged = false;
             }
 
 
@@ -524,7 +545,7 @@ public class Controller : MonoBehaviour
                 if (syncData.doesStatusChanged())
                 {
                     //TODO
-                    this.statusChange(syncData.getStatus());
+                    statusChange(syncData.getStatus());
                 }
                 steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
                 digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
@@ -919,7 +940,7 @@ public class Controller : MonoBehaviour
         this.project = project;
         cdnProject = true;
         sendProjectToClient(project);
-        loadSimulatorSetup(NodeInformation.cdn, project);
+        projectChanged = true;
     }
 
     //Network Init
@@ -1074,16 +1095,17 @@ public class Controller : MonoBehaviour
     {
         cdnProject = true;
         this.project = project;
-        loadSimulatorSetup(address, project);
+        projectChanged = true;
     }
     private void clientRecieveUpdate(string msg)
     {
         string[] data = msg.Split('|');
         syncData.setSimState(int.Parse(data[1]));
+        /*
         if (syncData.doesStatusChanged())
         {
             statusChange(syncData.getStatus());
-        }
+        }*/
         syncData.updateOBD(
                int.Parse(data[2]),
                int.Parse(data[3]),
@@ -1190,15 +1212,16 @@ public class Controller : MonoBehaviour
     private void serverUpdateDisplay(int displayID)
     {
         Debug.Log("Display ID received "+displayID);
-        if(NodeInformation.type.Equals(MASTERNODE))
-        switch (displayID)
-        {
-            case FRONT:{ log.write("Front Screen has been connected"); } break;
-            case LEFT: { log.write("Left Screen has been connected"); } break;
-            case RIGHT: { log.write("Right Screen has been connected"); } break;
-            case NAV: { log.write("Navigation has been connected"); } break;
-            case MIRRORS: { log.write("Mirrors has been connected"); } break;
-            case DASHBOARD: { log.write("Dashboard has been connected"); } break;
+        if (NodeInformation.type.Equals(MASTERNODE)) { 
+            switch (displayID)
+            {
+                case FRONT:{ log.write("Front Screen has been connected"); } break;
+                case LEFT: { log.write("Left Screen has been connected"); } break;
+                case RIGHT: { log.write("Right Screen has been connected"); } break;
+                case NAV: { log.write("Navigation has been connected"); } break;
+                case MIRRORS: { log.write("Mirrors has been connected"); } break;
+                case DASHBOARD: { log.write("Dashboard has been connected"); } break;
+            }
         }
     }
     
@@ -1270,7 +1293,7 @@ public class Controller : MonoBehaviour
             }
         }
 
-        return string.Format("{0}: {1}", message.SenderData.Name, data);
+        return data;
     }
 
 
@@ -1341,18 +1364,20 @@ public class Controller : MonoBehaviour
     }
     public void startSimulation()
     {
-        if (log.isRecording())
-        {
-            log.recordedStart(Labels.startSimulation);
-        }
-        sendMarker(START);
-        if (simulator.getDifferenceInSecs() == 0)
-        {
-            log.write("Simualtion started from beginning");
-        }
-        else
-        {
-            log.write("Simualtion continued at " + getSimTime(simulator.getDifferenceInSecs()));
+        if (NodeInformation.type.Equals(MASTERNODE)) { 
+            if (log.isRecording())
+            {
+                log.recordedStart(Labels.startSimulation);
+            }
+            sendMarker(START);
+            if (simulator.getDifferenceInSecs() == 0)
+            {
+                log.write("Simualtion started from beginning");
+            }
+            else
+            {
+                log.write("Simualtion continued at " + getSimTime(simulator.getDifferenceInSecs()));
+            }
         }
         simulator.beginnSimulation();
         frontWall.Play();
@@ -1427,7 +1452,10 @@ public class Controller : MonoBehaviour
 
 
         sendMarker(RESET);
-        log.write("Simualtion reseted");
+        if (NodeInformation.type.Equals(MASTERNODE))
+        {
+            log.write("Simualtion reseted");
+        }
 
         buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
         updateInterface();
@@ -1701,7 +1729,7 @@ public class Controller : MonoBehaviour
     }
     public void loadSimulatorSetup(string cdnAddress, string project)
     {
-        simulationContent = new SimulationContent(project, Application.persistentDataPath, cdnAddress);
+        simulationContent = new SimulationContent(project, persistentDataPath, cdnAddress);
         foreach (string filename in filenames)
         {
             StartCoroutine(simulationContent.addFile(cdnAddress + "/cdn/" + project + "/" + filename).downloadFile());
