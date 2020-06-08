@@ -6,7 +6,7 @@ public class OculusRecalibrateButton : MonoBehaviour {
 
     public void ButtonPressed()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.ReCenterOculus();
     }
 }

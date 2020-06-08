@@ -6,7 +6,7 @@ public class AutomatedTOR : MonoBehaviour {
 
     private void Start()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
     }
 
 

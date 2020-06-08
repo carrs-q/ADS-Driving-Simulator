@@ -8,7 +8,7 @@ public class overTake : MonoBehaviour
 
     public void Start()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
     }
     public void userTakeOver()
     {

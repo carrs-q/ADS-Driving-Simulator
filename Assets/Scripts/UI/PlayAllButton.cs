@@ -11,7 +11,7 @@ public class PlayAllButton : MonoBehaviour {
 
     //Button Controll for Start Simulation
     public void playAllVideos(){
-        controller = Controller.getController();
+        controller = Controller.GetController();
 
         if (playerText.text== Labels.startSimulation) {
             if (controller.IsSimulationReady() && controller.RequestSimStart()) {

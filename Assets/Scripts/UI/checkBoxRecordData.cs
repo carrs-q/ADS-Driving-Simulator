@@ -9,7 +9,7 @@ public class checkBoxRecordData : MonoBehaviour {
     
     public void activateRecording(bool check)
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.StartRecording(check);
     }
 }

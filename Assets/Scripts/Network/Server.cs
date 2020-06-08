@@ -123,40 +123,28 @@ public class Server : MonoBehaviour
 
             ConnectedClient connectedClient = new ConnectedClient(data, client);
             connectedClients.Add(connectedClient);
-            //Debug.Log(string.Format("{0} has Connected as {1}", ((IPEndPoint)client.Client.RemoteEndPoint).Address, data.Name));
+            
+            SendMessageToClient(data.ID, "Welcome Stranger, who are you?");
 
-            DispatchMessage(new ServerMessage(data, "Client Connected"));
-
-            // Get a stream object for reading
             try
             {
                 using (NetworkStream stream = client.GetStream())
                 {
                     int length;
-                    // Read incoming stream into byte array. 						
                     while (stream.CanRead && (length = stream.Read(bytes, 0, bytes.Length)) != 0)
                     {
                         var incomingData = new byte[length];
                         Array.Copy(bytes, 0, incomingData, 0, length);
-                        // Convert byte array to string message. 							
                         string clientMessage = Encoding.ASCII.GetString(incomingData);
-                        //OnLog("Server received: " + clientMessage);
 
                         if (clientMessage == "!disconnect")
                         { 
                             stream.Close();
                             client.Close();
                         }
-
-                        ServerMessage serverMessage = new ServerMessage(data, clientMessage);
-                        if (clientMessage.StartsWith("!"))
-                        {
-                            ProcessMessage(connectedClient, clientMessage);
-                        }
-                        else
-                        {
-                            DispatchMessage(serverMessage);
-                        }
+        
+                        
+                        ProcessMessage(connectedClient, clientMessage);
                     }
                 }
             }
@@ -171,8 +159,8 @@ public class Server : MonoBehaviour
     {
         string[] split = command.Split('|');
         string response = string.Empty;
-        Debug.Log(command);
         ServerMessage serverMessage = null;
+
         switch (split[0])
         {
             case Controller.RESDISPLAY: //Resond Display
@@ -219,7 +207,7 @@ public class Server : MonoBehaviour
         connectedClients.Remove(connection);
     }
 
-    public void sendMessageToClient(int clientID, string message)
+    public void SendMessageToClient(int clientID, string message)
     {
         ServerMessage tmp;
         connectedClients.ForEach(delegate (ConnectedClient c)
@@ -260,7 +248,7 @@ public class Server : MonoBehaviour
         return false;
     }
 
-    public void sendMessageToAllClients(string message)
+    public void SendMessageToAllClients(string message)
     {
         ServerMessage tmp;
         connectedClients.ForEach(delegate (ConnectedClient c)
@@ -272,7 +260,6 @@ public class Server : MonoBehaviour
 
     private void StopServer()
     {
-        Debug.Log("Stop server");
         tcpListener.Stop();
 
         //Disconnect all clients
@@ -281,7 +268,6 @@ public class Server : MonoBehaviour
         });
 
         tcpListenerThread.Abort();
-
     }
 
     void OnApplicationQuit()

@@ -112,7 +112,7 @@ public class Controller : MonoBehaviour
     private Log log;
     private int oldStatus;
 
-    public static Controller getController()
+    public static Controller GetController()
     {
         return instance;
     }
@@ -479,12 +479,6 @@ public class Controller : MonoBehaviour
                 projectChanged = false;
             }
 
-
-            if (_server.IsConnected || _client.IsConnected)
-            {
-                Receive();
-            }
-
             //TODO distinguish if Master or Slave
             if (renderMode == MASTER)
             {
@@ -537,7 +531,7 @@ public class Controller : MonoBehaviour
             {
                 //TODO Remove T est Key
                 Debug.Log("sendMessage to all clients");
-                _server.sendMessageToAllClients("!ping");
+                _server.SendMessageToAllClients("!ping");
             }
             if ((Input.anyKeyDown) && (
                 !Input.GetMouseButton(0) &&
@@ -951,29 +945,6 @@ public class Controller : MonoBehaviour
         }
     }
 
-    //Network Recieve
-    private void Receive()
-    {
-        lock (cacheLock)
-        {
-            if (!string.IsNullOrEmpty(cache))
-            {
-                //TODO: receive data
-                //TextWindow.text += string.Format("{0}", cache);
-                if (NodeInformation.type.Equals(MASTERNODE))
-                {
-                    Debug.Log("Master: " + cache);
-                }
-                else
-                {
-                    Debug.Log("Slave: " + cache);
-                }
-                cache = null;
-            }
-        }
-
-    }
-
 
     //New Network functions
     public void SendMessageToServer()
@@ -997,7 +968,6 @@ public class Controller : MonoBehaviour
             }
         }
     }
-
 
     /*
     public const string REQDISPLAY = "RQD";
@@ -1027,16 +997,10 @@ public class Controller : MonoBehaviour
                     case STATUSUPDATE:
                         ClientRecieveUpdate(finalMessage);
                         break;
-                    case REQDISPLAY:
-                        ServerUpdateDisplay(int.Parse(split[1]));
-                        break;
                     case REQPROJECT:{ 
                         if (split[1] != EMPTYMESSAGE) {
-                           ClientLoadProject(split[1], split[2]);
+                           //ClientLoadProject(split[1], split[2]);
                         }}; break;
-                    case SENDPROJECT:
-                        ClientLoadProject(split[1], split[2]);
-                        break;
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
@@ -1179,8 +1143,8 @@ public class Controller : MonoBehaviour
                     case RESDISPLAY:
                         ServerUpdateDisplay(int.Parse(split[1]));
                         break;
-
                     case REQPROJECT:
+                        //ClientLoadProject(split[1], split[2]);
                         ServerProjectRequest(int.Parse(split[1]));
                         break;
                 }
@@ -1219,13 +1183,14 @@ public class Controller : MonoBehaviour
         {
             message += EMPTYMESSAGE;
         }
+        Debug.Log(conID + "requested Project");
         _server.SendMessage(message, conID);
-        //serverToClientSend(message, relChannel, conID);
     }
+
     private void SendProjectToClient(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
-        _server.sendMessageToAllClients(msg);
+        _server.SendMessageToAllClients(msg);
     }
 
     private void SendStatusToClient()
@@ -1238,14 +1203,14 @@ public class Controller : MonoBehaviour
         if (syncData.doesStatusChanged())
         {
             this.sendSync = true;
-            _server.sendMessageToAllClients(msg);
+            _server.SendMessageToAllClients(msg);
         }
         else if (syncData.getStatus() == START)
         {
             if (lastMessage != msg)
             {
                 lastMessage = msg;
-                _server.sendMessageToAllClients(msg);
+                _server.SendMessageToAllClients(msg);
 
             }
         }
@@ -1928,7 +1893,7 @@ public class Controller : MonoBehaviour
         message += sliderInCarVolume.GetComponent<Slider>().value + "|";
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
-        _server.sendMessageToAllClients(message);
+        _server.SendMessageToAllClients(message);
         //ServerToClientListSend(message, relChannel, clients);
     }
 
@@ -2203,7 +2168,7 @@ public class Controller : MonoBehaviour
     }
     public static void NetWorkService()
     {
-        Controller controller = getController();
+        Controller controller = GetController();
         while (controller.AreThreadsAlive())
         {
             try

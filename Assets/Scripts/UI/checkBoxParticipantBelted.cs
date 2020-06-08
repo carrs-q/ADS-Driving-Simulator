@@ -8,7 +8,7 @@ public class checkBoxParticipantBelted : MonoBehaviour {
 
     public void activateRecording(bool check)
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.SafetyRequirements(check);
     }
 }

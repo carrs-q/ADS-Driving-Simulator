@@ -13,7 +13,7 @@ public class WSDPosition : MonoBehaviour
 
     public void Start()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         AttachList();
     }
     private void AttachList()

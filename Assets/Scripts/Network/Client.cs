@@ -92,7 +92,7 @@ public class Client : MonoBehaviour
                             // Convert byte array to string message. 						
                             string serverJson = Encoding.ASCII.GetString(incomingData);
                             Server.ServerMessage serverMessage = JsonUtility.FromJson<Server.ServerMessage>(serverJson);
-                            MessageReceived(serverMessage);
+                            OnMessageReceived(serverMessage);
                         }
                     }
                 }
@@ -111,11 +111,6 @@ public class Client : MonoBehaviour
     {
         SendMessage("bye bye"); 
         running = false;
-    }
-
-    public void MessageReceived(Server.ServerMessage serverMessage)
-    {
-        OnMessageReceived(serverMessage);
     }
 
     /// <summary> 	

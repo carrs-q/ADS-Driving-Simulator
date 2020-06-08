@@ -8,7 +8,7 @@ public class Tintslide : MonoBehaviour {
     
     public void sliderMoved(Single state)
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.SetTintState(state);
     }
     public void setSlider(Single state)

@@ -11,7 +11,7 @@ public class goToButton : MonoBehaviour {
 
     //Button Controll for Start Simulation
     public void interfaceSeek(){
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.InterfaceSeek();
     }
 }

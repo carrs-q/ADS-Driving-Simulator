@@ -4,7 +4,7 @@ public class ResetButton : MonoBehaviour {
     private Controller controller;
     
     public void resetVideos(){
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.ResetSimulation();
     }
 }

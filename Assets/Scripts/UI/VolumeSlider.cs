@@ -9,7 +9,7 @@ public class VolumeSlider : MonoBehaviour {
 
     void Start()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         valueText.text = ((int)this.GetComponent<Slider>().value).ToString();
     }
 

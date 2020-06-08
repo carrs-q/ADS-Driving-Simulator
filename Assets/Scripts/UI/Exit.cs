@@ -5,7 +5,7 @@ public class Exit : MonoBehaviour {
 
 
     public void exitSimulator(){
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.ShutdownSimulator();
 	}
 }

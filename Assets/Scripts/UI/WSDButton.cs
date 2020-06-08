@@ -7,7 +7,7 @@ public class WSDButton : MonoBehaviour {
 
     public void buttonPressed(bool isActivated)
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         
         if (isActivated)
         {

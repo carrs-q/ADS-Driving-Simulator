@@ -13,7 +13,7 @@ public class Audio : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         AttachList();
 
     }

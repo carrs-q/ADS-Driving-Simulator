@@ -5,7 +5,7 @@ public class Sensors : MonoBehaviour {
 
 
     public void enableSensors(bool isActivated){
-        controller = Controller.getController();
+        controller = Controller.GetController();
         controller.SetSensorSync(isActivated);
 	}
 }

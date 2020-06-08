@@ -23,7 +23,7 @@ public class OBD : MonoBehaviour {
     // Use this for initialization
     public void Start()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         countSet = false;
         AttachList();
     }

@@ -12,7 +12,7 @@ public class LoadVideoButton : MonoBehaviour
 
     public void Start()
     {
-        controller = Controller.getController();
+        controller = Controller.GetController();
         AttachList();
     }
     private void AttachList()
