@@ -9,7 +9,7 @@ public class Tintslide : MonoBehaviour {
     public void sliderMoved(Single state)
     {
         controller = Controller.getController();
-        controller.setTintState(state);
+        controller.SetTintState(state);
     }
     public void setSlider(Single state)
     {

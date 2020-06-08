@@ -8,6 +8,6 @@ public class ChromaButton : MonoBehaviour {
     public void buttonPressed(bool isActivated)
     {
         controller = Controller.getController();
-        controller.setChroma(isActivated);
+        controller.SetChroma(isActivated);
     }
 }

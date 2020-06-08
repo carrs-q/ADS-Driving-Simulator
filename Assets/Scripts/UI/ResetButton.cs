@@ -5,6 +5,6 @@ public class ResetButton : MonoBehaviour {
     
     public void resetVideos(){
         controller = Controller.getController();
-        controller.resetSimulation();
+        controller.ResetSimulation();
     }
 }

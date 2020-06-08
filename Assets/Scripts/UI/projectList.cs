@@ -36,12 +36,12 @@ public class projectList : MonoBehaviour {
     {
         if (index != 0 && index != names.Count-1)
         {
-            controller.loadProject(names[index]);
+            controller.LoadProject(names[index]);
         }
         else if (names[index] == loadProject)
         {
             loadVideoDropDown.value = 0;
-            controller.loadProjectList();
+            controller.LoadProjectList();
         }
     }
 }

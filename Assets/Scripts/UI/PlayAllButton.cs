@@ -14,12 +14,12 @@ public class PlayAllButton : MonoBehaviour {
         controller = Controller.getController();
 
         if (playerText.text== Labels.startSimulation) {
-            if (controller.isSimulationReady() && controller.requestSimStart()) {
-                controller.startSimulation();
+            if (controller.IsSimulationReady() && controller.RequestSimStart()) {
+                controller.StartSimulation();
                 playerText.text = Labels.stopSimulation;
             }
 		} else {
-            controller.stopSimulation();
+            controller.StopSimulation();
             playerText.text = Labels.startSimulation;
 		}
 	}

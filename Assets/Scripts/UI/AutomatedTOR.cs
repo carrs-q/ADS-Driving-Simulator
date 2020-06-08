@@ -12,6 +12,6 @@ public class AutomatedTOR : MonoBehaviour {
 
     public void toggleTOR(bool isActivated)
     {
-        controller.automatedTOR(isActivated);
+        controller.AutomatedTOR(isActivated);
     }
 }

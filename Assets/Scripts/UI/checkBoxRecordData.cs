@@ -10,6 +10,6 @@ public class checkBoxRecordData : MonoBehaviour {
     public void activateRecording(bool check)
     {
         controller = Controller.getController();
-        controller.startRecording(check);
+        controller.StartRecording(check);
     }
 }

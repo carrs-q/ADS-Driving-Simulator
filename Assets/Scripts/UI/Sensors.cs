@@ -6,6 +6,6 @@ public class Sensors : MonoBehaviour {
 
     public void enableSensors(bool isActivated){
         controller = Controller.getController();
-        controller.setSensorSync(isActivated);
+        controller.SetSensorSync(isActivated);
 	}
 }

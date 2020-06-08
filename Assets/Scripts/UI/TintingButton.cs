@@ -6,6 +6,6 @@ public class TintingButton : MonoBehaviour {
     public void buttonPressed(bool isActivated)
     {
         controller = Controller.getController();
-        controller.setTinting(isActivated);
+        controller.SetTinting(isActivated);
     }
 }

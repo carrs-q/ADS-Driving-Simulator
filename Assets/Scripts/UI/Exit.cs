@@ -6,6 +6,6 @@ public class Exit : MonoBehaviour {
 
     public void exitSimulator(){
         controller = Controller.getController();
-        controller.shutdownSimulator();
+        controller.ShutdownSimulator();
 	}
 }

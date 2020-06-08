@@ -267,7 +267,7 @@ public class Controller : MonoBehaviour
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
 
-    private void findAllGameObjects()
+    private void FindAllGameObjects()
     {
         persistentDataPath = Application.persistentDataPath;
 
@@ -360,7 +360,7 @@ public class Controller : MonoBehaviour
         //AllAudiosources
         allAudioSources = FindObjectsOfType<AudioSource>();
     }
-    private void writeLabels()
+    private void WriteLabels()
     {
 
     }
@@ -369,12 +369,12 @@ public class Controller : MonoBehaviour
     void Awake()
     {
         Application.runInBackground = true;
-        findAllGameObjects();
+        FindAllGameObjects();
         syncData = new SyncData();
         simulationContent = new SimulationContent();
         torTime = new Timing();
         lastTOR = DateTime.Now;
-        StartCoroutine(getProjectList());
+        StartCoroutine(GetProjectList());
         this.gameObject.SetActive(true);
 
         wsd = new WindShield();
@@ -401,7 +401,7 @@ public class Controller : MonoBehaviour
 
         windshieldDisplay.transform.localPosition = wsdDefault;
         videoWallDefault = videoWalls.transform.position;
-        initDrivingSide();
+        InitDrivingSide();
 
         //Network init
         _server = new Server();
@@ -426,7 +426,7 @@ public class Controller : MonoBehaviour
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             threadList = new List<Thread>();
             threadsAlive = true;
-            updateInterface();
+            UpdateInterface();
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -438,10 +438,10 @@ public class Controller : MonoBehaviour
 
             if (NodeInformation.debug != 1)
             {
-                debugInformations(false);
+                DebugInformations(false);
             }
         }
-        changeMode(actualMode);
+        ChangeMode(actualMode);
         enabledSensorSync = false;
         instance = this;
         videoPlayerAttached = false;
@@ -455,8 +455,8 @@ public class Controller : MonoBehaviour
         if (!shutdown)
         {
             if (syncData.doesStatusChanged())
-            {                
-                statusChange(syncData.getStatus());
+            {
+                StatusChange(syncData.getStatus());
             }
         }
     }
@@ -470,30 +470,30 @@ public class Controller : MonoBehaviour
                 if (simulationContent.areFilesReady())
                 {
                     cdnProject = false;
-                    prepareSimulator();
+                    PrepareSimulator();
                 }
             }
             if (projectChanged)
             {
-                loadSimulatorSetup(NodeInformation.cdn, project);
+                LoadSimulatorSetup(NodeInformation.cdn, project);
                 projectChanged = false;
             }
 
 
             if (_server.IsConnected || _client.IsConnected)
             {
-                receive();
+                Receive();
             }
 
             //TODO distinguish if Master or Slave
             if (renderMode == MASTER)
             {
                 //TODO
-                sendStatusToClient();
+                SendStatusToClient();
             }
             if (renderMode == MASTER && syncData.getStatus() == START)
             {
-                updateInterface();
+                UpdateInterface();
                 syncData.setSpeed(obdData.getSpeed());
                 syncData.setSteeringWheelRotation(obdData.getSteeringWheelAngle());
 
@@ -528,7 +528,7 @@ public class Controller : MonoBehaviour
                 if (syncData.doesStatusChanged())
                 {
                     //TODO
-                    statusChange(syncData.getStatus());
+                    StatusChange(syncData.getStatus());
                 }
                 steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
                 digitalSpeedoMeter.SetText(syncData.getSpeed().ToString());
@@ -649,7 +649,7 @@ public class Controller : MonoBehaviour
                         buttonStartSimulation.GetComponent<Button>().interactable = true;
                     }
                     wsd.updateWSDDefault(wsdDefault + WSDDyn);
-                    sendStatusToClient();
+                    SendStatusToClient();
                 }
 
             }
@@ -657,23 +657,23 @@ public class Controller : MonoBehaviour
     }
 
     //Simulator Mode
-    public void changeMode(int mode)
+    public void ChangeMode(int mode)
     {
-        initSettings();
+        InitSettings();
         switch (mode)
         {
             case CAVEMODE:
                 {
                     actualMode = CAVEMODE;
-                    loadCaveSettings();
-                    hideSeekPanel(true);
+                    LoadCaveSettings();
+                    HideSeekPanel(true);
                 }
                 break;
             case VRMODE:
                 {
                     actualMode = VRMODE;
-                    loadVRSettings();
-                    hideSeekPanel(true);
+                    LoadVRSettings();
+                    HideSeekPanel(true);
                 }
                 break;
             default:
@@ -683,7 +683,7 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
-    private void initSettings()
+    private void InitSettings()
     {
 
         if (NodeInformation.type.Equals(MASTERNODE))
@@ -692,16 +692,16 @@ public class Controller : MonoBehaviour
             {
                 Destroy(GameObject.FindObjectOfType<AudioListener>());
             }
-            defaultVolumes();
+            DefaultVolumes();
         }
         cameraNodeFront.SetActive(false);
         cameraNodeLeft.SetActive(false);
         cameraNodeRight.SetActive(false);
         cameraNodeMirrors.SetActive(false);
-        hideSeekPanel(false);
+        HideSeekPanel(false);
         vrCameraDisplay.SetActive(false);
 
-        oculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
+        OculusCalibrateHideButton(DefaultSettings.buttonResetOculusVisible);
         buttonJumpTo.SetActive(DefaultSettings.buttonJumpToVisible);
 
         checkBoxTOR.GetComponent<Toggle>().isOn = DefaultSettings.checkBoxTORDefault;
@@ -714,7 +714,7 @@ public class Controller : MonoBehaviour
 
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-            createClientNode();
+            CreateClientNode();
             if (oculus != null)
             {
                 Destroy(oculus);
@@ -740,7 +740,7 @@ public class Controller : MonoBehaviour
         }
 
     }
-    private void initDrivingSide()
+    private void InitDrivingSide()
     {
 
         // TODO:
@@ -804,10 +804,10 @@ public class Controller : MonoBehaviour
         }
     }
 
-    private void loadVRSettings()
+    private void LoadVRSettings()
     {
         oculus.SetActive(true);
-        oculusCalibrateHideButton(true);
+        OculusCalibrateHideButton(true);
         videoWalls.transform.localPosition = new Vector3(videoWallDefault.x, -0.34f, videoWallDefault.z);
         wsdDefault = WSDINCAR;
         Camera wsdCam = cameraWSD.GetComponent<Camera>();
@@ -824,7 +824,7 @@ public class Controller : MonoBehaviour
         //    Debug.Log(Display.displays[i].ToString());
         //}
     }
-    private void loadCaveSettings()
+    private void LoadCaveSettings()
     {
         if (NodeInformation.type.Equals(SLAVENODE))
         {
@@ -872,12 +872,12 @@ public class Controller : MonoBehaviour
         {
             wsdDefault = WSDINCAR;
             this.GetComponent<Camera>().targetDisplay = 0;
-            createMasterServer();
-            if (isMasterAndCave())
+            CreateMasterServer();
+            if (IsMasterAndCave())
             {
                 cameraMenue.AddComponent(typeof(AudioListener));
                 AudioListener.pause = false;
-                changeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
+                ChangeVolume(DefaultSettings.SliderVolumeMaster, (int)sliderVolumeMaster.GetComponent<Slider>().value);
             }
         }
         windshieldDisplay.transform.localPosition = wsdDefault;
@@ -886,7 +886,7 @@ public class Controller : MonoBehaviour
     }
 
 
-    IEnumerator getProjectList()
+    IEnumerator GetProjectList()
     {
         UnityWebRequest www = UnityWebRequest.Get(NodeInformation.cdn + "/getprojectlist");
 
@@ -896,39 +896,39 @@ public class Controller : MonoBehaviour
         {
             if (www.error == "Cannot connect to destination host")
             {
-                writeError("NodeJs Project Server is not running");
+                WriteError("NodeJs Project Server is not running");
             }
             else
             {
-                writeError(www.error);
+                WriteError(www.error);
             }
         }
         else
         {
-            writeLog("Projectlist loaded");
+            WriteLog("Projectlist loaded");
             projectList = www.downloadHandler.text.Split(new string[] { "," }, StringSplitOptions.None);
-            updateProjectList();
+            UpdateProjectList();
         }
     }
 
-    private void updateProjectList()
+    private void UpdateProjectList()
     {
         projectList pL = (projectList)dropDownChangeProject.GetComponent(typeof(projectList));
         pL.addList(projectList);
     }
 
-    public void loadProject(string project)
+    public void LoadProject(string project)
     {
         buttonStartSimulation.GetComponent<Button>().interactable = false;
         log.write("Project " + project + " loaded");
         this.project = project;
         cdnProject = true;
-        sendProjectToClient(project);
+        SendProjectToClient(project);
         projectChanged = true;
     }
 
     //Network Init
-    private void createMasterServer()
+    private void CreateMasterServer()
     {
         if (!_server.IsConnected)
         {
@@ -936,14 +936,14 @@ public class Controller : MonoBehaviour
         }
     }
 
-    private void createClientNode()
+    private void CreateClientNode()
     {
         if (!_client.IsConnected)
         {
             _client.ConnectToTcpServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
     }
-    private void disconnectNode()
+    private void DisconnectNode()
     {
         if (_client.IsConnected)
         {
@@ -952,7 +952,7 @@ public class Controller : MonoBehaviour
     }
 
     //Network Recieve
-    private void receive()
+    private void Receive()
     {
         lock (cacheLock)
         {
@@ -1025,30 +1025,30 @@ public class Controller : MonoBehaviour
                 switch (split[0])
                 {
                     case STATUSUPDATE:
-                        clientRecieveUpdate(finalMessage);
+                        ClientRecieveUpdate(finalMessage);
                         break;
                     case REQDISPLAY:
-                        serverUpdateDisplay(int.Parse(split[1]));
+                        ServerUpdateDisplay(int.Parse(split[1]));
                         break;
                     case REQPROJECT:{ 
                         if (split[1] != EMPTYMESSAGE) {
-                            clientLoadProject(split[1], split[2]);
+                           ClientLoadProject(split[1], split[2]);
                         }}; break;
                     case SENDPROJECT:
-                        clientLoadProject(split[1], split[2]);
+                        ClientLoadProject(split[1], split[2]);
                         break;
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
                     case VOLUMECONTROL:{
-                            clientRecieveVolume(split[1], split[2], split[3], split[4]);
+                            ClientRecieveVolume(split[1], split[2], split[3], split[4]);
                         }
                         break;
                     case SEEKMSG:{
-                            clientSeek(split[1]);
+                            ClientSeek(split[1]);
                         }; break;
                     case SHUTDOWNSIM:{
-                            shutdownSimulator();
+                            ShutdownSimulator();
                         }; break;
                 }
             }
@@ -1073,13 +1073,13 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    private void clientLoadProject(string project, string address)
+    private void ClientLoadProject(string project, string address)
     {
         cdnProject = true;
         this.project = project;
         projectChanged = true;
     }
-    private void clientRecieveUpdate(string msg)
+    private void ClientRecieveUpdate(string msg)
     {
         string[] data = msg.Split('|');
         syncData.setSimState(int.Parse(data[1]));
@@ -1132,35 +1132,35 @@ public class Controller : MonoBehaviour
             };
         }
     }
-    private void clientRecieveVolume(string volMaster, string volAmb, string volTOR, string volWSD)
+    private void ClientRecieveVolume(string volMaster, string volAmb, string volTOR, string volWSD)
     {
-        changeVolume(DefaultSettings.SliderVolumeMaster, int.Parse(volMaster));
-        changeVolume(DefaultSettings.SliderInCarVolume, int.Parse(volAmb));
-        changeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
-        changeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
+        ChangeVolume(DefaultSettings.SliderVolumeMaster, int.Parse(volMaster));
+        ChangeVolume(DefaultSettings.SliderInCarVolume, int.Parse(volAmb));
+        ChangeVolume(DefaultSettings.SliderWarnVolume, int.Parse(volTOR));
+        ChangeVolume(DefaultSettings.SliderWSDVolume, int.Parse(volWSD));
     }
-    private void clientSeek(string millisString)
+    private void ClientSeek(string millisString)
     {
         Int64 millis = Int64.Parse(millisString);
-        this.networkSeek(new Timing(millis));
+        this.NetworkSeek(new Timing(millis));
     }
-    private void statusChange(int status)
+    private void StatusChange(int status)
     {
         switch (status)
         {
             case START:
                 {
-                    startSimulation();
+                    StartSimulation();
                 }
                 break;
             case PAUSE:
                 {
-                    stopSimulation();
+                    StopSimulation();
                 }
                 break;
             case RESET:
                 {
-                    resetSimulation();
+                    ResetSimulation();
                 }
                 break;
         }
@@ -1177,11 +1177,11 @@ public class Controller : MonoBehaviour
                 switch (split[0])
                 {
                     case RESDISPLAY:
-                        serverUpdateDisplay(int.Parse(split[1]));
+                        ServerUpdateDisplay(int.Parse(split[1]));
                         break;
 
                     case REQPROJECT:
-                        serverProjectRequest(int.Parse(split[1]));
+                        ServerProjectRequest(int.Parse(split[1]));
                         break;
                 }
             }
@@ -1191,7 +1191,7 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    private void serverUpdateDisplay(int displayID)
+    private void ServerUpdateDisplay(int displayID)
     {
         Debug.Log("Display ID received "+displayID);
         if (NodeInformation.type.Equals(MASTERNODE)) { 
@@ -1208,7 +1208,7 @@ public class Controller : MonoBehaviour
     }
     
     
-    private void serverProjectRequest(int conID)
+    private void ServerProjectRequest(int conID)
     {
         string message = REQPROJECT + "|";
         if (simulationContent.isProjectLoaded())
@@ -1222,13 +1222,13 @@ public class Controller : MonoBehaviour
         _server.SendMessage(message, conID);
         //serverToClientSend(message, relChannel, conID);
     }
-    private void sendProjectToClient(string project)
+    private void SendProjectToClient(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
         _server.sendMessageToAllClients(msg);
     }
 
-    private void sendStatusToClient()
+    private void SendStatusToClient()
     {
         string msg = STATUSUPDATE + "|" + syncData.getStat();
         if (wsd.isWSDActive())
@@ -1291,13 +1291,13 @@ public class Controller : MonoBehaviour
 
         //TODO Reconnect
         Debug.Log("Client disconnected. Try to reconnect");
-        createClientNode();
+        CreateClientNode();
     }
 
 
 
     // Core Functions for Simulator
-    public bool requestSimStart()
+    public bool RequestSimStart()
     {
         if (log.isRecording())
         {
@@ -1344,21 +1344,21 @@ public class Controller : MonoBehaviour
             return true;
         }
     }
-    public void startSimulation()
+    public void StartSimulation()
     {
         if (NodeInformation.type.Equals(MASTERNODE)) { 
             if (log.isRecording())
             {
                 log.recordedStart(Labels.startSimulation);
             }
-            sendMarker(START);
+            SendMarker(START);
             if (simulator.getDifferenceInSecs() == 0)
             {
                 log.write("Simualtion started from beginning");
             }
             else
             {
-                log.write("Simualtion continued at " + getSimTime(simulator.getDifferenceInSecs()));
+                log.write("Simualtion continued at " + GetSimTime(simulator.getDifferenceInSecs()));
             }
         }
         simulator.beginnSimulation();
@@ -1370,17 +1370,17 @@ public class Controller : MonoBehaviour
         MirrorRight.Play();
         MirrorCameraPlayer.Play();
         navigationScreen.Play();
-        playPauseAudioSources(START);
-        guiProtection(false);
-        debugInformations(false);
+        PlayPauseAudioSources(START);
+        GuiProtection(false);
+        DebugInformations(false);
     }
-    public void stopSimulation()
+    public void StopSimulation()
     {
         if (log.isRecording())
         {
             log.recordedStart(Labels.stopSimulation);
         }
-        sendMarker(PAUSE);
+        SendMarker(PAUSE);
         log.write("Simualtion paused");
         simulator.pauseSimulation();
         frontWall.Pause();
@@ -1391,12 +1391,12 @@ public class Controller : MonoBehaviour
         MirrorLeft.Pause();
         MirrorRight.Pause();
         MirrorCameraPlayer.Pause();
-        guiProtection(true);
-        playPauseAudioSources(PAUSE);
+        GuiProtection(true);
+        PlayPauseAudioSources(PAUSE);
     }
-    public void resetSimulation()
+    public void ResetSimulation()
     {
-        //playPauseAudioSources(INIT);
+        //PlayPauseAudioSources(INIT);
 
         frontWall.Pause();
         leftWall.Pause();
@@ -1433,18 +1433,18 @@ public class Controller : MonoBehaviour
         Seek(MirrorRight, nTime);
 
 
-        sendMarker(RESET);
+        SendMarker(RESET);
         if (NodeInformation.type.Equals(MASTERNODE))
         {
             log.write("Simualtion reseted");
         }
 
         buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
-        updateInterface();
+        UpdateInterface();
         torFired = false;
     }
 
-    private void playPauseAudioSources(int pauseCode)
+    private void PlayPauseAudioSources(int pauseCode)
     {
         foreach (var aS in allAudioSources)
         {
@@ -1475,7 +1475,7 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    public void takeOverRequest()
+    public void TakeOverRequest()
     {
         if (log.isRecording())
         {
@@ -1493,14 +1493,14 @@ public class Controller : MonoBehaviour
         }
 
     }
-    public void takeOverRequest(DateTime time)
+    public void TakeOverRequest(DateTime time)
     {
         if (this.syncData.getStatus() == START)
         {
             if (time.Subtract(lastTOR).TotalSeconds >= 10)
             {
                 lastTOR = DateTime.Now;
-                this.takeOverRequest();
+                this.TakeOverRequest();
             }
             else
             {
@@ -1512,7 +1512,7 @@ public class Controller : MonoBehaviour
             log.writeWarning("The Simulation need to be started for TOR");
         }
     }
-    public void automatedTOR(bool isActivated)
+    public void AutomatedTOR(bool isActivated)
     {
         InputField temp = inputTORTime.GetComponent<InputField>();
         temp.interactable = !isActivated;
@@ -1544,7 +1544,7 @@ public class Controller : MonoBehaviour
         }
 
     }
-    private void guiProtection(bool isInteractable)
+    private void GuiProtection(bool isInteractable)
     {
         buttonResetSimulation.GetComponent<Button>().interactable = isInteractable;
         buttonClose.GetComponent<Button>().interactable = isInteractable;
@@ -1576,43 +1576,43 @@ public class Controller : MonoBehaviour
             inputTORTime.GetComponent<InputField>().interactable = isInteractable;
         }
     }
-    private void hideSeekPanel(bool active)
+    private void HideSeekPanel(bool active)
     {
         pannelSimulation.SetActive(active);
         pannelResearch.SetActive(active);
         pannelWSD.SetActive(active);
     }
 
-    public void enableWindshield()
+    public void EnableWindshield()
     {
         this.wsd.enableWSD();
     }
-    public void disableWindshield()
+    public void DisableWindshield()
     {
         this.wsd.disableWSD();
     }
-    public void setChroma(bool state)
+    public void SetChroma(bool state)
     {
         this.wsd.setWSDChroma(state);
     }
-    public void setTinting(bool state)
+    public void SetTinting(bool state)
     {
         this.wsd.setWSDTinting(state);
     }
-    public void setWSDMoving(bool state)
+    public void SetWSDMoving(bool state)
     {
         wsd.setWSDHorizontalMovement(state);
     }
-    public void setTintState(Single tintPercent)
+    public void SetTintState(Single tintPercent)
     {
         wsd.setTintingTransparency(tintPercent);
     }
 
-    public bool isMasterAndCave()
+    public bool IsMasterAndCave()
     {
         return (renderMode == MASTER && actualMode == CAVEMODE);
     }
-    private void prepareSimulator()
+    private void PrepareSimulator()
     {
         int temp = 0;
         string temppath;
@@ -1627,27 +1627,27 @@ public class Controller : MonoBehaviour
                     case 0:
                         {
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
-                                loadVideo(frontWall, temppath);
+                                LoadVideo(frontWall, temppath);
 
                         }
                         break;
                     case 1:
                         {
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
-                                loadVideo(leftWall, temppath);
+                                LoadVideo(leftWall, temppath);
                         }
                         break;
                     case 2:
                         {
                             if (NodeInformation.type.Equals(MASTERNODE) || NodeInformation.screen != 5)
-                                loadVideo(rightWall, temppath);
+                                LoadVideo(rightWall, temppath);
                         }
                         break;
                     case 3:
                         {
                             if (NodeInformation.type.Equals(MASTERNODE))
                             {
-                                loadVideo(navigationScreen, temppath);
+                                LoadVideo(navigationScreen, temppath);
                             }
                         }
                         break;
@@ -1655,7 +1655,7 @@ public class Controller : MonoBehaviour
                         { //Mirror All
                             if (NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 5)
                             {
-                                loadVideo(MirrorCameraPlayer, temppath);
+                                LoadVideo(MirrorCameraPlayer, temppath);
                             }
                         }
                         break;
@@ -1663,7 +1663,7 @@ public class Controller : MonoBehaviour
                         { // Mirror Back
                             if (NodeInformation.type.Equals(MASTERNODE))
                             {
-                                loadVideo(MirrorStraigt, temppath);
+                                LoadVideo(MirrorStraigt, temppath);
                             }
                         }
                         break;
@@ -1671,7 +1671,7 @@ public class Controller : MonoBehaviour
                         { // Mirror Left
                             if (NodeInformation.type.Equals(MASTERNODE))
                             {
-                                loadVideo(MirrorLeft, temppath);
+                                LoadVideo(MirrorLeft, temppath);
                             }
                         }
                         break;
@@ -1679,7 +1679,7 @@ public class Controller : MonoBehaviour
                         { // Mirror Right
                             if (NodeInformation.type.Equals(MASTERNODE))
                             {
-                                loadVideo(MirrorRight, temppath);
+                                LoadVideo(MirrorRight, temppath);
                             }
                         }
                         break;
@@ -1687,7 +1687,7 @@ public class Controller : MonoBehaviour
                         {
                             if ((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
-                                loadAudioSource(2, temppath);
+                                LoadAudioSource(2, temppath);
                             }
                         }
                         break;
@@ -1695,7 +1695,7 @@ public class Controller : MonoBehaviour
                         {
                             if ((NodeInformation.type.Equals(SLAVENODE) && NodeInformation.screen == 1) || NodeInformation.type.Equals(MASTERNODE))
                             {
-                                loadAudioSource(1, temppath);
+                                LoadAudioSource(1, temppath);
                             }
                         }
                         break;
@@ -1709,7 +1709,7 @@ public class Controller : MonoBehaviour
             ++temp;
         }
     }
-    public void loadSimulatorSetup(string cdnAddress, string project)
+    public void LoadSimulatorSetup(string cdnAddress, string project)
     {
         simulationContent = new SimulationContent(project, persistentDataPath, cdnAddress);
         foreach (string filename in filenames)
@@ -1721,7 +1721,7 @@ public class Controller : MonoBehaviour
     }
 
     // Systemcheck for Starting Actual Checksum should be 1       
-    public bool isSimulationReady()
+    public bool IsSimulationReady()
     {
         int checksum = 0;
         if (frontWall.isPrepared)
@@ -1734,7 +1734,7 @@ public class Controller : MonoBehaviour
     }
 
     //Function Load Video - Called from FileManager
-    private void loadVideo(VideoPlayer video, string path)
+    private void LoadVideo(VideoPlayer video, string path)
     {
         string temp = path;
         if (video.url == temp || temp == null)
@@ -1750,43 +1750,43 @@ public class Controller : MonoBehaviour
             video.targetTexture = cameraNodeMirrors.GetComponent<RenderTexture>();
         }
     }
-    public void loadVideotoPlayer(int player, string path)
+    public void LoadVideotoPlayer(int player, string path)
     {
         switch (player)
         {
             case 0:
                 {
-                    loadVideo(frontWall, path);
+                    LoadVideo(frontWall, path);
                 }
                 break;
             case 1:
                 {
-                    loadVideo(leftWall, path);
+                    LoadVideo(leftWall, path);
                 }
                 break;
             case 2:
                 {
-                    loadVideo(rightWall, path);
+                    LoadVideo(rightWall, path);
                 }
                 break;
             case 3:
                 {
-                    loadVideo(navigationScreen, path);
+                    LoadVideo(navigationScreen, path);
                 }
                 break;
             case 4:
                 {
-                    loadVideo(MirrorStraigt, path);
+                    LoadVideo(MirrorStraigt, path);
                 }
                 break;
             case 5:
                 {
-                    loadVideo(MirrorLeft, path);
+                    LoadVideo(MirrorLeft, path);
                 }
                 break;
             case 6:
                 {
-                    loadVideo(MirrorRight, path);
+                    LoadVideo(MirrorRight, path);
                 }
                 break;
             default:
@@ -1796,7 +1796,7 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
-    public void loadAudioSource(int player, string path)
+    public void LoadAudioSource(int player, string path)
     {
         switch (player)
         {
@@ -1829,7 +1829,7 @@ public class Controller : MonoBehaviour
         {
             audioClip = www.GetAudioClip();
             audioClip.name = Path.GetFileName(path);
-            attachAudioClip(audioClip, player);
+            AttachAudioClip(audioClip, player);
         }
         else
         {
@@ -1837,7 +1837,7 @@ public class Controller : MonoBehaviour
             buttonStartSimulation.GetComponent<Button>().interactable = true;
         }
     }
-    private void attachAudioClip(AudioClip clip, int player)
+    private void AttachAudioClip(AudioClip clip, int player)
     {
         if (clip.length != 0)
         {
@@ -1868,7 +1868,7 @@ public class Controller : MonoBehaviour
         }
 
     }
-    private void defaultVolumes()
+    private void DefaultVolumes()
     {
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -1883,11 +1883,11 @@ public class Controller : MonoBehaviour
         //changeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
 
     }
-    public void changeVolume(string sourceName, int value)
+    public void ChangeVolume(string sourceName, int value)
     {
-        if (isMasterAndCave())
+        if (IsMasterAndCave())
         {
-            //sendVolume();
+            SendVolume();
         }
         float volume = ((float)value) / 100;
         //Network Send
@@ -1921,6 +1921,17 @@ public class Controller : MonoBehaviour
         }
     }
 
+    public void SendVolume()
+    {
+        string message = VOLUMECONTROL + "|";
+        message += sliderVolumeMaster.GetComponent<Slider>().value + "|";
+        message += sliderInCarVolume.GetComponent<Slider>().value + "|";
+        message += sliderWarnVolume.GetComponent<Slider>().value + "|";
+        message += sliderWSDVolume.GetComponent<Slider>().value;
+        _server.sendMessageToAllClients(message);
+        //ServerToClientListSend(message, relChannel, clients);
+    }
+
     //Video Controll Helping Method for Seeking
     private void Seek(VideoPlayer p, float additionalTime)
     {
@@ -1933,12 +1944,12 @@ public class Controller : MonoBehaviour
         p.time = seekTime.getTotalSeconds();
         //p.time = nTime  * (p.frameCount / p.frameRate);
     }
-    public bool areVideosAttached()
+    public bool AreVideosAttached()
     {
         return this.videoPlayerAttached;
     }
 
-    public void interfaceSeek()
+    public void InterfaceSeek()
     {
         InputField temp = inputTimeGotTo.GetComponent<InputField>();
         bool requirements = false;
@@ -1955,7 +1966,7 @@ public class Controller : MonoBehaviour
         }
         if (requirements)
         {
-            this.resetSimulation();
+            this.ResetSimulation();
             if (renderMode == MASTER)
             {
 
@@ -1964,19 +1975,19 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    public void networkSeek(Timing time)
+    public void NetworkSeek(Timing time)
     {
         this.seekTime = time;
-        this.resetSimulation();
+        this.ResetSimulation();
     }
 
 
     //Operation Overloading for Init OBD Data
-    public void loadOBDData(int obdType, Int64[] obdDataCount, int count)
+    public void LoadOBDData(int obdType, Int64[] obdDataCount, int count)
     {
         obdData.setobdDataTime(count, obdDataCount);
     }
-    public void loadOBDData(int obdType, float[] obdDataSet)
+    public void LoadOBDData(int obdType, float[] obdDataSet)
     {
         switch (obdType)
         {
@@ -1997,11 +2008,11 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
-    public void loadOBDData(int obdType, bool[] obdDataSet)
+    public void LoadOBDData(int obdType, bool[] obdDataSet)
     {
         obdData.setisBreakPedal(obdDataSet);
     }
-    public void loadOBDData(int obdType, int[] obdDataSet)
+    public void LoadOBDData(int obdType, int[] obdDataSet)
     {
         switch (obdType)
         {
@@ -2022,14 +2033,14 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
-    public bool isWebcamAttached()
+    public bool IsWebcamAttached()
     {
         wsd.initialHDMIWindshield();
         return wsd.isWebcamAvailable();
     }
 
     // Network Interfaces
-    public void shutdownSimulator()
+    public void ShutdownSimulator()
     {
         shutdown = true;
 
@@ -2040,7 +2051,7 @@ public class Controller : MonoBehaviour
                 string msg = SHUTDOWNSIM + "|" + "byebye";
                 //serverToClientListSend(msg, allCostDeliChannel, clients);
             }
-            guiProtection(false);
+            GuiProtection(false);
             string url;
             if (this.threadsAlive)
             {
@@ -2050,7 +2061,7 @@ public class Controller : MonoBehaviour
                 }
                 else
                 {
-                    url = "http://" + getIRIPAddress() + ":" + getPort() + "/?event=" + 5;
+                    url = "http://" + GetIRIPAddress() + ":" + GetPort() + "/?event=" + 5;
                 }
                 WebRequest request = WebRequest.Create(url);
                 request.Method = "POST";
@@ -2061,7 +2072,7 @@ public class Controller : MonoBehaviour
         }
         if (NodeInformation.type.Equals(SLAVENODE))
         {
-            disconnectNode();
+            DisconnectNode();
         }
 
         if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
@@ -2073,10 +2084,10 @@ public class Controller : MonoBehaviour
             this.threadsAlive = false;
         }
 
-        StartCoroutine(closeSoftware());
+        StartCoroutine(CloseSoftware());
     }
 
-    private IEnumerator closeSoftware()
+    private IEnumerator CloseSoftware()
     {
 
         yield return new WaitForSeconds(0.1f);
@@ -2087,7 +2098,7 @@ public class Controller : MonoBehaviour
                 threadList[i].Abort();
             }
             this.threadsAlive = false;
-            StartCoroutine(closeSoftware());
+            StartCoroutine(CloseSoftware());
         }
         else
         {
@@ -2097,7 +2108,7 @@ public class Controller : MonoBehaviour
         }
     }
 
-    public void sendMarker(int marker)
+    public void SendMarker(int marker)
     {
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -2114,11 +2125,11 @@ public class Controller : MonoBehaviour
             */
         }
     }
-    public Config getConfig()
+    public Config GetConfig()
     {
         return this.config;
     }
-    public bool isTor()
+    public bool IsTor()
     {
         if (sendTOR)
         {
@@ -2131,45 +2142,45 @@ public class Controller : MonoBehaviour
         }
     }
 
-    public IPAddress getIRIPAddress()
+    public IPAddress GetIRIPAddress()
     {
         return this.irIPAddress;
     }
-    public int getPort()
+    public int GetPort()
     {
         return this.port;
     }
-    public int getActualStatus()
+    public int GetActualStatus()
     {
         return this.syncData.getStatus();
     }
-    public int getOldStatus()
+    public int GetOldStatus()
     {
         return this.oldStatus;
     }
-    public void setOldStatus(int actualStatus)
+    public void SetOldStatus(int actualStatus)
     {
         this.oldStatus = actualStatus;
     }
-    public bool areThreadsAlive()
+    public bool AreThreadsAlive()
     {
         return this.threadsAlive;
     }
-    public void setSensorSync(bool state)
+    public void SetSensorSync(bool state)
     {
         this.enabledSensorSync = state;
         if (enabledSensorSync)
         {
-            this.runNetworkservice();
+            this.RunNetworkservice();
             inputSyncServer.GetComponent<InputField>().interactable = false;
         }
         else
         {
-            this.stopNetworkservice();
+            this.StopNetworkservice();
             inputSyncServer.GetComponent<InputField>().interactable = true;
         }
     }
-    public void runNetworkservice()
+    public void RunNetworkservice()
     {
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -2184,27 +2195,27 @@ public class Controller : MonoBehaviour
             }
             Debug.Log("Network Service Started");
             this.threadsAlive = true;
-            Thread t = new Thread(new ThreadStart(netWorkService));
+            Thread t = new Thread(new ThreadStart(NetWorkService));
             t.Start();
             threadList.Add(t);
         }
 
     }
-    public static void netWorkService()
+    public static void NetWorkService()
     {
         Controller controller = getController();
-        while (controller.areThreadsAlive())
+        while (controller.AreThreadsAlive())
         {
             try
             {
-                if (controller.sendSync || controller.isTor())
+                if (controller.sendSync || controller.IsTor())
                 {
                     int code = 0;
                     if (controller.sendSync)
                     {
                         controller.sendSync = false;
-                        controller.setOldStatus(controller.getActualStatus());
-                        code = controller.getActualStatus();
+                        controller.SetOldStatus(controller.GetActualStatus());
+                        code = controller.GetActualStatus();
                     }
                     else
                     {
@@ -2218,15 +2229,15 @@ public class Controller : MonoBehaviour
                     }
                     else
                     {
-                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + code;
+                        url = "http://" + controller.GetIRIPAddress() + ":" + controller.GetPort() + "/?event=" + code;
                     }
                     WebRequest request = WebRequest.Create(url);
                     request.Method = "POST";
                     HttpWebResponse response = request.GetResponse() as HttpWebResponse;
                 }
-                if (controller.isNewLogEntry())
+                if (controller.IsNewLogEntry())
                 {
-                    string message = controller.getNewLogEntry();
+                    string message = controller.GetNewLogEntry();
                     message = WWW.EscapeURL(message);
                     string url;
                     if (controller.manualIP)
@@ -2235,7 +2246,7 @@ public class Controller : MonoBehaviour
                     }
                     else
                     {
-                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + message;
+                        url = "http://" + controller.GetIRIPAddress() + ":" + controller.GetPort() + "/?event=" + message;
                     }
                     Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
@@ -2252,9 +2263,9 @@ public class Controller : MonoBehaviour
             }
             try
             {
-                if (controller.isNewLogEntry())
+                if (controller.IsNewLogEntry())
                 {
-                    string message = controller.getNewLogEntry();
+                    string message = controller.GetNewLogEntry();
                     message = WWW.EscapeURL(message);
                     string url;
                     if (controller.manualIP)
@@ -2263,7 +2274,7 @@ public class Controller : MonoBehaviour
                     }
                     else
                     {
-                        url = "http://" + controller.getIRIPAddress() + ":" + controller.getPort() + "/?event=" + message;
+                        url = "http://" + controller.GetIRIPAddress() + ":" + controller.GetPort() + "/?event=" + message;
                     }
                     Debug.Log(url);
                     WebRequest request = WebRequest.Create(url);
@@ -2282,7 +2293,7 @@ public class Controller : MonoBehaviour
 
         }
     }
-    private string getNodeName(int displayID)
+    private string GetNodeName(int displayID)
     {
         string tempName = "";
         switch (displayID)
@@ -2321,29 +2332,29 @@ public class Controller : MonoBehaviour
         return tempName;
     }
 
-    public bool isNewLogEntry()
+    public bool IsNewLogEntry()
     {
         return log.isNewLogEntry();
     }
-    public string getNewLogEntry()
+    public string GetNewLogEntry()
     {
         return this.log.getUnstoredLog();
     }
 
-    public void startRecording(bool recordingState)
+    public void StartRecording(bool recordingState)
     {
         log.recordingStatus(recordingState);
     }
-    public void safetyRequirements(bool requirementsSet)
+    public void SafetyRequirements(bool requirementsSet)
     {
         log.safetyRequirements(requirementsSet);
     }
 
-    public int getSyncStatus()
+    public int GetSyncStatus()
     {
         return this.syncData.getStatus();
     }
-    public void stopNetworkservice()
+    public void StopNetworkservice()
     {
         for (int i = 0; i < threadList.Count; i++)
         {
@@ -2355,30 +2366,30 @@ public class Controller : MonoBehaviour
     }
 
     //Oculus Specific
-    public void reCenterOculus()
+    public void ReCenterOculus()
     {
         UnityEngine.XR.InputTracking.Recenter();
     }
-    private void oculusCalibrateHideButton(bool visible)
+    private void OculusCalibrateHideButton(bool visible)
     {
         buttonResetHeadPosition.SetActive(visible);
     }
 
     //Log
-    public void writeLog(string logMessage)
+    public void WriteLog(string logMessage)
     {
         log.write(logMessage);
     }
-    public void writeWarning(string logMessage)
+    public void WriteWarning(string logMessage)
     {
         log.writeWarning(logMessage);
     }
-    public void writeError(string logMessage)
+    public void WriteError(string logMessage)
     {
         log.writeError(logMessage);
     }
 
-    public void changeWSDDefault(int wsdPos)
+    public void ChangeWSDDefault(int wsdPos)
     {
         switch (wsdPos)
         {
@@ -2401,7 +2412,7 @@ public class Controller : MonoBehaviour
         wsd.setSizeWSD(wsdSizeDyn);
         //TODO
     }
-    private void updateInterface()
+    private void UpdateInterface()
     {
         if (!torFired)
         {
@@ -2409,14 +2420,14 @@ public class Controller : MonoBehaviour
             if (torTimeRemaining == Labels.torFired)
             {
                 torFired = true;
-                takeOverRequest(DateTime.Now);
+                TakeOverRequest(DateTime.Now);
             }
             inputTORTime.GetComponent<InputField>().text = torTimeRemaining;
         }
-        inputTimeGotTo.GetComponent<InputField>().text = getSimTime(simulator.getDifferenceInSecs());
+        inputTimeGotTo.GetComponent<InputField>().text = GetSimTime(simulator.getDifferenceInSecs());
         if (frontWall.isPrepared)
         {
-            textTimeRemainingLog.GetComponent<Text>().text = getSimTime(simulator.timeRemaining(videoLengthSeconds));
+            textTimeRemainingLog.GetComponent<Text>().text = GetSimTime(simulator.timeRemaining(videoLengthSeconds));
             if (simulator.timeRemaining(videoLengthSeconds) <= 0)
             {
                 buttonStartSimulation.GetComponent<Button>().onClick.Invoke();
@@ -2432,7 +2443,7 @@ public class Controller : MonoBehaviour
         textSpeedLog.GetComponent<Text>().text = obdData.getSpeed().ToString() + " km/h";
 
     }
-    public string getSimTime(int seconds)
+    public string GetSimTime(int seconds)
     {
         int curMin = seconds / 60;
         int curSec = seconds % 60;
@@ -2463,11 +2474,11 @@ public class Controller : MonoBehaviour
         return curH + ":" + min + ":" + sec;
 
     }
-    public void loadProjectList()
+    public void LoadProjectList()
     {
-        StartCoroutine(getProjectList());
+        StartCoroutine(GetProjectList());
     }
-    private void debugInformations(bool activated)
+    private void DebugInformations(bool activated)
     {
         if (!activated)
         {

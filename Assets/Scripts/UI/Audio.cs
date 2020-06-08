@@ -39,11 +39,11 @@ public class Audio : MonoBehaviour {
                     case 1:
                     case 2:
                         {
-                            controller.loadAudioSource(index, newPath);
+                            controller.LoadAudioSource(index, newPath);
                         };  break;
                     default:
                         {
-                            controller.writeError("Index out of Bound - Audio");
+                            controller.WriteError("Index out of Bound - Audio");
                         }
                         break;
                 }

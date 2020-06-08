@@ -24,8 +24,8 @@ public class SimulatorDropdown : MonoBehaviour {
     {
         if (index != 0 && index < 3)
         {
-            controller.changeMode(index);
-            controller.writeLog("Destination " + modes[index]);
+            controller.ChangeMode(index);
+            controller.WriteLog("Destination " + modes[index]);
         }
     }
 }

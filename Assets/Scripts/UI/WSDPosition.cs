@@ -25,7 +25,7 @@ public class WSDPosition : MonoBehaviour
     {
         if (index != 0)
         {
-            controller.changeWSDDefault(index);
+            controller.ChangeWSDDefault(index);
             this.GetComponent<Dropdown>().value = 0;
         }
     }

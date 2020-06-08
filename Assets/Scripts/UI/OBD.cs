@@ -49,7 +49,7 @@ public class OBD : MonoBehaviour {
                 obdDataCount = lines.Length;
                 if (!countSet)
                 {
-                    controller.loadOBDData(index, bigintOBD(lines), obdDataCount);
+                    controller.LoadOBDData(index, bigintOBD(lines), obdDataCount);
                     countSet = true;
                 }
                 --index;
@@ -58,21 +58,21 @@ public class OBD : MonoBehaviour {
                     case 0:
                     case 2:
                         {
-                            controller.loadOBDData(index, floatOBD(lines));
+                            controller.LoadOBDData(index, floatOBD(lines));
                         }break;
                     case 1:
                         {
-                            controller.loadOBDData(index, boolOBD(lines));
+                            controller.LoadOBDData(index, boolOBD(lines));
                         }
                         break;
                     case 3:
                     case 4:
                         {
-                            controller.loadOBDData(index, intOBD(lines));
+                            controller.LoadOBDData(index, intOBD(lines));
                         }
                         break;
                     default:{
-                            controller.writeError("Index out of bound at OBD");
+                            controller.WriteError("Index out of bound at OBD");
                         }
                         break;
                 }
@@ -97,7 +97,7 @@ public class OBD : MonoBehaviour {
             catch
             {
                 obdData[i] = 0;
-                controller.writeError("Error: #CSVS-1");
+                controller.WriteError("Error: #CSVS-1");
             }
             
             //LogText.text += "\n" + string.Format("{0:N0}", obdData[i]);
@@ -121,12 +121,12 @@ public class OBD : MonoBehaviour {
                 catch
                 {
                     obdData[i] = 0;
-                    controller.writeError("Error: #CSVS-1");
+                    controller.WriteError("Error: #CSVS-1");
                 }
             }
             else
             {
-                controller.writeError("Error: #CSVS-2");
+                controller.WriteError("Error: #CSVS-2");
             }
             //LogText.text += "\n" + string.Format("{0:N0}", obdData[i]);
         }
@@ -154,7 +154,7 @@ public class OBD : MonoBehaviour {
             catch
             {
                 obdData[i] = false;
-                controller.writeError("Error: #CSVS-2");
+                controller.WriteError("Error: #CSVS-2");
             }
         }
         return obdData;
@@ -181,7 +181,7 @@ public class OBD : MonoBehaviour {
                 catch
                 {
                     obdData[i] = 0;
-                    controller.writeError("Error: #CSVS-1");
+                    controller.WriteError("Error: #CSVS-1");
                 }
             }
             

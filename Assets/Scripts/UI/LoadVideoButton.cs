@@ -33,12 +33,12 @@ public class LoadVideoButton : MonoBehaviour
                 string newPath = WWW.UnEscapeURL(path[0].Replace("file://", ""));
                
 
-                controller.loadVideotoPlayer(index - 1, newPath);
+                controller.LoadVideotoPlayer(index - 1, newPath);
             }
         }
         if (index >=5)
         {
-            controller.writeLog("Display is currently not available");
+            controller.WriteLog("Display is currently not available");
         }
         loadVideoDropDown.value = 0;
     }

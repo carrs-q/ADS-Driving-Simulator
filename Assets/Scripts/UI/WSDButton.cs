@@ -11,21 +11,21 @@ public class WSDButton : MonoBehaviour {
         
         if (isActivated)
         {
-            if (controller.isWebcamAttached() || controller.isMasterAndCave())
+            if (controller.IsWebcamAttached() || controller.IsMasterAndCave())
             {
-                controller.enableWindshield();
+                controller.EnableWindshield();
             }
             else
             {
-                controller.writeWarning("No HDMI Input detected");
+                controller.WriteWarning("No HDMI Input detected");
                 thisButton.isOn = false;
             }
         }
         else
         {
-            if (controller.isWebcamAttached() || controller.isMasterAndCave())
+            if (controller.IsWebcamAttached() || controller.IsMasterAndCave())
             {
-                controller.disableWindshield();
+                controller.DisableWindshield();
             }
         }
     }
