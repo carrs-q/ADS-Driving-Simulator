@@ -75,7 +75,6 @@ public class Client : MonoBehaviour
             Byte[] bytes = new Byte[Controller.BUFFERSIZE];
             running = true;
 
-            SendMessage("Hello");
             while (running)
             {
                 // Get a stream object for reading
@@ -118,7 +117,7 @@ public class Client : MonoBehaviour
     /// <summary> 	
     /// Send message to server using socket connection. 	
     /// </summary> 	
-    public new bool SendMessage(string clientMessage)
+    public new void SendMessage(string clientMessage)
     {
         if (socketConnection != null && socketConnection.Connected)
         {
@@ -133,7 +132,6 @@ public class Client : MonoBehaviour
                     // Write byte array to socketConnection stream.                 
                     stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
                     OnSentMessage(clientMessage);
-                    return true;
                 }
             }
             catch (SocketException socketException)
@@ -141,13 +139,11 @@ public class Client : MonoBehaviour
                 Debug.Log("Socket exception: " + socketException);
             }
         }
-
-        return false;
     }
 
     public virtual void OnSentMessage(string message)
     {
-
+        Debug.Log("Message sent" + message);
     }
 
 
