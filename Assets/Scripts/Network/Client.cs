@@ -37,9 +37,7 @@ public class Client : MonoBehaviour
     private TcpClient socketConnection;
     private Thread clientReceiveThread;
     private NetworkStream stream;
-    private bool running;
-    private bool newMessage = false;
-    private string clientMessage;
+    private bool running; 
 
 
     /// <summary> 	
@@ -80,48 +78,23 @@ public class Client : MonoBehaviour
             while (running)
             {
                 // Get a stream object for reading
-                stream = socketConnection.GetStream();
-                int length;
-                // Read incoming stream into byte array. 					
-                while (running && stream.CanRead)
+                using (stream = socketConnection.GetStream())
                 {
-                    length = stream.Read(bytes, 0, bytes.Length);
-                    if (length != 0)
+                    int length;
+                    // Read incoming stream into byte array. 					
+                    while (running && stream.CanRead)
                     {
-                        var incomingData = new byte[length];
-                        Array.Copy(bytes, 0, incomingData, 0, length);
-                        // Convert byte array to string message. 						
-                        string serverJson = Encoding.ASCII.GetString(incomingData);
-                        Server.ServerMessage serverMessage = JsonUtility.FromJson<Server.ServerMessage>(serverJson);
-                        MessageReceived(serverMessage);
-                    }
-                    if (newMessage)
-                    {
-
-                        if (socketConnection != null && socketConnection.Connected)
+                        length = stream.Read(bytes, 0, bytes.Length);
+                        if (length != 0)
                         {
-                            try
-                            {
-                                // Get a stream object for writing. 			
-                                //stream = socketConnection.GetStream();
-                                if (stream.CanWrite)
-                                {
-                                    // Convert string message to byte array.                 
-                                    byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
-                                    // Write byte array to socketConnection stream.                 
-                                    stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
-                                    OnSentMessage(clientMessage);
-                                    newMessage = false;
-                                    clientMessage = "";
-                                }
-                            }
-                            catch (SocketException socketException)
-                            {
-                                Debug.Log("Socket exception: " + socketException);
-                            }
+                            var incomingData = new byte[length];
+                            Array.Copy(bytes, 0, incomingData, 0, length);
+                            // Convert byte array to string message. 						
+                            string serverJson = Encoding.ASCII.GetString(incomingData);
+                            Server.ServerMessage serverMessage = JsonUtility.FromJson<Server.ServerMessage>(serverJson);
+                            MessageReceived(serverMessage);
                         }
                     }
-
                 }
             }
             socketConnection.Close();
@@ -148,15 +121,36 @@ public class Client : MonoBehaviour
     /// <summary> 	
     /// Send message to server using socket connection. 	
     /// </summary> 	
-    public void SendMessage(string clientMessage)
+    public new bool SendMessage(string clientMessage)
     {
-        this.newMessage = true;
-        this.clientMessage = clientMessage;
+        if (socketConnection != null && socketConnection.Connected)
+        {
+            try
+            {
+                // Get a stream object for writing. 			
+                NetworkStream stream = socketConnection.GetStream();
+                if (stream.CanWrite)
+                {
+                    // Convert string message to byte array.                 
+                    byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
+                    // Write byte array to socketConnection stream.                 
+                    stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
+                    OnSentMessage(clientMessage);
+                    return true;
+                }
+            }
+            catch (SocketException socketException)
+            {
+                Debug.Log("Socket exception: " + socketException);
+            }
+        }
+
+        return false;
     }
 
     public virtual void OnSentMessage(string message)
     {
-        Debug.Log("Message sent: " + message);
+
     }
 
 

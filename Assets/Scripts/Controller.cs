@@ -992,10 +992,8 @@ public class Controller : MonoBehaviour
 
             if (!string.IsNullOrEmpty(message))
             {
-                if (_client.SendMessage(message))
-                {
-                    // MessageInputField.text = string.Empty;
-                }
+                _client.SendMessage(message);
+                
             }
         }
     }
