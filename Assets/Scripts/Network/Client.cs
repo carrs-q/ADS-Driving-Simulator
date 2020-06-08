@@ -74,6 +74,7 @@ public class Client : MonoBehaviour
 
             Byte[] bytes = new Byte[Controller.BUFFERSIZE];
             running = true;
+
             SendMessage("Hello");
             while (running)
             {
@@ -96,6 +97,7 @@ public class Client : MonoBehaviour
                         }
                     }
                 }
+
             }
             socketConnection.Close();
             Debug.Log("Disconnected from server");

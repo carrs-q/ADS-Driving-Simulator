@@ -1247,15 +1247,14 @@ public class Controller : MonoBehaviour
     private void OnClientConnected(Client client)
     {
         //Send Display type to Server
-        client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
         clients.Add(client);
+        client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
     }
     private void OnClientDisconnected(Client client)
     {
-        clients.Remove(client);
-
         //TODO Reconnect
         Debug.Log("Client disconnected. Try to reconnect");
+        clients.Remove(client);
         CreateClientNode();
     }
 
