@@ -133,21 +133,6 @@ public class Controller : MonoBehaviour
     private TcpListener tcpListener;
     private Thread tcpListenerThread;
 
-
-
-    //old Network
-    /*
-    private int hostID = -1, connectionID, clientID;
-    private byte relChannel;             // For Connections
-    private byte unrelSeqChannel;        // If Streaming is needed
-    private byte allCostDeliChannel;     // For Simulator States
-    private byte relFragSecChannel;     //Content Delivery
-    private bool isStarted = false;
-    private byte error;
-    private float connectionTime;
-    //private List<ClientNode> clients;
-    */
-
     private Config config;
     private IPAddress serverIP;
     private IPAddress irIPAddress;
@@ -470,9 +455,7 @@ public class Controller : MonoBehaviour
         if (!shutdown)
         {
             if (syncData.doesStatusChanged())
-            {
-                Debug.Log("I'm first");
-                
+            {                
                 statusChange(syncData.getStatus());
             }
         }
@@ -927,11 +910,13 @@ public class Controller : MonoBehaviour
             updateProjectList();
         }
     }
+
     private void updateProjectList()
     {
         projectList pL = (projectList)dropDownChangeProject.GetComponent(typeof(projectList));
         pL.addList(projectList);
     }
+
     public void loadProject(string project)
     {
         buttonStartSimulation.GetComponent<Button>().interactable = false;
