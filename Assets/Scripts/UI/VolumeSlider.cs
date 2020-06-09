@@ -20,6 +20,6 @@ public class VolumeSlider : MonoBehaviour {
 
     public void onMouseRelease()
     {
-        //controller.changeVolume(this.name, (int)this.GetComponent<Slider>().value);
+        controller.ChangeVolume(this.name, (int)this.GetComponent<Slider>().value);
     }
 }

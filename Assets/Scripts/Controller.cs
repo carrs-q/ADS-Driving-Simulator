@@ -272,7 +272,7 @@ public class Controller : MonoBehaviour
         persistentDataPath = Application.persistentDataPath;
 
        //Oculus
-       oculus = GameObject.Find(DefaultSettings.Oculus);
+        oculus = GameObject.Find(DefaultSettings.Oculus);
 
         //Cameras
         cameraMenue = GameObject.Find(DefaultSettings.CameraMenue);
@@ -410,7 +410,7 @@ public class Controller : MonoBehaviour
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
         _client.OnMessageReceived += OnClientReceivedMessage;
-        _client.OnLog += OnClientLog;
+        //_client.OnLog += OnClientLog;
 
 
         if (NodeInformation.type.Equals(MASTERNODE))
@@ -917,8 +917,8 @@ public class Controller : MonoBehaviour
         log.write("Project " + project + " loaded");
         this.project = project;
         cdnProject = true;
-        SendProjectToClient(project);
         projectChanged = true;
+        SendProjectToClients(project);
     }
 
     //Network Init
@@ -929,7 +929,6 @@ public class Controller : MonoBehaviour
             _server.StartServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
     }
-
     private void CreateClientNode()
     {
         if (!_client.IsConnected)
@@ -947,6 +946,7 @@ public class Controller : MonoBehaviour
 
 
     //New Network functions
+    //Client functions
     public void SendMessageToServer()
     {
         if (_client.IsConnected)
@@ -968,25 +968,10 @@ public class Controller : MonoBehaviour
             }
         }
     }
-
-    /*
-    public const string REQDISPLAY = "RQD";
-    public const string RESDISPLAY = "RSD";
-    public const string SENDPROJECT = "PRO";
-    public const string REQPROJECT = "RPRO";
-    public const string STATUSUPDATE = "STA";
-    public const string TORMESSAGE = "TOR";
-    public const string VOLUMECONTROL = "NVC";
-    public const string SEEKMSG = "SEK";
-    public const string SHUTDOWNSIM = "ZZZ";
-    public const string EMPTYMESSAGE = "undefined";
-     */
-
-    private void OnClientReceivedMessage(Server.ServerMessage m)
+    private void OnClientReceivedMessage(ServerMessage m)
     {
-        string finalMessage = ProcessServerMessage(m);
-        string[] split = finalMessage.Split('|');
-
+        string finalMessage = m.Data;
+        string[] split = finalMessage.Split('|');        
         lock (cacheLock)
         {
             Debug.Log(finalMessage);
@@ -997,10 +982,15 @@ public class Controller : MonoBehaviour
                     case STATUSUPDATE:
                         ClientRecieveUpdate(finalMessage);
                         break;
-                    case REQPROJECT:{ 
-                        if (split[1] != EMPTYMESSAGE) {
-                           //ClientLoadProject(split[1], split[2]);
-                        }}; break;
+                    case SENDPROJECT:
+                        ClientLoadProject(split[1], split[2]);
+                        break;
+                    case REQPROJECT:
+                        if (split[1] != EMPTYMESSAGE)
+                        {
+                            ClientLoadProject(split[1], split[2]);
+                        }
+                        break;
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
@@ -1019,21 +1009,6 @@ public class Controller : MonoBehaviour
             else
             {
                 //cache += string.Format("<color=green>{0}</color>\n", finalMessage);
-            }
-        }
-    }
-    private void OnClientLog(string message)
-    {
-        lock (cacheLock)
-        {
-            Debug.Log(message);
-            if (string.IsNullOrEmpty(cache))
-            {
-                cache = string.Format(message);
-            }
-            else
-            {
-                cache += string.Format(message);
             }
         }
     }
@@ -1129,10 +1104,27 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
+    private void OnClientConnected(Client client)
+    {
+        //Send Display type to Server
+        clients.Add(client);
+        client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
+    }
+    private void OnClientDisconnected(Client client)
+    {
+        //TODO Reconnect
+        Debug.Log("Client disconnected. Try to reconnect");
+        clients.Remove(client);
+        CreateClientNode();
+    }
 
+
+    //server functions
     private void OnServerReceivedMessage(string m)
     {
         string[] split = m.Split('|');
+        bool resdis = false;
+        int clientID = 0;
         lock (cacheLock)
         {
             Debug.Log(m);
@@ -1141,11 +1133,9 @@ public class Controller : MonoBehaviour
                 switch (split[0])
                 {
                     case RESDISPLAY:
-                        ServerUpdateDisplay(int.Parse(split[1]));
-                        break;
-                    case REQPROJECT:
-                        //ClientLoadProject(split[1], split[2]);
-                        ServerProjectRequest(int.Parse(split[1]));
+                        ServerUpdateDisplay(int.Parse(split[1]), int.Parse(split[2]));
+                        resdis = true;
+                        clientID = int.Parse(split[1]);
                         break;
                 }
             }
@@ -1154,11 +1144,17 @@ public class Controller : MonoBehaviour
                 cache += string.Format(m);
             }
         }
+        if (resdis)
+        {
+            SendProjectToClient(clientID);
+            SendAudioSettingsToClient(clientID);
+        }
     }
-    private void ServerUpdateDisplay(int displayID)
+    private void ServerUpdateDisplay(int clientID, int displayID)
     {
         Debug.Log("Display ID received "+displayID);
-        if (NodeInformation.type.Equals(MASTERNODE)) { 
+        if (NodeInformation.type.Equals(MASTERNODE)) {
+           
             switch (displayID)
             {
                 case FRONT:{ log.write("Front Screen has been connected"); } break;
@@ -1170,29 +1166,34 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    
-    
-    private void ServerProjectRequest(int conID)
+    private void SendProjectToClient(int conID)
     {
         string message = REQPROJECT + "|";
         if (simulationContent.isProjectLoaded())
         {
             message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
+            _server.SendMessage(message, conID);
         }
         else
         {
-            message += EMPTYMESSAGE;
+            Debug.Log("No Project loaded");
         }
-        Debug.Log(conID + "requested Project");
+    }
+    private void SendAudioSettingsToClient(int conID)
+    {
+        string message = VOLUMECONTROL + "|";
+        message += sliderVolumeMaster.GetComponent<Slider>().value + "|";
+        message += sliderInCarVolume.GetComponent<Slider>().value + "|";
+        message += sliderWarnVolume.GetComponent<Slider>().value + "|";
+        message += sliderWSDVolume.GetComponent<Slider>().value;
+        Debug.Log(message);
         _server.SendMessage(message, conID);
     }
-
-    private void SendProjectToClient(string project)
+    private void SendProjectToClients(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
         _server.SendMessageToAllClients(msg);
     }
-
     private void SendStatusToClient()
     {
         string msg = STATUSUPDATE + "|" + syncData.getStat();
@@ -1215,50 +1216,6 @@ public class Controller : MonoBehaviour
             }
         }
     }
-
-    private string ProcessServerMessage(Server.ServerMessage message)
-    {
-        string data = message.Data;
-
-        if (message.Data.StartsWith("!"))
-        {
-            string[] split = data.Split(' ');
-            switch (split[0])
-            {
-                case "!ping":
-                    double sentTimeStamp = double.Parse(split[1]);
-                    double recTimeStamp = double.Parse(split[2]);
-                    double nowTimeStamp = (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
-                    double toServerTime = recTimeStamp - sentTimeStamp;
-                    double fromServerTime = nowTimeStamp - recTimeStamp;
-                    double totalTime = nowTimeStamp - sentTimeStamp;
-                    data = string.Format("!ping To Server: ({2}ms) {0}ms From Server: {1}",
-                        toServerTime.ToString("F2"),
-                        fromServerTime.ToString("F2"),
-                        totalTime.ToString("F2"));
-                    break;
-            }
-        }
-
-        return data;
-    }
-
-
-    private void OnClientConnected(Client client)
-    {
-        //Send Display type to Server
-        clients.Add(client);
-        client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
-    }
-    private void OnClientDisconnected(Client client)
-    {
-        //TODO Reconnect
-        Debug.Log("Client disconnected. Try to reconnect");
-        clients.Remove(client);
-        CreateClientNode();
-    }
-
-
 
     // Core Functions for Simulator
     public bool RequestSimStart()
@@ -1841,20 +1798,16 @@ public class Controller : MonoBehaviour
             sliderWarnVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWarning;
             sliderWSDVolume.GetComponent<Slider>().value = DefaultSettings.defaultVolumeWSD;
         }
-        //changeVolume(DefaultSettings.SliderVolumeMaster, DefaultSettings.defaultVolumeAmbiente);
-        //changeVolume(DefaultSettings.SliderInCarVolume, DefaultSettings.defaultVolumeAmbiente);
-        //changeVolume(DefaultSettings.SliderWarnVolume, DefaultSettings.defaultVolumeWarning);
-        //changeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
+        ChangeVolume(DefaultSettings.SliderVolumeMaster, DefaultSettings.defaultVolumeAmbiente);
+        ChangeVolume(DefaultSettings.SliderInCarVolume, DefaultSettings.defaultVolumeAmbiente);
+        ChangeVolume(DefaultSettings.SliderWarnVolume, DefaultSettings.defaultVolumeWarning);
+        ChangeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
 
     }
     public void ChangeVolume(string sourceName, int value)
     {
-        if (IsMasterAndCave())
-        {
-            SendVolume();
-        }
+       
         float volume = ((float)value) / 100;
-        //Network Send
         switch (sourceName)
         {
             case DefaultSettings.SliderVolumeMaster:
@@ -1883,10 +1836,17 @@ public class Controller : MonoBehaviour
 
                 }; break;
         }
+
+        //Network Send
+        if (IsMasterAndCave())
+        {
+            SendVolume();
+        }
     }
 
     public void SendVolume()
     {
+
         string message = VOLUMECONTROL + "|";
         message += sliderVolumeMaster.GetComponent<Slider>().value + "|";
         message += sliderInCarVolume.GetComponent<Slider>().value + "|";

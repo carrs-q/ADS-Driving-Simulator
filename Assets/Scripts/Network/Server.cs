@@ -7,43 +7,44 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
+[Serializable]
+public class ClientData
+{
+    public static int MAX_ID;
+
+    public int ID;
+    public string Name;
+}
+
+public class ConnectedClient
+{
+    public ClientData ClientData;
+    public TcpClient Client;
+
+    public ConnectedClient(ClientData data, TcpClient client)
+    {
+        ClientData = data;
+        Client = client;
+    }
+
+}
+
+[Serializable]
+public class ServerMessage
+{
+    public ClientData SenderData;
+    public string Data;
+
+    public ServerMessage(ClientData client, string message)
+    {
+        SenderData = client;
+        Data = message;
+    }
+}
+
+
 public class Server : MonoBehaviour
 {
-    [Serializable]
-    public class ClientData
-    {
-        public static int MAX_ID;
-
-        public int ID;
-        public string Name;
-    }
-
-    public class ConnectedClient
-    {
-        public ClientData ClientData;
-        public TcpClient Client;
-
-        public ConnectedClient(ClientData data, TcpClient client)
-        {
-            ClientData = data;
-            Client = client;
-        }
-
-    }
-
-    [Serializable]
-    public class ServerMessage
-    {
-        public ClientData SenderData;
-        public string Data;
-
-        public ServerMessage(ClientData client, string message)
-        {
-            SenderData = client;
-            Data = message;
-        }
-    }
-
     public Action<string> OnLog = delegate { };
 
     public bool IsConnected
@@ -110,6 +111,7 @@ public class Server : MonoBehaviour
             var client = tcpListener.AcceptTcpClient();
             ThreadPool.QueueUserWorkItem(HandleClientWorker, client);
         }
+        Debug.Log("hmm something went wrong");
     }
 
     private void HandleClientWorker(object token)
@@ -119,7 +121,7 @@ public class Server : MonoBehaviour
         {
             ClientData data = new ClientData();
             data.ID = ++ClientData.MAX_ID;
-            data.Name = "User-" + data.ID; 
+            data.Name = "TMP" + data.ID; 
 
             ConnectedClient connectedClient = new ConnectedClient(data, client);
             connectedClients.Add(connectedClient);
@@ -146,6 +148,7 @@ public class Server : MonoBehaviour
                         
                         ProcessMessage(connectedClient, clientMessage);
                     }
+                    Debug.Log("ich bin ausgelaufen");
                 }
             }
             catch (SocketException e)
@@ -165,7 +168,7 @@ public class Server : MonoBehaviour
         {
             case Controller.RESDISPLAY: //Resond Display
                 connectedClient.ClientData.Name = split[1]; //Assign correct name
-                OnLog(split[0]+"|"+connectedClient.ClientData.ID);
+                OnLog(split[0]+"|"+connectedClient.ClientData.ID +"|"+ split[1]);
                 break;
             case "!disconnect":
                 response = (string.Format("{0} has Disconnected", connectedClient.ClientData.Name));
@@ -212,13 +215,45 @@ public class Server : MonoBehaviour
         ServerMessage tmp;
         connectedClients.ForEach(delegate (ConnectedClient c)
         {
-            if (c.ClientData.ID == clientID) {
+            if (c.ClientData.ID == clientID)
+            {
                 tmp = new ServerMessage(c.ClientData, message);
-                SendMessage(c.Client, tmp);
+                if(SendMessage(c.Client, tmp))
+                {
+                    Debug.Log("Message sent: " + message);
+                }
+                else
+                {
+                    Debug.Log("Error sending Message" + message);
+                }
             }
         });
     }
 
+    public void SendMessageToAllClients(string message)
+    {
+        ServerMessage tmp;
+        Debug.Log("Connected Clients: " +connectedClients.Count);
+        try
+        {
+            connectedClients.ForEach(delegate (ConnectedClient c)
+            {
+                Debug.Log(message + " to " + c.ClientData.Name);
+                tmp = new ServerMessage(c.ClientData, message);
+                if (!SendMessage(c.Client, tmp))
+                {
+                    Debug.Log("Client Disconnected");
+                    //Debug.Log(string.Format("Lost connection with {0}", connection.ClientData.Name));
+                    DisconnectClient(c);
+                }
+            });
+        }
+        catch(Exception e)
+        {
+            Debug.Log("Client got disconnected: " +e);
+        }
+    }
+    
     /// <summary> 	
     /// Send message to client using socket connection. 	
     /// </summary> 	
@@ -238,24 +273,17 @@ public class Server : MonoBehaviour
                     stream.Write(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
                     return true;
                 }
+                else
+                {
+                    Debug.Log("I can't write");
+                }
             }
             catch (SocketException socketException)
             {
                 Debug.Log("Socket exception: " + socketException);
             }
         }
-
         return false;
-    }
-
-    public void SendMessageToAllClients(string message)
-    {
-        ServerMessage tmp;
-        connectedClients.ForEach(delegate (ConnectedClient c)
-        {
-            tmp = new ServerMessage(c.ClientData, message);
-            SendMessage(c.Client, tmp);
-        });
     }
 
     private void StopServer()

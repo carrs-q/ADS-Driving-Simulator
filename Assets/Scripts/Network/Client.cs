@@ -8,8 +8,7 @@ public class Client : MonoBehaviour
 {
     public Action<Client> OnConnected = delegate { };
     public Action<Client> OnDisconnected = delegate { };
-    public Action<string> OnLog = delegate { };
-    public Action<Server.ServerMessage> OnMessageReceived = delegate { };
+    public Action<ServerMessage> OnMessageReceived = delegate { };
 
     private int connectionID;
     private int displayID;
@@ -91,10 +90,17 @@ public class Client : MonoBehaviour
                             Array.Copy(bytes, 0, incomingData, 0, length);
                             // Convert byte array to string message. 						
                             string serverJson = Encoding.ASCII.GetString(incomingData);
-                            Server.ServerMessage serverMessage = JsonUtility.FromJson<Server.ServerMessage>(serverJson);
+                            ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(JsonUtility.ToJson(serverJson));
                             OnMessageReceived(serverMessage);
                         }
+                        #if UNITY_EDITOR
+                            running = false;
+                            Application.Quit();
+                        #endif
+
                     }
+
+                    Debug.Log("I can't write anymore");
                 }
 
             }
@@ -151,17 +157,18 @@ public class Client : MonoBehaviour
     {
         if (running)
         {
-            SendMessage("!disconnect");
-            running = false;
+            //SendMessage("!disconnect");
             stream.Close();
         }
-      
+        running = false;
+
     }
 
     void OnApplicationQuit()
     {
         StopClient();
     }
+
     void OnDestroy()
     {
         StopClient();
