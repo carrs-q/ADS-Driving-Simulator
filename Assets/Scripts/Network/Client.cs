@@ -30,18 +30,14 @@ public class Client : MonoBehaviour
         get { return socketConnection != null && socketConnection.Connected; }
     }
 
-    public string IPAddress = "localhost";
-    public int Port = 8052;
+    private string IPAddress = "localhost";
+    private int Port = 8052;
 
     private TcpClient socketConnection;
-    private Thread clientReceiveThread;
+    //private Thread clientReceiveThread;
     private NetworkStream stream;
     private bool running; 
-
-
-    /// <summary> 	
-    /// Setup socket connection. 	
-    /// </summary> 	
+    
     public void ConnectToTcpServer(string IPAddress, int Port)
     {
         try
@@ -49,64 +45,61 @@ public class Client : MonoBehaviour
             this.IPAddress = IPAddress;
             this.Port = Port;
             Debug.Log(string.Format("Connecting to {0}:{1}", IPAddress, Port));
-
+            socketConnection = new TcpClient(IPAddress, Port);
+            
+            ThreadPool.QueueUserWorkItem(ListenForData, socketConnection);
+            /*
             clientReceiveThread = new Thread(new ThreadStart(ListenForData));
             clientReceiveThread.IsBackground = true;
             clientReceiveThread.Start();
+            */
         }
         catch (Exception e)
         {
             Debug.Log("On client connect exception " + e);
         }
     }
-
-    /// <summary> 	
-    /// Runs in background clientReceiveThread; Listens for incoming data. 	
-    /// </summary>     
-    private void ListenForData()
+  
+    private void ListenForData(object token)
     {
         try
         {
-            socketConnection = new TcpClient(IPAddress, Port);
-            OnConnected(this);
-            Debug.Log("Connected");
-
-            Byte[] bytes = new Byte[Controller.BUFFERSIZE];
-            running = true;
-
-            while (running)
+            using(TcpClient client = token as TcpClient)
             {
-                // Get a stream object for reading
-                using (stream = socketConnection.GetStream())
+                OnConnected(this);
+                Debug.Log("Connected");
+
+                Byte[] bytes = new Byte[Controller.BUFFERSIZE];
+                running = true;
+
+                while (running)
                 {
-                    int length;
-                    // Read incoming stream into byte array. 					
-                    while (running && stream.CanRead)
+                    // Get a stream object for reading
+                    using (stream = socketConnection.GetStream())
                     {
-                        length = stream.Read(bytes, 0, bytes.Length);
-                        if (length != 0)
+                        int length;
+                        // Read incoming stream into byte array. 					
+                        while (running && stream.CanRead)
                         {
-                            var incomingData = new byte[length];
-                            Array.Copy(bytes, 0, incomingData, 0, length);
-                            // Convert byte array to string message. 						
-                            string serverJson = Encoding.ASCII.GetString(incomingData);
-                            ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(JsonUtility.ToJson(serverJson));
-                            OnMessageReceived(serverMessage);
+                            length = stream.Read(bytes, 0, bytes.Length);
+                            if (length != 0)
+                            {
+                                var incomingData = new byte[length];
+                                Array.Copy(bytes, 0, incomingData, 0, length);
+                                // Convert byte array to string message. 						
+                                string serverJson = Encoding.ASCII.GetString(incomingData);
+                                ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(serverJson);
+                                OnMessageReceived(serverMessage);
+                            }
                         }
-                        #if UNITY_EDITOR
-                            running = false;
-                            Application.Quit();
-                        #endif
-
+                        Debug.Log("I can't write anymore");
                     }
-
-                    Debug.Log("I can't write anymore");
                 }
-
+                socketConnection.Close();
+                Debug.Log("Disconnected from server");
+                OnDisconnected(this);
             }
-            socketConnection.Close();
-            Debug.Log("Disconnected from server");
-            OnDisconnected(this);
+            
         }
         catch (SocketException socketException)
         {
@@ -120,22 +113,16 @@ public class Client : MonoBehaviour
         running = false;
     }
 
-    /// <summary> 	
-    /// Send message to server using socket connection. 	
-    /// </summary> 	
     public new void SendMessage(string clientMessage)
     {
         if (socketConnection != null && socketConnection.Connected)
         {
             try
             {
-                // Get a stream object for writing. 			
                 NetworkStream stream = socketConnection.GetStream();
                 if (stream.CanWrite)
                 {
-                    // Convert string message to byte array.                 
                     byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
-                    // Write byte array to socketConnection stream.                 
                     stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
                     OnSentMessage(clientMessage);
                 }

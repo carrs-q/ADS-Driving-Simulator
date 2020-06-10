@@ -18,13 +18,13 @@ public class ClientData
 
 public class ConnectedClient
 {
-    public ClientData ClientData;
-    public TcpClient Client;
+    public ClientData clientData;
+    public TcpClient client;
 
     public ConnectedClient(ClientData data, TcpClient client)
     {
-        ClientData = data;
-        Client = client;
+        clientData = data;
+        this.client = client;
     }
 
 }
@@ -43,24 +43,20 @@ public class ServerMessage
 }
 
 
-public class Server : MonoBehaviour
+public class Server :  MonoBehaviour
 {
     public Action<string> OnLog = delegate { };
+    public Action<ConnectedClient> OnClientDisconnect = delegate { };
 
-    public bool IsConnected
+
+    public bool IsConnected()
     {
-        get { return tcpListenerThread != null && tcpListenerThread.IsAlive; }
+        //get { return tcpListenerThread != null && tcpListenerThread.IsAlive};
+         return tcpListener != null && tcpListener.Server.IsBound;
     }
 
-    public string IPAddress = "127.0.0.1";
-
-
-    public int Port = 8052;
-
-    /// <summary> 	
-    /// TCPListener to listen for incoming TCP connection 	
-    /// requests. 	
-    /// </summary> 	
+    private string IPAddress = "127.0.0.1";
+    private int Port = 8052;
     private TcpListener tcpListener;
 
     /// <summary> 
@@ -75,44 +71,37 @@ public class Server : MonoBehaviour
     {
         this.IPAddress = IPAddress;
         this.Port = Port;
-
-        // Start TcpServer background thread 		
-        tcpListenerThread = new Thread(ListenForIncomingRequests);
-        tcpListenerThread.IsBackground = true;
-        tcpListenerThread.Start();
-        Debug.Log("Server started at: " + this.IPAddress + ":" + this.Port);
-
-    }
-
-    /// <summary> 	
-    /// Runs in background TcpServerThread; Handles incoming TcpClient requests 	
-    /// </summary> 	
-    private void ListenForIncomingRequests()
-    {
         try
         {
             // Create listener on localhost port 8052. 			
             tcpListener = new TcpListener(System.Net.IPAddress.Any, Port);
             tcpListener.Start();
 
-            ThreadPool.QueueUserWorkItem(ListenerWorker, null);
-            Debug.Log("Server is listening");
+            ThreadPool.QueueUserWorkItem(ListenerWorker, tcpListener);
+            Debug.Log("Server started at: " + this.IPAddress + ":" + this.Port);
         }
         catch (SocketException socketException)
         {
             Debug.Log("SocketException " + socketException);
         }
+        // Start TcpServer background thread 		
+        /*
+        tcpListenerThread = new Thread(ListenForIncomingRequests);
+        tcpListenerThread.IsBackground = true;
+        tcpListenerThread.Start();
+        */
     }
 
     private void ListenerWorker(object token)
     {
         while (tcpListener != null)
         {
-            var client = tcpListener.AcceptTcpClient();
-            ThreadPool.QueueUserWorkItem(HandleClientWorker, client);
+            TcpClient tcpClient = tcpListener.AcceptTcpClient();
+            ThreadPool.QueueUserWorkItem(HandleClientWorker, tcpClient);
         }
-        Debug.Log("hmm something went wrong");
+        Debug.Log("tcpListener went out");
     }
+    
 
     private void HandleClientWorker(object token)
     {
@@ -121,12 +110,13 @@ public class Server : MonoBehaviour
         {
             ClientData data = new ClientData();
             data.ID = ++ClientData.MAX_ID;
-            data.Name = "TMP" + data.ID; 
+            data.Name = "TMP" + data.ID;
+
+
 
             ConnectedClient connectedClient = new ConnectedClient(data, client);
             connectedClients.Add(connectedClient);
-            
-            SendMessageToClient(data.ID, "Welcome Stranger, who are you?");
+            //SendMessageToClient(data.ID, "Welcome Stranger, who are you?");
 
             try
             {
@@ -139,13 +129,12 @@ public class Server : MonoBehaviour
                         Array.Copy(bytes, 0, incomingData, 0, length);
                         string clientMessage = Encoding.ASCII.GetString(incomingData);
 
-                        if (clientMessage == "!disconnect")
+                        /*if (clientMessage == "!disconnect")
                         { 
                             stream.Close();
                             client.Close();
-                        }
-        
-                        
+                        }*/
+
                         ProcessMessage(connectedClient, clientMessage);
                     }
                     Debug.Log("ich bin ausgelaufen");
@@ -156,6 +145,7 @@ public class Server : MonoBehaviour
                 Debug.Log(e.ToString());
             }
         }
+        Debug.Log("Ich bin ausgelaufen 2");
     }
 
     private void ProcessMessage(ConnectedClient connectedClient, string command)
@@ -167,25 +157,19 @@ public class Server : MonoBehaviour
         switch (split[0])
         {
             case Controller.RESDISPLAY: //Resond Display
-                connectedClient.ClientData.Name = split[1]; //Assign correct name
-                OnLog(split[0]+"|"+connectedClient.ClientData.ID +"|"+ split[1]);
+                connectedClient.clientData.Name = split[1]; //Assign correct name
+                OnLog(split[0]+"|"+connectedClient.clientData.ID +"|"+ split[1]);
                 break;
             case "!disconnect":
-                response = (string.Format("{0} has Disconnected", connectedClient.ClientData.Name));
+                response = (string.Format("{0} has Disconnected", connectedClient.clientData.Name));
                 Debug.Log(response);
                 DisconnectClient(connectedClient);
                 break;
-            case "!ping":
-                response = String.Join(" ", split) + " " + (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
-                serverMessage = new ServerMessage(connectedClient.ClientData, response);
-                SendMessage(connectedClient.Client, serverMessage);
-                break;
             default:
-                response = "Unknown Command '" + command + "'";
-                serverMessage = new ServerMessage(connectedClient.ClientData, response);
-                SendMessage(connectedClient.Client, serverMessage);
+                OnLog(command);
                 break;
         }
+
     }
     
 
@@ -194,11 +178,10 @@ public class Server : MonoBehaviour
         for (int i = 0; i < connectedClients.Count; i++)
         {
             ConnectedClient connection = connectedClients[i];
-            TcpClient client = connection.Client;
+            TcpClient client = connection.client;
             if (!SendMessage(client, serverMessage))
             {
-                Debug.Log("Client Disconnected");
-                //Debug.Log(string.Format("Lost connection with {0}", connection.ClientData.Name));
+                Debug.Log(string.Format("Lost connection with {0}", connection.clientData.Name));
                 DisconnectClient(connection);
                 i--;
             }
@@ -207,18 +190,21 @@ public class Server : MonoBehaviour
 
     private void DisconnectClient(ConnectedClient connection)
     {
+        OnClientDisconnect(connection);
         connectedClients.Remove(connection);
     }
 
     public void SendMessageToClient(int clientID, string message)
     {
         ServerMessage tmp;
+        Debug.Log("Start sending Message to " + clientID);
+
         connectedClients.ForEach(delegate (ConnectedClient c)
         {
-            if (c.ClientData.ID == clientID)
+            if (c.clientData.ID == clientID)
             {
-                tmp = new ServerMessage(c.ClientData, message);
-                if(SendMessage(c.Client, tmp))
+                tmp = new ServerMessage(c.clientData, message);
+                if(SendMessage(c.client, tmp))
                 {
                     Debug.Log("Message sent: " + message);
                 }
@@ -233,30 +219,26 @@ public class Server : MonoBehaviour
     public void SendMessageToAllClients(string message)
     {
         ServerMessage tmp;
-        Debug.Log("Connected Clients: " +connectedClients.Count);
         try
         {
             connectedClients.ForEach(delegate (ConnectedClient c)
             {
-                Debug.Log(message + " to " + c.ClientData.Name);
-                tmp = new ServerMessage(c.ClientData, message);
-                if (!SendMessage(c.Client, tmp))
+                Debug.Log(message + " to " + c.clientData.Name);
+                tmp = new ServerMessage(c.clientData, message);
+                TcpClient tempClient = c.client;
+                if (!SendMessage(tempClient, tmp))
                 {
-                    Debug.Log("Client Disconnected");
-                    //Debug.Log(string.Format("Lost connection with {0}", connection.ClientData.Name));
+                    Debug.Log(string.Format("Lost connection with {0}", c.clientData.Name));
                     DisconnectClient(c);
                 }
             });
         }
         catch(Exception e)
         {
-            Debug.Log("Client got disconnected: " +e);
+            //Debug.Log("Client got disconnected: " +e);
         }
     }
     
-    /// <summary> 	
-    /// Send message to client using socket connection. 	
-    /// </summary> 	
     private bool SendMessage(TcpClient client, ServerMessage serverMessage)
     {
         if (client != null && client.Connected)
@@ -267,21 +249,23 @@ public class Server : MonoBehaviour
                 NetworkStream stream = client.GetStream();
                 if (stream.CanWrite)
                 {
+                    Debug.Log("Original Message" + serverMessage.Data);
                     // Convert string message to byte array.                 
                     byte[] serverMessageAsByteArray = Encoding.ASCII.GetBytes(JsonUtility.ToJson(serverMessage));
+                    Debug.Log("Byte Message" + serverMessageAsByteArray.ToString());
                     // Write byte array to socketConnection stream.               
                     stream.Write(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
                     return true;
-                }
-                else
-                {
-                    Debug.Log("I can't write");
                 }
             }
             catch (SocketException socketException)
             {
                 Debug.Log("Socket exception: " + socketException);
             }
+        }
+        else
+        {
+            Debug.Log("It kicks me out here");
         }
         return false;
     }
@@ -297,12 +281,11 @@ public class Server : MonoBehaviour
 
         tcpListenerThread.Abort();
     }
-
-    void OnApplicationQuit()
+    private void OnApplicationQuit()
     {
         StopServer();
     }
-    void OnDestroy()
+    private void OnDestroy()
     {
         StopServer();
     }

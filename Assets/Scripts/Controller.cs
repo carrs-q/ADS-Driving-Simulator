@@ -95,6 +95,7 @@ public class Controller : MonoBehaviour
     public const string SEEKMSG = "SEK";
     public const string SHUTDOWNSIM = "ZZZ";
     public const string EMPTYMESSAGE = "undefined";
+    public const string KEEPALIVE = "KISS";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
     private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
@@ -406,6 +407,7 @@ public class Controller : MonoBehaviour
         //Network init
         _server = new Server();
         _server.OnLog += OnServerReceivedMessage;
+        _server.OnClientDisconnect += ServerOnClientDisconnect;
         _client = new Client();
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
@@ -473,6 +475,12 @@ public class Controller : MonoBehaviour
                     PrepareSimulator();
                 }
             }
+
+            if (_server.IsConnected())
+            {
+                _server.SendMessageToAllClients(KEEPALIVE);
+            }
+
             if (projectChanged)
             {
                 LoadSimulatorSetup(NodeInformation.cdn, project);
@@ -924,7 +932,7 @@ public class Controller : MonoBehaviour
     //Network Init
     private void CreateMasterServer()
     {
-        if (!_server.IsConnected)
+        if (!_server.IsConnected())
         {
             _server.StartServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
@@ -972,7 +980,7 @@ public class Controller : MonoBehaviour
     {
         string finalMessage = m.Data;
         string[] split = finalMessage.Split('|');        
-        lock (cacheLock)
+        lock(cacheLock)
         {
             Debug.Log(finalMessage);
             if (string.IsNullOrEmpty(cache))
@@ -991,6 +999,10 @@ public class Controller : MonoBehaviour
                             ClientLoadProject(split[1], split[2]);
                         }
                         break;
+                    case KEEPALIVE:
+                        {
+                            _client.SendMessage(KEEPALIVE);
+                        }; break;
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
@@ -1118,14 +1130,13 @@ public class Controller : MonoBehaviour
         CreateClientNode();
     }
 
-
     //server functions
     private void OnServerReceivedMessage(string m)
     {
         string[] split = m.Split('|');
         bool resdis = false;
         int clientID = 0;
-        lock (cacheLock)
+        lock(cacheLock)
         {
             Debug.Log(m);
             if (string.IsNullOrEmpty(cache))
@@ -1133,10 +1144,17 @@ public class Controller : MonoBehaviour
                 switch (split[0])
                 {
                     case RESDISPLAY:
+                        { 
                         ServerUpdateDisplay(int.Parse(split[1]), int.Parse(split[2]));
                         resdis = true;
                         clientID = int.Parse(split[1]);
+                        SendProjectToClient(clientID);
+                        }
                         break;
+                    default:
+                        {
+                            Debug.Log("Unknown Message received " + m);
+                        };break;
                 }
             }
             else
@@ -1146,7 +1164,9 @@ public class Controller : MonoBehaviour
         }
         if (resdis)
         {
-            SendProjectToClient(clientID);
+            Debug.Log("ServerUpdate receives");
+            resdis = false;
+           
             SendAudioSettingsToClient(clientID);
         }
     }
@@ -1166,8 +1186,31 @@ public class Controller : MonoBehaviour
             }
         }
     }
+    private void ServerOnClientDisconnect(ConnectedClient c)
+    {
+        try
+        {
+            switch (int.Parse(c.clientData.Name))
+            {
+                case FRONT: { log.write("Front Screen has been disconncted"); } break;
+                case LEFT: { log.write("Left Screen has been disconncted"); } break;
+                case RIGHT: { log.write("Right Screen has been disconncted"); } break;
+                case NAV: { log.write("Navigation has been disconncted"); } break;
+                case MIRRORS: { log.write("Mirrors has been disconncted"); } break;
+                case DASHBOARD: { log.write("Dashboard has been disconncted"); } break;
+                default: { log.write("Unknown client has been disconncted"); }; break;
+            }
+        }
+        catch (Exception e)
+        {
+            log.write("Unknown client has been disconncted");
+        }
+       
+    }
+
     private void SendProjectToClient(int conID)
     {
+
         string message = REQPROJECT + "|";
         if (simulationContent.isProjectLoaded())
         {
