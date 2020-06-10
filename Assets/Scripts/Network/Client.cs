@@ -80,11 +80,10 @@ public class Client : MonoBehaviour
 
             while (running)
             {
-                // Get a stream object for reading
                 using (stream = socketConnection.GetStream())
                 {
                     int length;
-                    // Read incoming stream into byte array. 					
+
                     while (running && stream.CanRead)
                     {
                         length = stream.Read(bytes, 0, bytes.Length);
@@ -92,7 +91,6 @@ public class Client : MonoBehaviour
                         {
                             var incomingData = new byte[length];
                             Array.Copy(bytes, 0, incomingData, 0, length);
-                            // Convert byte array to string message. 						
                             string serverJson = Encoding.ASCII.GetString(incomingData);
                             ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(serverJson);
                             OnMessageReceived(serverMessage);

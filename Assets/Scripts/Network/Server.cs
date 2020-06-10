@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -70,6 +68,7 @@ public class Server :  MonoBehaviour
             tcpListener.Start();
 
             ThreadPool.QueueUserWorkItem(ListenerWorker, tcpListener);
+
             Debug.Log("Server started at: " + this.IPAddress + ":" + this.Port);
         }
         catch (SocketException socketException)
@@ -77,18 +76,17 @@ public class Server :  MonoBehaviour
             Debug.Log("SocketException " + socketException);
         }
     }
-
     private void ListenerWorker(object token)
     {
         while (tcpListener != null)
         {
             TcpClient tcpClient = tcpListener.AcceptTcpClient();
+            
+
             ThreadPool.QueueUserWorkItem(HandleClientWorker, tcpClient);
         }
         Debug.Log("tcpListener went out");
     }
-    
-
     private void HandleClientWorker(object token)
     {
         Byte[] bytes = new Byte[Controller.BUFFERSIZE];
@@ -135,7 +133,6 @@ public class Server :  MonoBehaviour
         }
         Debug.Log("Ich bin ausgelaufen 2");
     }
-
     private void ProcessMessage(ConnectedClient connectedClient, string command)
     {
         string[] split = command.Split('|');
@@ -158,8 +155,6 @@ public class Server :  MonoBehaviour
         }
 
     }
-    
-
     private void DispatchMessage(ServerMessage serverMessage)
     {
         for (int i = 0; i < connectedClients.Count; i++)
@@ -174,13 +169,11 @@ public class Server :  MonoBehaviour
             }
         }
     }
-
     private void DisconnectClient(ConnectedClient connection)
     {
         OnClientDisconnect(connection);
         connectedClients.Remove(connection);
     }
-
     public void SendMessageToClient(int clientID, string message)
     {
         ServerMessage tmp;
@@ -197,7 +190,6 @@ public class Server :  MonoBehaviour
             }
         });
     }
-
     public void SendMessageToAllClients(string message)
     {
         ServerMessage tmp;
@@ -221,7 +213,6 @@ public class Server :  MonoBehaviour
            //Debug.Log("Client got disconnected: " +e);
         }
     }
-    
     private bool SendMessage(TcpClient client, ServerMessage serverMessage)
     {
         if (client != null && client.Connected)
@@ -251,7 +242,6 @@ public class Server :  MonoBehaviour
         }
         return false;
     }
-
     private void StopServer()
     {
         tcpListener.Stop();
