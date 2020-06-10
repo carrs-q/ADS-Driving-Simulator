@@ -95,7 +95,6 @@ public class Controller : MonoBehaviour
     public const string SEEKMSG = "SEK";
     public const string SHUTDOWNSIM = "ZZZ";
     public const string EMPTYMESSAGE = "undefined";
-    public const string KEEPALIVE = "KISS";
 
     private Vector3 WSDINCAR = new Vector3(-0.8f, 2.0f, 10f);
     private Vector3 WSDINFRONT = new Vector3(-0.8f, 2.0f, 10f); //Nearly Center of Screen
@@ -478,7 +477,7 @@ public class Controller : MonoBehaviour
 
             if (_server.IsConnected())
             {
-                _server.SendMessageToAllClients(KEEPALIVE);
+                //TODO Update
             }
 
             if (projectChanged)
@@ -978,7 +977,7 @@ public class Controller : MonoBehaviour
     }
     private void OnClientReceivedMessage(ServerMessage m)
     {
-        string finalMessage = m.Data;
+        string finalMessage = m.message;
         string[] split = finalMessage.Split('|');        
         lock(cacheLock)
         {
@@ -999,10 +998,6 @@ public class Controller : MonoBehaviour
                             ClientLoadProject(split[1], split[2]);
                         }
                         break;
-                    case KEEPALIVE:
-                        {
-                            _client.SendMessage(KEEPALIVE);
-                        }; break;
                     case TORMESSAGE:
                         //TODO TOR Client functions
                         ; break;
@@ -1138,7 +1133,7 @@ public class Controller : MonoBehaviour
         int clientID = 0;
         lock(cacheLock)
         {
-            Debug.Log(m);
+            Debug.Log("Server received" + m);
             if (string.IsNullOrEmpty(cache))
             {
                 switch (split[0])
@@ -1172,7 +1167,6 @@ public class Controller : MonoBehaviour
     }
     private void ServerUpdateDisplay(int clientID, int displayID)
     {
-        Debug.Log("Display ID received "+displayID);
         if (NodeInformation.type.Equals(MASTERNODE)) {
            
             switch (displayID)
@@ -1190,7 +1184,7 @@ public class Controller : MonoBehaviour
     {
         try
         {
-            switch (int.Parse(c.clientData.Name))
+            switch (int.Parse(c.simClient.name))
             {
                 case FRONT: { log.write("Front Screen has been disconncted"); } break;
                 case LEFT: { log.write("Left Screen has been disconncted"); } break;

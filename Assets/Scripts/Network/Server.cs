@@ -8,23 +8,23 @@ using System.Threading;
 using UnityEngine;
 
 [Serializable]
-public class ClientData
+public class SimClient
 {
     public static int MAX_ID;
 
     public int ID;
-    public string Name;
+    public string name;
 }
 
 public class ConnectedClient
 {
-    public ClientData clientData;
-    public TcpClient client;
+    public SimClient simClient;
+    public TcpClient tcpClient;
 
-    public ConnectedClient(ClientData data, TcpClient client)
+    public ConnectedClient(SimClient simClient, TcpClient tcpClient)
     {
-        clientData = data;
-        this.client = client;
+        this.simClient = simClient;
+        this.tcpClient = tcpClient;
     }
 
 }
@@ -32,13 +32,13 @@ public class ConnectedClient
 [Serializable]
 public class ServerMessage
 {
-    public ClientData SenderData;
-    public string Data;
+    public SimClient simClient;
+    public string message;
 
-    public ServerMessage(ClientData client, string message)
+    public ServerMessage(SimClient simClient, string message)
     {
-        SenderData = client;
-        Data = message;
+        this.simClient = simClient;
+        this.message = message;
     }
 }
 
@@ -47,8 +47,7 @@ public class Server :  MonoBehaviour
 {
     public Action<string> OnLog = delegate { };
     public Action<ConnectedClient> OnClientDisconnect = delegate { };
-
-
+    
     public bool IsConnected()
     {
         //get { return tcpListenerThread != null && tcpListenerThread.IsAlive};
@@ -59,21 +58,14 @@ public class Server :  MonoBehaviour
     private int Port = 8052;
     private TcpListener tcpListener;
 
-    /// <summary> 
-    /// Background thread for TcpServer workload. 	
-    /// </summary> 	
-    private Thread tcpListenerThread;
-
     private List<ConnectedClient> connectedClients = new List<ConnectedClient>();
 
-    // Use this for initialization
     public void StartServer(string IPAddress, int Port)
     {
         this.IPAddress = IPAddress;
         this.Port = Port;
         try
         {
-            // Create listener on localhost port 8052. 			
             tcpListener = new TcpListener(System.Net.IPAddress.Any, Port);
             tcpListener.Start();
 
@@ -84,12 +76,6 @@ public class Server :  MonoBehaviour
         {
             Debug.Log("SocketException " + socketException);
         }
-        // Start TcpServer background thread 		
-        /*
-        tcpListenerThread = new Thread(ListenForIncomingRequests);
-        tcpListenerThread.IsBackground = true;
-        tcpListenerThread.Start();
-        */
     }
 
     private void ListenerWorker(object token)
@@ -108,15 +94,17 @@ public class Server :  MonoBehaviour
         Byte[] bytes = new Byte[Controller.BUFFERSIZE];
         using (TcpClient client = token as TcpClient)
         {
-            ClientData data = new ClientData();
-            data.ID = ++ClientData.MAX_ID;
-            data.Name = "TMP" + data.ID;
+            SimClient simclient = new SimClient();
+            simclient.ID = ++SimClient.MAX_ID;
+            simclient.name = "TMP" + simclient.ID;
 
 
 
-            ConnectedClient connectedClient = new ConnectedClient(data, client);
+            ConnectedClient connectedClient = new ConnectedClient(simclient, client);
             connectedClients.Add(connectedClient);
-            //SendMessageToClient(data.ID, "Welcome Stranger, who are you?");
+
+            //Just send a random message
+            SendMessageToClient(simclient.ID, "Welcome Stranger, who are you?");
 
             try
             {
@@ -152,16 +140,15 @@ public class Server :  MonoBehaviour
     {
         string[] split = command.Split('|');
         string response = string.Empty;
-        ServerMessage serverMessage = null;
 
         switch (split[0])
         {
             case Controller.RESDISPLAY: //Resond Display
-                connectedClient.clientData.Name = split[1]; //Assign correct name
-                OnLog(split[0]+"|"+connectedClient.clientData.ID +"|"+ split[1]);
+                connectedClient.simClient.name = split[1]; //Assign correct name
+                OnLog(split[0]+"|"+connectedClient.simClient.ID +"|"+ split[1]);
                 break;
             case "!disconnect":
-                response = (string.Format("{0} has Disconnected", connectedClient.clientData.Name));
+                response = (string.Format("{0} has Disconnected", connectedClient.simClient.name));
                 Debug.Log(response);
                 DisconnectClient(connectedClient);
                 break;
@@ -178,10 +165,10 @@ public class Server :  MonoBehaviour
         for (int i = 0; i < connectedClients.Count; i++)
         {
             ConnectedClient connection = connectedClients[i];
-            TcpClient client = connection.client;
+            TcpClient client = connection.tcpClient;
             if (!SendMessage(client, serverMessage))
             {
-                Debug.Log(string.Format("Lost connection with {0}", connection.clientData.Name));
+                Debug.Log(string.Format("Lost connection with {0}", connection.simClient.name));
                 DisconnectClient(connection);
                 i--;
             }
@@ -201,15 +188,10 @@ public class Server :  MonoBehaviour
 
         connectedClients.ForEach(delegate (ConnectedClient c)
         {
-            if (c.clientData.ID == clientID)
+            if (c.simClient.ID == clientID)
             {
-                tmp = new ServerMessage(c.clientData, message);
-                if(SendMessage(c.client, tmp))
-                {
-                    Debug.Log("Message sent: " + message);
-                }
-                else
-                {
+                tmp = new ServerMessage(c.simClient, message);
+                if(!SendMessage(c.tcpClient, tmp)){
                     Debug.Log("Error sending Message" + message);
                 }
             }
@@ -223,19 +205,20 @@ public class Server :  MonoBehaviour
         {
             connectedClients.ForEach(delegate (ConnectedClient c)
             {
-                Debug.Log(message + " to " + c.clientData.Name);
-                tmp = new ServerMessage(c.clientData, message);
-                TcpClient tempClient = c.client;
+                Debug.Log(message + " to " + c.simClient.name);
+                tmp = new ServerMessage(c.simClient, message);
+                TcpClient tempClient = c.tcpClient;
                 if (!SendMessage(tempClient, tmp))
                 {
-                    Debug.Log(string.Format("Lost connection with {0}", c.clientData.Name));
+                    Debug.Log(string.Format("Lost connection with {0}", c.simClient.name));
                     DisconnectClient(c);
                 }
             });
         }
         catch(Exception e)
         {
-            //Debug.Log("Client got disconnected: " +e);
+           // TODO: This exception will be thrown always when a client got removed, not nice
+           //Debug.Log("Client got disconnected: " +e);
         }
     }
     
@@ -245,16 +228,13 @@ public class Server :  MonoBehaviour
         {
             try
             {
-                // Get a stream object for writing. 			
                 NetworkStream stream = client.GetStream();
                 if (stream.CanWrite)
                 {
-                    Debug.Log("Original Message" + serverMessage.Data);
-                    // Convert string message to byte array.                 
+                    //Create Json Byte Array from Serializable Object 
                     byte[] serverMessageAsByteArray = Encoding.ASCII.GetBytes(JsonUtility.ToJson(serverMessage));
-                    Debug.Log("Byte Message" + serverMessageAsByteArray.ToString());
-                    // Write byte array to socketConnection stream.               
-                    stream.Write(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
+                    stream.WriteAsync(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
+                    Debug.Log("Message sent:" + serverMessage.message);
                     return true;
                 }
             }
@@ -265,6 +245,8 @@ public class Server :  MonoBehaviour
         }
         else
         {
+            // The client is null or not connected anymore
+            // In this case the connection got dropped
             Debug.Log("It kicks me out here");
         }
         return false;
@@ -274,12 +256,9 @@ public class Server :  MonoBehaviour
     {
         tcpListener.Stop();
 
-        //Disconnect all clients
         connectedClients.ForEach(delegate(ConnectedClient c){
             DisconnectClient(c);
         });
-
-        tcpListenerThread.Abort();
     }
     private void OnApplicationQuit()
     {
