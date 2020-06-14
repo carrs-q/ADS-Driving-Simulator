@@ -155,6 +155,42 @@ public class Server :  MonoBehaviour
         }
 
     }
+
+    private void CheckForData(TcpClient c)
+    {
+        Debug.Log("still connected");
+        Byte[] bytes = new Byte[Controller.BUFFERSIZE];
+        //begin receiving data from the client
+        c.Client.BeginReceive(bytes, 0, Controller.BUFFERSIZE, 0, ReadCallback, c);
+
+    }
+    void ReadCallback(IAsyncResult ar)
+    {
+
+        Debug.Log("test");
+
+    }
+
+    public void serverUpdate()
+    {
+        connectedClients.ForEach(delegate (ConnectedClient c)
+        {
+
+            if (c.tcpClient != null && c.tcpClient.Connected)
+            {
+                CheckForData(c.tcpClient);
+            }
+            else
+            {
+                c.tcpClient.Close(); //close the socket
+                connectedClients.Remove(c);
+                Debug.Log("Client disconnected");
+                //disconnectList.Add(sc);
+                //continue;
+            }
+        });
+    }
+
     private void DispatchMessage(ServerMessage serverMessage)
     {
         for (int i = 0; i < connectedClients.Count; i++)
@@ -250,6 +286,7 @@ public class Server :  MonoBehaviour
             DisconnectClient(c);
         });
     }
+
     private void OnApplicationQuit()
     {
         StopServer();

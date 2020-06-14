@@ -460,6 +460,11 @@ public class Controller : MonoBehaviour
                 StatusChange(syncData.getStatus());
             }
         }
+        if (_server.IsConnected())
+        {
+            //TODO Update
+            _server.serverUpdate();
+        }
     }
 
     void Update()
@@ -475,10 +480,7 @@ public class Controller : MonoBehaviour
                 }
             }
 
-            if (_server.IsConnected())
-            {
-                //TODO Update
-            }
+           
 
             if (projectChanged)
             {
