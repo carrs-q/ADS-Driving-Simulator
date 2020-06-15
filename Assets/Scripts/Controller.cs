@@ -123,9 +123,8 @@ public class Controller : MonoBehaviour
 
 
     //new Network
-    private List<Client> clients = new List<Client>();
     private Server _server;
-    private Client _client;
+    private myClient _client;
 
     private object cacheLock = new object();
     private string cache;
@@ -408,7 +407,7 @@ public class Controller : MonoBehaviour
         _server.OnClientMessage += OnServerReceivedMessage;
         _server.OnClientDisconnect += ServerOnClientDisconnect;
 
-        _client = new Client();
+        _client = new myClient();
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
         _client.OnMessage += OnClientReceivedMessage;
@@ -978,7 +977,7 @@ public class Controller : MonoBehaviour
 
             if (!string.IsNullOrEmpty(message))
             {
-                _client.SendMessage(message);
+                _client.SendToServer(message);
                 
             }
         }

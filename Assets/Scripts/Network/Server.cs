@@ -104,6 +104,7 @@ public class Server :  MonoBehaviour
             serverSocket.Bind(new IPEndPoint(System.Net.IPAddress.Parse(this.IPAddress), this.Port));
             serverSocket.Listen(Controller.MAX_CONNECTION);
             ThreadPool.QueueUserWorkItem(StartListening, serverSocket);
+            Debug.Log("Server has been created");
             serverStarted = true;
         }
         catch(Exception e){
@@ -142,7 +143,6 @@ public class Server :  MonoBehaviour
 
         handler.socket.BeginReceive(clientState.buffer, 0, clientState.buffer.Length, 0, ReceiveCallback, clientState);
     }
-
 
     //Server Update
     public void ServerUpdate(){

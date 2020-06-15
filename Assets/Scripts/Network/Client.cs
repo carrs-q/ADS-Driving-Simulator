@@ -4,7 +4,7 @@ using System.Text;
 using UnityEngine;
 using System.Net.Sockets;
 
-public class Client : MonoBehaviour
+public class myClient : MonoBehaviour
 {
     public Action OnConnected = delegate { };
     public Action OnDisconnected = delegate { };
@@ -20,7 +20,8 @@ public class Client : MonoBehaviour
     private bool socketConnected = false;
 
     //Connect
-    public void ConnectToServer(string ip, int port){
+    public void ConnectToServer(string ip, int port)
+    {
         clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         try
@@ -38,60 +39,72 @@ public class Client : MonoBehaviour
             Debug.Log("Error while connecting to Server " + e);
         }
     }
-    private void ConnectCallback(IAsyncResult ar){
-        try{
+    private void ConnectCallback(IAsyncResult ar)
+    {
+        try
+        {
             Socket client = (Socket)ar.AsyncState;
             client.EndConnect(ar);
             OnConnected();
             Debug.Log("Connected to " + client.RemoteEndPoint);
         }
-        catch(Exception e){
+        catch (Exception e)
+        {
             Debug.Log("Error connecting: " + e);
         }
     }
-    public bool IsConnected(){
+    public bool IsConnected()
+    {
         //TODO make check if connection is active
         return socketConnected;
     }
 
     //Send
-    public void SendToServer(string message){
+    public void SendToServer(string message)
+    {
         byte[] byteMessage = Encoding.ASCII.GetBytes(message);
 
-        clientSocket.BeginSend(byteMessage, 0, byteMessage.Length, 0, 
+        clientSocket.BeginSend(byteMessage, 0, byteMessage.Length, 0,
             new AsyncCallback(SendCallBack), clientSocket);
 
     }
-    private void SendCallBack(IAsyncResult ar){
-        try{
+    private void SendCallBack(IAsyncResult ar)
+    {
+        try
+        {
             Socket client = (Socket)ar.AsyncState;
             int bytesSent = client.EndSend(ar);
             Debug.Log("Message sent with " + bytesSent + " bytes");
         }
-        catch(Exception e){
+        catch (Exception e)
+        {
             Debug.Log("Error sending message");
         }
     }
-    
+
     //Receive
     public void ClientUpdate()
     {
-        try{
+        try
+        {
             clientSocket.BeginReceive(buffer, 0, buffer.Length, 0,
                 new AsyncCallback(ReceiveCallback), clientSocket);
         }
-        catch(Exception e){
-            OnDisconnected();
+        catch (Exception e)
+        {
+            StopClient();
             Debug.Log("Error receiving data");
         }
     }
     private void ReceiveCallback(IAsyncResult ar)
     {
-        try{
+        try
+        {
             Socket client = (Socket)ar.AsyncState;
             int bytesReceived = client.EndReceive(ar);
 
-            if(bytesReceived == 0){
+            if (bytesReceived == 0)
+            {
                 Debug.Log("nothing to receive");
                 return;
             }
@@ -105,7 +118,9 @@ public class Client : MonoBehaviour
             string serverMessage = Encoding.Default.GetString(buffer);
             OnMessage(serverMessage);
         }
-        catch(Exception e){
+        catch (Exception e)
+        {
+            StopClient();
             Debug.Log("Receiving failed");
         }
     }
@@ -114,10 +129,11 @@ public class Client : MonoBehaviour
     //Shutdown
     public void StopClient()
     {
-        if(socketConnected)
+        if (socketConnected)
         {
             clientSocket.Close();
             socketConnected = false;
+            OnDisconnected();
         }
     }
     private void OnApplicationQuit()
@@ -132,119 +148,4 @@ public class Client : MonoBehaviour
     {
         StopClient();
     }
-
-
-    /*
-    private TcpClient socketConnection;
-    private Thread clientReceiveThread;
-    private NetworkStream stream;
-    private bool running;
-
-    public bool IsConnected
-    {
-        get { return socketConnection != null && socketConnection.Connected; }
-    }
-    public void ConnectToTcpServer(string IPAddress, int Port)
-    {
-        try
-        {
-            this.IPAddress = IPAddress;
-            this.Port = Port;
-            Debug.Log(string.Format("Connecting to {0}:{1}", IPAddress, Port));
-
-            clientReceiveThread = new Thread(new ThreadStart(ListenForData));
-            clientReceiveThread.IsBackground = true;
-            clientReceiveThread.Start();
-        }
-        catch (Exception e)
-        {
-            Debug.Log("On client connect exception " + e);
-        }
-    }
-    public new void SendMessage(string clientMessage)
-    {
-        if (socketConnection != null && socketConnection.Connected)
-        {
-            try
-            {
-                NetworkStream stream = socketConnection.GetStream();
-                if (stream.CanWrite)
-                {
-                    byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
-                    stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
-                    Debug.Log("Message sent" + clientMessage);
-                }
-            }
-            catch (SocketException socketException)
-            {
-                Debug.Log("Socket exception: " + socketException);
-            }
-        }
-    }
-    public void CloseConnection()
-    {
-        SendMessage("bye bye");
-        running = false;
-    }
-
-    private void ListenForData()
-    {
-        try
-        {
-            socketConnection = new TcpClient(IPAddress, Port);
-            OnConnected(this);
-            Debug.Log("Connected");
-
-            Byte[] bytes = new Byte[Controller.BUFFERSIZE];
-            running = true;
-
-            while (running)
-            {
-                using (stream = socketConnection.GetStream())
-                {
-                    int length;
-
-                    while (running && stream.CanRead)
-                    {
-                        length = stream.Read(bytes, 0, bytes.Length);
-                        if (length != 0)
-                        {
-                            var incomingData = new byte[length];
-                            Array.Copy(bytes, 0, incomingData, 0, length);
-                            string serverJson = Encoding.ASCII.GetString(incomingData);
-                            ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(serverJson);
-                            OnMessageReceived(serverMessage);
-                        }
-                    }
-                    Debug.Log("I can't write anymore");
-                }
-            }
-            socketConnection.Close();
-            Debug.Log("Disconnected from server");
-            OnDisconnected(this);
-        }
-        catch (SocketException socketException)
-        {
-            Debug.Log("Socket exception: " + socketException);
-        }
-    }
-    private void StopClient()
-    {
-        if (running)
-        {
-            //SendMessage("!disconnect");
-            stream.Close();
-        }
-        running = false;
-
-    }
-    private void OnApplicationQuit()
-    {
-        StopClient();
-    }
-    private void OnDestroy()
-    {
-        StopClient();
-    }
-    */
 }
