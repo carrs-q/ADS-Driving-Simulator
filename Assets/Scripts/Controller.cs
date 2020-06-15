@@ -123,8 +123,8 @@ public class Controller : MonoBehaviour
 
 
     //new Network
-    private Server _server;
-    private myClient _client;
+    private Server server;
+    private myClient client;
 
     private object cacheLock = new object();
     private string cache;
@@ -403,15 +403,15 @@ public class Controller : MonoBehaviour
         InitDrivingSide();
 
         //Network init
-        _server = new Server();
-        _server.OnClientMessage += OnServerReceivedMessage;
-        _server.OnClientDisconnect += ServerOnClientDisconnect;
+        server = new Server();
+        server.OnClientMessage += OnServerReceivedMessage;
+        server.OnClientDisconnect += ServerOnClientDisconnect;
 
-        _client = new myClient();
-        _client.OnConnected += OnClientConnected;
-        _client.OnDisconnected += OnClientDisconnected;
-        _client.OnMessage += OnClientReceivedMessage;
-        //_client.OnLog += OnClientLog;
+        client = new myClient();
+        client.OnConnected += OnClientConnected;
+        client.OnDisconnected += OnClientDisconnected;
+        client.OnMessage += OnClientReceivedMessage;
+        //client.OnLog += OnClientLog;
 
 
         if (NodeInformation.type.Equals(MASTERNODE))
@@ -475,13 +475,13 @@ public class Controller : MonoBehaviour
                     PrepareSimulator();
                 }
             }
-            if (_server.IsConnected())
+            if (server.IsConnected())
             {
-                _server.ServerUpdate();
+                server.ServerUpdate();
             }
-            if (_client.IsConnected())
+            if (client.IsConnected())
             {
-                _client.ClientUpdate();
+                client.ClientUpdate();
             }
 
 
@@ -544,7 +544,7 @@ public class Controller : MonoBehaviour
             {
                 //TODO Remove T est Key
                 Debug.Log("sendMessage to all clients");
-                _server.BroadCastAll("!ping");
+                server.BroadCastAll("!ping");
             }
             if ((Input.anyKeyDown) && (
                 !Input.GetMouseButton(0) &&
@@ -937,23 +937,23 @@ public class Controller : MonoBehaviour
     //Network Init
     private void CreateMasterServer()
     {
-        if (!_server.IsConnected())
+        if (!server.IsConnected())
         {
-            _server.CreateServer(NodeInformation.serverIp, NodeInformation.serverPort);
+            server.CreateServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
     }
     private void CreateClientNode()
     {
-        if (!_client.IsConnected())
+        if (!client.IsConnected())
         {
-            _client.ConnectToServer(NodeInformation.serverIp, NodeInformation.serverPort);
+            client.ConnectToServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
     }
     private void DisconnectNode()
     {
-        if (_client.IsConnected())
+        if (client.IsConnected())
         {
-            _client.StopClient();
+            client.StopClient();
         }
     }
 
@@ -963,7 +963,7 @@ public class Controller : MonoBehaviour
     //TODO: Remove this function, not used anymore
     public void SendMessageToServer()
     {
-        if (_client.IsConnected())
+        if (client.IsConnected())
         {
             string message = "test";
             if (message.StartsWith("!ping"))
@@ -977,7 +977,7 @@ public class Controller : MonoBehaviour
 
             if (!string.IsNullOrEmpty(message))
             {
-                _client.SendToServer(message);
+                client.SendToServer(message);
                 
             }
         }
@@ -1109,7 +1109,7 @@ public class Controller : MonoBehaviour
     private void OnClientConnected()
     {
         //Send Display type to Server
-        _client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
+        client.SendToServer(RESDISPLAY + "|" + NodeInformation.screen);
     }
     private void OnClientDisconnected()
     {
@@ -1137,7 +1137,7 @@ public class Controller : MonoBehaviour
                         ServerUpdateDisplay(int.Parse(split[1]), int.Parse(split[2]));
                         resdis = true;
                         clientID = int.Parse(split[1]);
-                        _server.setClientType(m.ID, clientID);
+                        server.setClientType(m.ID, clientID);
                         SendProjectToClient(clientID);
                         }
                         break;
@@ -1199,7 +1199,7 @@ public class Controller : MonoBehaviour
         if (simulationContent.isProjectLoaded())
         {
             message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
-            _server.SendMessage(message, conID);
+            server.SendMessage(message, conID);
         }
         else
         {
@@ -1214,12 +1214,12 @@ public class Controller : MonoBehaviour
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
         Debug.Log(message);
-        _server.SendMessage(message, conID);
+        server.SendMessage(message, conID);
     }
     private void SendProjectToClients(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
-        _server.BroadCastAll(msg);
+        server.BroadCastAll(msg);
     }
     private void SendStatusToClient()
     {
@@ -1231,14 +1231,14 @@ public class Controller : MonoBehaviour
         if (syncData.doesStatusChanged())
         {
             this.sendSync = true;
-            _server.BroadCastAll(msg);
+            server.BroadCastAll(msg);
         }
         else if (syncData.getStatus() == START)
         {
             if (lastMessage != msg)
             {
                 lastMessage = msg;
-                _server.BroadCastAll(msg);
+                server.BroadCastAll(msg);
 
             }
         }
@@ -1879,7 +1879,7 @@ public class Controller : MonoBehaviour
         message += sliderInCarVolume.GetComponent<Slider>().value + "|";
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
-        _server.BroadCastAll(message);
+        server.BroadCastAll(message);
         //ServerToClientListSend(message, relChannel, clients);
     }
 
