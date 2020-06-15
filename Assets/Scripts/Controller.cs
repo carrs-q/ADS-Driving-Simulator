@@ -84,7 +84,7 @@ public class Controller : MonoBehaviour
 
     //MessageCodes
     public const int BUFFERSIZE = 1024;
-    public const int MAX_CONNECTION = 10;
+    public const int MAX_CONNECTION = 20;
     public const string REQDISPLAY = "RQD";
     public const string RESDISPLAY = "RSD";
     public const string SENDPROJECT = "PRO";
@@ -405,12 +405,13 @@ public class Controller : MonoBehaviour
 
         //Network init
         _server = new Server();
-        _server.OnLog += OnServerReceivedMessage;
+        _server.OnClientMessage += OnServerReceivedMessage;
         _server.OnClientDisconnect += ServerOnClientDisconnect;
+
         _client = new Client();
         _client.OnConnected += OnClientConnected;
         _client.OnDisconnected += OnClientDisconnected;
-        _client.OnMessageReceived += OnClientReceivedMessage;
+        _client.OnMessage += OnClientReceivedMessage;
         //_client.OnLog += OnClientLog;
 
 
@@ -460,11 +461,7 @@ public class Controller : MonoBehaviour
                 StatusChange(syncData.getStatus());
             }
         }
-        if (_server.IsConnected())
-        {
-            //TODO Update
-            _server.serverUpdate();
-        }
+        
     }
 
     void Update()
@@ -479,8 +476,16 @@ public class Controller : MonoBehaviour
                     PrepareSimulator();
                 }
             }
+            if (_server.IsConnected())
+            {
+                _server.ServerUpdate();
+            }
+            if (_client.IsConnected())
+            {
+                _client.ClientUpdate();
+            }
 
-           
+
 
             if (projectChanged)
             {
@@ -540,7 +545,7 @@ public class Controller : MonoBehaviour
             {
                 //TODO Remove T est Key
                 Debug.Log("sendMessage to all clients");
-                _server.SendMessageToAllClients("!ping");
+                _server.BroadCastAll("!ping");
             }
             if ((Input.anyKeyDown) && (
                 !Input.GetMouseButton(0) &&
@@ -935,30 +940,31 @@ public class Controller : MonoBehaviour
     {
         if (!_server.IsConnected())
         {
-            _server.StartServer(NodeInformation.serverIp, NodeInformation.serverPort);
+            _server.CreateServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
     }
     private void CreateClientNode()
     {
-        if (!_client.IsConnected)
+        if (!_client.IsConnected())
         {
-            _client.ConnectToTcpServer(NodeInformation.serverIp, NodeInformation.serverPort);
+            _client.ConnectToServer(NodeInformation.serverIp, NodeInformation.serverPort);
         }
     }
     private void DisconnectNode()
     {
-        if (_client.IsConnected)
+        if (_client.IsConnected())
         {
-            _client.CloseConnection();
+            _client.StopClient();
         }
     }
 
 
     //New Network functions
     //Client functions
+    //TODO: Remove this function, not used anymore
     public void SendMessageToServer()
     {
-        if (_client.IsConnected)
+        if (_client.IsConnected())
         {
             string message = "test";
             if (message.StartsWith("!ping"))
@@ -977,48 +983,36 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    private void OnClientReceivedMessage(ServerMessage m)
+    private void OnClientReceivedMessage(string message)
     {
-        string finalMessage = m.message;
-        string[] split = finalMessage.Split('|');        
-        lock(cacheLock)
+        string[] split = message.Split('|');        
+        switch (split[0])
         {
-            Debug.Log(finalMessage);
-            if (string.IsNullOrEmpty(cache))
-            {
-                switch (split[0])
+            case STATUSUPDATE:
+                ClientRecieveUpdate(message);
+                break;
+            case SENDPROJECT:
+                ClientLoadProject(split[1], split[2]);
+                break;
+            case REQPROJECT:
+                if (split[1] != EMPTYMESSAGE)
                 {
-                    case STATUSUPDATE:
-                        ClientRecieveUpdate(finalMessage);
-                        break;
-                    case SENDPROJECT:
-                        ClientLoadProject(split[1], split[2]);
-                        break;
-                    case REQPROJECT:
-                        if (split[1] != EMPTYMESSAGE)
-                        {
-                            ClientLoadProject(split[1], split[2]);
-                        }
-                        break;
-                    case TORMESSAGE:
-                        //TODO TOR Client functions
-                        ; break;
-                    case VOLUMECONTROL:{
-                            ClientRecieveVolume(split[1], split[2], split[3], split[4]);
-                        }
-                        break;
-                    case SEEKMSG:{
-                            ClientSeek(split[1]);
-                        }; break;
-                    case SHUTDOWNSIM:{
-                            ShutdownSimulator();
-                        }; break;
+                    ClientLoadProject(split[1], split[2]);
                 }
-            }
-            else
-            {
-                //cache += string.Format("<color=green>{0}</color>\n", finalMessage);
-            }
+                break;
+            case TORMESSAGE:
+                //TODO TOR Client functions
+                ; break;
+            case VOLUMECONTROL:{
+                    ClientRecieveVolume(split[1], split[2], split[3], split[4]);
+                }
+                break;
+            case SEEKMSG:{
+                    ClientSeek(split[1]);
+                }; break;
+            case SHUTDOWNSIM:{
+                    ShutdownSimulator();
+                }; break;
         }
     }
     private void ClientLoadProject(string project, string address)
@@ -1113,24 +1107,23 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
-    private void OnClientConnected(Client client)
+    private void OnClientConnected()
     {
         //Send Display type to Server
-        clients.Add(client);
-        client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
+        _client.SendMessage(RESDISPLAY + "|" + NodeInformation.screen);
     }
-    private void OnClientDisconnected(Client client)
+    private void OnClientDisconnected()
     {
         //TODO Reconnect
         Debug.Log("Client disconnected. Try to reconnect");
-        clients.Remove(client);
-        CreateClientNode();
+        //clients.Remove(client);
+        //CreateClientNode();
     }
 
     //server functions
-    private void OnServerReceivedMessage(string m)
+    private void OnServerReceivedMessage(ServerMessage m)
     {
-        string[] split = m.Split('|');
+        string[] split = m.message.Split('|');
         bool resdis = false;
         int clientID = 0;
         lock(cacheLock)
@@ -1145,6 +1138,7 @@ public class Controller : MonoBehaviour
                         ServerUpdateDisplay(int.Parse(split[1]), int.Parse(split[2]));
                         resdis = true;
                         clientID = int.Parse(split[1]);
+                        _server.setClientType(m.ID, clientID);
                         SendProjectToClient(clientID);
                         }
                         break;
@@ -1156,7 +1150,7 @@ public class Controller : MonoBehaviour
             }
             else
             {
-                cache += string.Format(m);
+                cache += string.Format(m.message);
             }
         }
         if (resdis)
@@ -1182,12 +1176,9 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    private void ServerOnClientDisconnect(ConnectedClient c)
-    {
-        try
-        {
-            switch (int.Parse(c.simClient.name))
-            {
+    private void ServerOnClientDisconnect(ServerClient c){
+        try{
+            switch (c.type){
                 case FRONT: { log.write("Front Screen has been disconncted"); } break;
                 case LEFT: { log.write("Left Screen has been disconncted"); } break;
                 case RIGHT: { log.write("Right Screen has been disconncted"); } break;
@@ -1197,11 +1188,9 @@ public class Controller : MonoBehaviour
                 default: { log.write("Unknown client has been disconncted"); }; break;
             }
         }
-        catch (Exception e)
-        {
+        catch (Exception e){
             log.write("Unknown client has been disconncted");
         }
-       
     }
 
     private void SendProjectToClient(int conID)
@@ -1231,7 +1220,7 @@ public class Controller : MonoBehaviour
     private void SendProjectToClients(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
-        _server.SendMessageToAllClients(msg);
+        _server.BroadCastAll(msg);
     }
     private void SendStatusToClient()
     {
@@ -1243,14 +1232,14 @@ public class Controller : MonoBehaviour
         if (syncData.doesStatusChanged())
         {
             this.sendSync = true;
-            _server.SendMessageToAllClients(msg);
+            _server.BroadCastAll(msg);
         }
         else if (syncData.getStatus() == START)
         {
             if (lastMessage != msg)
             {
                 lastMessage = msg;
-                _server.SendMessageToAllClients(msg);
+                _server.BroadCastAll(msg);
 
             }
         }
@@ -1891,7 +1880,7 @@ public class Controller : MonoBehaviour
         message += sliderInCarVolume.GetComponent<Slider>().value + "|";
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
-        _server.SendMessageToAllClients(message);
+        _server.BroadCastAll(message);
         //ServerToClientListSend(message, relChannel, clients);
     }
 
