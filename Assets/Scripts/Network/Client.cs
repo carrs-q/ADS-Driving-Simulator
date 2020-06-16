@@ -121,17 +121,37 @@ public class myClient : MonoBehaviour
 
                 string rawMessage = Encoding.Default.GetString(buffer);
                 Debug.Log("Received " + rawMessage);
-
-                //Unpack message according to ServerMessage class (in Server.cs)
-                ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(rawMessage);
-                Debug.Log("Received " + serverMessage.message);
-                OnMessage(serverMessage);
+                if (!rawMessage.Contains("}{")) //Check if two or more messages have received at once
+                {
+                    //Unpack message according to ServerMessage class (in Server.cs)
+                    ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(rawMessage);
+                    Debug.Log("Received " + serverMessage.message);
+                    OnMessage(serverMessage);
+                    
+                }
+                else
+                {
+                    string[] messages = rawMessage.Split('}');
+                    string tmp;
+                    foreach(string mMessage in messages)
+                    {
+                        tmp = mMessage + "}";
+                        if (!String.IsNullOrEmpty(tmp)){ 
+                            ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(tmp);
+                            OnMessage(serverMessage);
+                            Debug.Log("multi messages");
+                        }
+                    }
+                }
                 Array.Clear(buffer, 0, buffer.Length);
+
+
                 //client.BeginReceive(buffer, 0, buffer.Length, 0,  new AsyncCallback(ReceiveCallback), client);
             }
         }
         catch (Exception e)
         {
+            Array.Clear(buffer, 0, buffer.Length);
             Debug.Log("Receiving failed" + e);
         }
     }

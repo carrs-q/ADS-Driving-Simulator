@@ -451,7 +451,6 @@ public class Controller : MonoBehaviour
         this.actualStatus = INIT;
         manualIP = false;
     }
-
     private void FixedUpdate()
     {
         if (!shutdown)
@@ -463,7 +462,6 @@ public class Controller : MonoBehaviour
         }
         
     }
-
     void Update()
     {
         if (!shutdown)
@@ -810,7 +808,6 @@ public class Controller : MonoBehaviour
 
         }
     }
-
     private void LoadVRSettings()
     {
         oculus.SetActive(true);
@@ -999,9 +996,10 @@ public class Controller : MonoBehaviour
                     ClientLoadProject(split[1], split[2]);
                 }
                 break;
-            case TORMESSAGE:
-                //TODO TOR Client functions
-                ; break;
+            case TORMESSAGE:{
+                    Debug.Log("TOR received");
+                    //Just on mobile device
+                }; break;
             case VOLUMECONTROL:{
                     ClientRecieveVolume(split[1], split[2], split[3], split[4]);
                 }
@@ -1364,15 +1362,14 @@ public class Controller : MonoBehaviour
         Seek(MirrorRight, nTime);
 
 
-        SendMarker(RESET);
         if (NodeInformation.type.Equals(MASTERNODE))
         {
+            SendMarker(RESET);
             log.write("Simualtion reseted");
+            buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
+            UpdateInterface();
+            torFired = false;
         }
-
-        buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
-        UpdateInterface();
-        torFired = false;
     }
 
     private void PlayPauseAudioSources(int pauseCode)
@@ -1412,8 +1409,7 @@ public class Controller : MonoBehaviour
         {
             log.recordedStart(Labels.torFired);
         }
-        //TODO
-        //serverTakeOverRequest();
+        serverTakeOverRequest();
         if (checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn)
         {
             checkBoxWindshieldDisplay.GetComponent<Toggle>().isOn = false;
@@ -1512,6 +1508,12 @@ public class Controller : MonoBehaviour
         pannelSimulation.SetActive(active);
         pannelResearch.SetActive(active);
         pannelWSD.SetActive(active);
+    }
+    private void serverTakeOverRequest()
+    {
+        this.sendTOR = true;
+        string message = TORMESSAGE + "|";
+        server.BroadCastAll(message);
     }
 
     public void EnableWindshield()
@@ -1855,7 +1857,6 @@ public class Controller : MonoBehaviour
             SendVolume();
         }
     }
-
     public void SendVolume()
     {
 
@@ -1884,7 +1885,6 @@ public class Controller : MonoBehaviour
     {
         return this.videoPlayerAttached;
     }
-
     public void InterfaceSeek()
     {
         InputField temp = inputTimeGotTo.GetComponent<InputField>();
@@ -1909,7 +1909,6 @@ public class Controller : MonoBehaviour
             }
         }
     }
-
     public void sendSeekTime()
     {
         string message = SEEKMSG + "|";
