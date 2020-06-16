@@ -262,6 +262,7 @@ public class Controller : MonoBehaviour
     private bool connectionTry = false, shutdown = false;
     private string persistentDataPath;
     private bool projectChanged = false;
+    public static double currentTime;
    
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
@@ -476,7 +477,7 @@ public class Controller : MonoBehaviour
             }
             if (server.IsConnected())
             {
-                server.ServerUpdate(this.getVideoTime());
+                server.ServerUpdate();
             }
             if (client.IsConnected())
             {
@@ -493,7 +494,9 @@ public class Controller : MonoBehaviour
             if (renderMode == MASTER)
             {
                 //TODO
+                currentTime = getVideoTime();
                 SendStatusToClients();
+
             }
             if (renderMode == MASTER && syncData.getStatus() == START)
             {
@@ -1178,6 +1181,7 @@ public class Controller : MonoBehaviour
         if (simulationContent.isProjectLoaded())
         {
             message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
+            currentTime = getVideoTime();
             server.Send(conID, message);
         }
         else
@@ -1193,11 +1197,13 @@ public class Controller : MonoBehaviour
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
         Debug.Log(message);
+        currentTime = getVideoTime();
         server.Send(conID, message);
     }
     private void SendProjectToClients(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
+        currentTime = getVideoTime();
         server.BroadCastAll(msg);
     }
     private void SendStatusToClients()
@@ -1210,6 +1216,7 @@ public class Controller : MonoBehaviour
         if (syncData.doesStatusChanged())
         {
             this.sendSync = true;
+            currentTime = getVideoTime();
             server.BroadCastAll(msg);
         }
         else if (syncData.getStatus() == START)
@@ -1217,6 +1224,7 @@ public class Controller : MonoBehaviour
             if (lastMessage != msg)
             {
                 lastMessage = msg;
+                currentTime = getVideoTime();
                 server.BroadCastAll(msg);
 
             }
@@ -1511,6 +1519,7 @@ public class Controller : MonoBehaviour
     {
         this.sendTOR = true;
         string message = TORMESSAGE + "|";
+        currentTime = getVideoTime();
         server.BroadCastAll(message);
     }
 
@@ -1863,6 +1872,7 @@ public class Controller : MonoBehaviour
         message += sliderInCarVolume.GetComponent<Slider>().value + "|";
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
+        currentTime = getVideoTime();
         server.BroadCastAll(message);
         //ServerToClientListSend(message, relChannel, clients);
     }
@@ -1911,6 +1921,7 @@ public class Controller : MonoBehaviour
     {
         string message = SEEKMSG + "|";
         message += seekTime.getTotalMillis();
+        currentTime = getVideoTime();
         server.BroadCastAll(message);
     }
     public void NetworkSeek(Timing time)
@@ -1919,7 +1930,7 @@ public class Controller : MonoBehaviour
         this.ResetSimulation();
     }
 
-    public double getVideoTime(){
+    private double getVideoTime(){
         return frontWall.time;
     }
 
