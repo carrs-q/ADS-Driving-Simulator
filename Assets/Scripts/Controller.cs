@@ -405,6 +405,7 @@ public class Controller : MonoBehaviour
         //Network init
         server = new Server();
         server.OnClientMessage += OnServerReceivedMessage;
+        server.OnClientConnect += OnServerClientConnect;
         server.OnClientDisconnect += ServerOnClientDisconnect;
 
         client = new myClient();
@@ -484,8 +485,6 @@ public class Controller : MonoBehaviour
                 client.ClientUpdate();
             }
 
-
-
             if (projectChanged)
             {
                 LoadSimulatorSetup(NodeInformation.cdn, project);
@@ -544,7 +543,8 @@ public class Controller : MonoBehaviour
             {
                 //TODO Remove T est Key
                 Debug.Log("sendMessage to all clients");
-                server.BroadCastAll("!ping");
+                server.loopKiller = false;
+                //server.BroadCastAll("!ping");
             }
             if ((Input.anyKeyDown) && (
                 !Input.GetMouseButton(0) &&
@@ -1115,49 +1115,32 @@ public class Controller : MonoBehaviour
     {
         //TODO Reconnect
         Debug.Log("Client disconnected. Try to reconnect");
+        client.Reconnect();
         //clients.Remove(client);
         //CreateClientNode();
+    }
+    private void OnServerClientConnect(ServerClient client){
+        Debug.Log("First contact with client " + client.socket.RemoteEndPoint);
     }
 
     //server functions
     private void OnServerReceivedMessage(ServerMessage m)
     {
         string[] split = m.message.Split('|');
-        bool resdis = false;
-        int clientID = 0;
-        lock(cacheLock)
+        int clientID = m.ID;
+        Debug.Log("Server received" + m);
+        switch (split[0])
         {
-            Debug.Log("Server received" + m);
-            if (string.IsNullOrEmpty(cache))
-            {
-                switch (split[0])
-                {
-                    case RESDISPLAY:
-                        { 
-                        ServerUpdateDisplay(int.Parse(split[1]), int.Parse(split[2]));
-                        resdis = true;
-                        clientID = int.Parse(split[1]);
-                        server.setClientType(m.ID, clientID);
-                        SendProjectToClient(clientID);
-                        }
-                        break;
-                    default:
-                        {
-                            Debug.Log("Unknown Message received " + m);
-                        };break;
-                }
-            }
-            else
-            {
-                cache += string.Format(m.message);
-            }
-        }
-        if (resdis)
-        {
-            Debug.Log("ServerUpdate receives");
-            resdis = false;
-           
-            SendAudioSettingsToClient(clientID);
+            case RESDISPLAY:{
+                server.setClientType(m.ID, int.Parse(split[1]));
+                ServerUpdateDisplay(m.ID, m.type);
+                SendProjectToClient(clientID);
+                //TODO:
+                //SendAudioSettingsToClient(clientID);
+            } break;
+            default:{
+                Debug.Log("Unknown Message received " + m);
+            };break;
         }
     }
     private void ServerUpdateDisplay(int clientID, int displayID)
@@ -1997,6 +1980,7 @@ public class Controller : MonoBehaviour
 
         if (NodeInformation.type.Equals(MASTERNODE))
         {
+            server.StopServer();
             if (checkBoxShutdownNodes.GetComponent<Toggle>().isOn)
             {
                 string msg = SHUTDOWNSIM + "|" + "byebye";
@@ -2042,6 +2026,7 @@ public class Controller : MonoBehaviour
     {
 
         yield return new WaitForSeconds(0.1f);
+
         if (NodeInformation.type.Equals(MASTERNODE) && this.threadsAlive)
         {
             for (int i = 0; i < threadList.Count; i++)

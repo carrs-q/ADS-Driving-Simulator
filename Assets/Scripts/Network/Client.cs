@@ -6,6 +6,7 @@ using System.Net.Sockets;
 
 public class myClient : MonoBehaviour
 {
+    //Delegate Events
     public Action OnConnected = delegate { };
     public Action OnDisconnected = delegate { };
     public Action<string> OnMessage = delegate { };
@@ -14,6 +15,7 @@ public class myClient : MonoBehaviour
     private string IPAddress = "localhost";
     private int Port = 8052;
     private byte[] buffer = new byte[Controller.BUFFERSIZE];
+    private bool autoReconnect = true;
 
     public Socket clientSocket;
     public IPEndPoint endPoint;
@@ -57,6 +59,11 @@ public class myClient : MonoBehaviour
     {
         //TODO make check if connection is active
         return socketConnected;
+    }
+    public void Reconnect(){
+        if (autoReconnect){
+            //TODO: If lost connection,  
+        }
     }
 
     //Send
@@ -135,6 +142,7 @@ public class myClient : MonoBehaviour
             socketConnected = false;
             OnDisconnected();
         }
+        autoReconnect = false;
     }
     private void OnApplicationQuit()
     {

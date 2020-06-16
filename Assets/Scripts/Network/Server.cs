@@ -64,6 +64,7 @@ public class Server :  MonoBehaviour
     public Action<ServerMessage>    OnClientMessage = delegate { };
     public Action<ServerClient>     OnClientConnect = delegate { };
     public Action<ServerClient>     OnClientDisconnect = delegate { };
+    //TODO: Add OnServerStart and OnServerStop
 
     private string IPAddress = "127.0.0.1";
     private int Port = 8052;
@@ -72,8 +73,8 @@ public class Server :  MonoBehaviour
     private static List<ServerClient> connectedClients = new List<ServerClient>();
     private static List<ServerClient> disconnectedClients = new List<ServerClient>();
 
-    private bool    serverStarted = false;
-    private bool    loopKiller = true;
+    private bool   serverStarted = false;
+    public bool    loopKiller = true;
 
     public bool IsConnected(){
         try{
@@ -104,7 +105,7 @@ public class Server :  MonoBehaviour
             serverSocket.Bind(new IPEndPoint(System.Net.IPAddress.Parse(this.IPAddress), this.Port));
             serverSocket.Listen(Controller.MAX_CONNECTION);
             ThreadPool.QueueUserWorkItem(StartListening, serverSocket);
-            Debug.Log("Server has been created");
+            Debug.Log("Server has been created " + serverSocket.LocalEndPoint);
             serverStarted = true;
         }
         catch(Exception e){
@@ -116,15 +117,13 @@ public class Server :  MonoBehaviour
     private void StartListening(object token){
         try{
             while (loopKiller){
-                //allDone.Reset();
-
-                // Waiting for Connection
                 serverSocket.BeginAccept(new AsyncCallback(AcceptCallback), serverSocket);
-
+                Debug.Log("I receive");
                 //TODO: Check if Async doesn't work
                 //listener.BeginAccept(SocketListener.AcceptCallback, listener);
 
                 //allDone.WaitOne();
+                Thread.Sleep(10);
             }
         }
         catch(Exception e){
@@ -133,11 +132,18 @@ public class Server :  MonoBehaviour
         Debug.Log("Connection closed");
     }
     private void AcceptCallback(IAsyncResult ar){
-        Socket server = (Socket)ar.AsyncState;
 
-        //Thats ma client
+        //Works
+        //Debug.Log("Client Conencted");
+
+        Socket server = (Socket)ar.AsyncState;
+        //Works
+        // Debug.Log(server.LocalEndPoint);
+
         ServerClient handler = new ServerClient(server.EndAccept(ar));
         connectedClients.Add(handler);
+        OnClientConnect(handler);
+
         StateObject clientState = new StateObject();
         clientState.serverClient = handler;
 
@@ -146,18 +152,15 @@ public class Server :  MonoBehaviour
 
     //Server Update
     public void ServerUpdate(){
-        if (!serverStarted)
-        {
-            return;
-        }
         foreach (ServerClient sc in connectedClients){
             if (!sc.IsConnected()){
+                Debug.Log("Connected Client disconnected" + sc.ID);
                 sc.socket.Close();
                 OnClientDisconnect(sc);
                 disconnectedClients.Add(sc);
-
             }
             else{
+                Debug.Log("check for data");
                 CheckForData(sc);
             }
         }
@@ -176,30 +179,50 @@ public class Server :  MonoBehaviour
     {
         try
         {
+            Debug.Log("Receive Callback");
             StateObject clientState = (StateObject)ar.AsyncState;
             Socket c = clientState.serverClient.socket;
             int bR = c.EndReceive(ar);
-            if (bR > 0)
+
+            if(bR == 0)
             {
+                Debug.Log("No data received");
+                return;
+            }
+            else if (bR > 0){
                 clientState.sb.Append(Encoding.ASCII.GetString(clientState.buffer, 0, bR));
+
+                OnClientMessage(
+                        new ServerMessage(
+                            clientState.sb.ToString(),
+                            clientState.serverClient.type,
+                            clientState.serverClient.ID));
+
 
                 c.BeginReceive(clientState.buffer, 0, Controller.BUFFERSIZE, 0,
                     new AsyncCallback(ReceiveCallback), clientState);
             }
+
+            /*
             else
             {
-                if (clientState.sb.Length > 1)
-                {
+                Debug.Log("Now 0");
+                if (clientState.sb.Length > 1) {
                     OnClientMessage(
                         new ServerMessage(
                             clientState.sb.ToString(),
                             clientState.serverClient.type, 
                             clientState.serverClient.ID));
                 }
+                else
+                {
+                    Debug.Log("it was empty");
+                }
 
+                
                 // Signal that all bytes have been received.  
                 //receiveDone.Set();
-            }
+            } */
         }
         catch (Exception e)
         {
@@ -334,7 +357,7 @@ public class Server :  MonoBehaviour
     }
     
     // Server Stop
-    private void StopServer()
+    public void StopServer()
     {
         loopKiller = false;
         serverStarted = false;
@@ -369,6 +392,7 @@ public class Server :  MonoBehaviour
 
     //Specific functions
     public void setClientType(int ID, int type){
+        Debug.Log("Set Client ID  " + ID + " type" + type );
         foreach (ServerClient sc in connectedClients){
             if(sc.ID == ID){
                 sc.type = type;
