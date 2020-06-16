@@ -1905,11 +1905,16 @@ public class Controller : MonoBehaviour
             this.ResetSimulation();
             if (renderMode == MASTER)
             {
-
-                //TODO
-                //this.sendSeekTime();
+                sendSeekTime();
             }
         }
+    }
+
+    public void sendSeekTime()
+    {
+        string message = SEEKMSG + "|";
+        message += seekTime.getTotalMillis();
+        server.BroadCastAll(message);
     }
     public void NetworkSeek(Timing time)
     {
