@@ -476,7 +476,7 @@ public class Controller : MonoBehaviour
             }
             if (server.IsConnected())
             {
-                server.ServerUpdate();
+                server.ServerUpdate(this.getVideoTime());
             }
             if (client.IsConnected())
             {
@@ -1919,6 +1919,10 @@ public class Controller : MonoBehaviour
         this.ResetSimulation();
     }
 
+    public double getVideoTime(){
+        return frontWall.time;
+    }
+
 
     //Operation Overloading for Init OBD Data
     public void LoadOBDData(int obdType, Int64[] obdDataCount, int count)
@@ -2444,7 +2448,6 @@ public class Controller : MonoBehaviour
         }
 
     }
-
 }
 
 /*

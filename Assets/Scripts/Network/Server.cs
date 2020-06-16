@@ -44,11 +44,13 @@ public class ServerMessage{
     public string message;
     public int type;
     public int ID;
+    public double videoTime;
 
-    public ServerMessage(string message, int type, int ID){
+    public ServerMessage(string message, int type, int ID, double videoTime){
         this.message = message;
         this.type = type;
         this.ID = ID;
+        this.videoTime = videoTime;
     }
 }
 
@@ -70,6 +72,7 @@ public class Server :  MonoBehaviour
     private int Port = 8052;
     private byte[] serverBuffer = new byte[Controller.BUFFERSIZE];
     private Socket  serverSocket;
+    private double currentVideoTime;
     private static List<ServerClient> connectedClients = new List<ServerClient>();
     private static List<ServerClient> disconnectedClients = new List<ServerClient>();
 
@@ -96,6 +99,7 @@ public class Server :  MonoBehaviour
     //Startup Server
     public bool CreateServer(string IPAddress, int Port)
     {
+        this.currentVideoTime = 0;
         this.IPAddress = IPAddress;
         this.Port = Port;
 
@@ -151,7 +155,8 @@ public class Server :  MonoBehaviour
     }
 
     //Server Update
-    public void ServerUpdate(){
+    public void ServerUpdate(double videotime){
+        this.currentVideoTime = videotime;
         foreach (ServerClient sc in connectedClients){
             if (!sc.IsConnected()){
                 Debug.Log("Connected Client disconnected" + sc.ID);
@@ -196,7 +201,8 @@ public class Server :  MonoBehaviour
                         new ServerMessage(
                             clientState.sb.ToString(),
                             clientState.serverClient.type,
-                            clientState.serverClient.ID));
+                            clientState.serverClient.ID,
+                            currentVideoTime));
 
 
                 c.BeginReceive(clientState.buffer, 0, Controller.BUFFERSIZE, 0,
@@ -269,7 +275,7 @@ public class Server :  MonoBehaviour
         //TODO: Create Send
     }
     private void Send(ServerClient sc, string message){
-        ServerMessage sM = new ServerMessage(message, sc.type, sc.ID);
+        ServerMessage sM = new ServerMessage(message, sc.type, sc.ID, currentVideoTime);
         byte[] byteMessage = Encoding.ASCII.GetBytes(JsonUtility.ToJson(sM));
         Debug.Log(byteMessage);
         sc.socket.BeginSend(byteMessage, 0, byteMessage.Length, 0, new AsyncCallback(SendCallback), sc.socket);
@@ -286,6 +292,7 @@ public class Server :  MonoBehaviour
             Debug.Log("Message hasn't been sent: " + e.Message);
         }
     }
+
     
     // Server Stop
     public void StopServer()
@@ -330,7 +337,6 @@ public class Server :  MonoBehaviour
             }
         }
     }
-
 }
 
 
