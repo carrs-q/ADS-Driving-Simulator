@@ -495,7 +495,7 @@ public class Controller : MonoBehaviour
             if (renderMode == MASTER)
             {
                 //TODO
-                SendStatusToClient();
+                SendStatusToClients();
             }
             if (renderMode == MASTER && syncData.getStatus() == START)
             {
@@ -656,7 +656,7 @@ public class Controller : MonoBehaviour
                         buttonStartSimulation.GetComponent<Button>().interactable = true;
                     }
                     wsd.updateWSDDefault(wsdDefault + WSDDyn);
-                    SendStatusToClient();
+                    SendStatusToClients();
                 }
 
             }
@@ -1182,7 +1182,7 @@ public class Controller : MonoBehaviour
         if (simulationContent.isProjectLoaded())
         {
             message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
-            server.SendMessage(message, conID);
+            server.Send(conID, message);
         }
         else
         {
@@ -1197,14 +1197,14 @@ public class Controller : MonoBehaviour
         message += sliderWarnVolume.GetComponent<Slider>().value + "|";
         message += sliderWSDVolume.GetComponent<Slider>().value;
         Debug.Log(message);
-        server.SendMessage(message, conID);
+        server.Send(conID, message);
     }
     private void SendProjectToClients(string project)
     {
         string msg = SENDPROJECT + "|" + project + "|" + NodeInformation.cdn;
         server.BroadCastAll(msg);
     }
-    private void SendStatusToClient()
+    private void SendStatusToClients()
     {
         string msg = STATUSUPDATE + "|" + syncData.getStat();
         if (wsd.isWSDActive())

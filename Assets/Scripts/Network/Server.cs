@@ -202,80 +202,11 @@ public class Server :  MonoBehaviour
                 c.BeginReceive(clientState.buffer, 0, Controller.BUFFERSIZE, 0,
                     new AsyncCallback(ReceiveCallback), clientState);
             }
-
-            /*
-            else
-            {
-                Debug.Log("Now 0");
-                if (clientState.sb.Length > 1) {
-                    OnClientMessage(
-                        new ServerMessage(
-                            clientState.sb.ToString(),
-                            clientState.serverClient.type, 
-                            clientState.serverClient.ID));
-                }
-                else
-                {
-                    Debug.Log("it was empty");
-                }
-
-                
-                // Signal that all bytes have been received.  
-                //receiveDone.Set();
-            } */
         }
         catch (Exception e)
         {
             Console.WriteLine(e.ToString());
         }
-
-
-        /*
-
-        Byte[] bytes = new Byte[Controller.BUFFERSIZE];
-        Socket handler = (Socket)ar.AsyncState;
-        ServerClient client = new ServerClient(handler);
-
-
-        
-
-        Debug.Log("function to read data from client");
-        
-        // Read data from the client socket  
-        int bytesRead = client.tcpSocket.EndReceive(ar);
-
-        Debug.Log("receiving from client....");
-        
-        if (bytesRead == 0)
-        {
-            //no data to read
-            Debug.Log("no data to receive");
-            return;
-        }
-
-
-        //////////////not sure here
-        var data = new byte[bytesRead];
-        Array.Copy(serverBuffer, data, bytesRead);
-
-        // Get the data
-        client.tcpSocket.BeginReceive(serverBuffer, 0, serverBuffer.Length, 0,
-                                      new AsyncCallback(ReadCallback), client.tcpSocket);
-        /////////////////
-
-        //store the data received
-        content = Encoding.ASCII.GetString(serverBuffer);
-
-
-        //send data to teh client
-        //Send(client.tcpSocket, "hello from the server");
-
-        //OnIncommingData(client, content);
-
-        Debug.Log("client sent: ");
-
-        */
-
     }
 
     //Server Events
@@ -338,9 +269,9 @@ public class Server :  MonoBehaviour
         //TODO: Create Send
     }
     private void Send(ServerClient sc, string message){
-
         ServerMessage sM = new ServerMessage(message, sc.type, sc.ID);
         byte[] byteMessage = Encoding.ASCII.GetBytes(JsonUtility.ToJson(sM));
+        Debug.Log(byteMessage);
         sc.socket.BeginSend(byteMessage, 0, byteMessage.Length, 0, new AsyncCallback(SendCallback), sc.socket);
     }
     private void SendCallback(IAsyncResult ar){

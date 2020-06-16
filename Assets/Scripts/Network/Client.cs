@@ -126,6 +126,7 @@ public class myClient : MonoBehaviour
                 ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(rawMessage);
                 Debug.Log("Received " + serverMessage.message);
                 OnMessage(serverMessage);
+                Array.Clear(buffer, 0, buffer.Length);
                 //client.BeginReceive(buffer, 0, buffer.Length, 0,  new AsyncCallback(ReceiveCallback), client);
             }
         }
