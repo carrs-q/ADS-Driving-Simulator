@@ -956,8 +956,6 @@ public class Controller : MonoBehaviour
 
 
     //New Network functions
-    //Client functions
-    //TODO: Remove this function, not used anymore
     public void SendMessageToServer()
     {
         if (client.IsConnected())
