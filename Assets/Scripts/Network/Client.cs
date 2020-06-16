@@ -9,7 +9,7 @@ public class myClient : MonoBehaviour
     //Delegate Events
     public Action OnConnected = delegate { };
     public Action OnDisconnected = delegate { };
-    public Action<string> OnMessage = delegate { };
+    public Action<ServerMessage> OnMessage = delegate { };
 
     private int connectionID;
     private string IPAddress = "localhost";
@@ -94,6 +94,7 @@ public class myClient : MonoBehaviour
     {
         try
         {
+            Debug.Log("I listen");
             clientSocket.BeginReceive(buffer, 0, buffer.Length, 0,
                 new AsyncCallback(ReceiveCallback), clientSocket);
         }
@@ -110,25 +111,27 @@ public class myClient : MonoBehaviour
             Socket client = (Socket)ar.AsyncState;
             int bytesReceived = client.EndReceive(ar);
 
-            if (bytesReceived == 0)
-            {
-                Debug.Log("nothing to receive");
+
+            if (bytesReceived == 0){
                 return;
             }
+            else if (bytesReceived > 0 ){
+                var data = new byte[bytesReceived];
+                Array.Copy(buffer, data, bytesReceived);
 
-            var data = new byte[bytesReceived];
-            Array.Copy(buffer, data, bytesReceived);
+                string rawMessage = Encoding.Default.GetString(buffer);
+                Debug.Log("Received " + rawMessage);
 
-            client.BeginReceive(buffer, 0, buffer.Length, 0,
-                new AsyncCallback(ReceiveCallback), client);
-
-            string serverMessage = Encoding.Default.GetString(buffer);
-            OnMessage(serverMessage);
+                //Unpack message according to ServerMessage class (in Server.cs)
+                ServerMessage serverMessage = JsonUtility.FromJson<ServerMessage>(rawMessage);
+                Debug.Log("Received " + serverMessage.message);
+                OnMessage(serverMessage);
+                //client.BeginReceive(buffer, 0, buffer.Length, 0,  new AsyncCallback(ReceiveCallback), client);
+            }
         }
         catch (Exception e)
         {
-            StopClient();
-            Debug.Log("Receiving failed");
+            Debug.Log("Receiving failed" + e);
         }
     }
 

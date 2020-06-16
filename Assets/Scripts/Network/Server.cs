@@ -338,10 +338,9 @@ public class Server :  MonoBehaviour
         //TODO: Create Send
     }
     private void Send(ServerClient sc, string message){
-        Send(sc, new ServerMessage(message, sc.type, sc.ID));
-    }
-    private void Send(ServerClient sc, ServerMessage message){
-        byte[] byteMessage = Encoding.ASCII.GetBytes(JsonUtility.ToJson(message));
+
+        ServerMessage sM = new ServerMessage(message, sc.type, sc.ID);
+        byte[] byteMessage = Encoding.ASCII.GetBytes(JsonUtility.ToJson(sM));
         sc.socket.BeginSend(byteMessage, 0, byteMessage.Length, 0, new AsyncCallback(SendCallback), sc.socket);
     }
     private void SendCallback(IAsyncResult ar){
@@ -352,6 +351,7 @@ public class Server :  MonoBehaviour
 
         }
         catch (Exception e) {
+            // Detect here disconnected client
             Debug.Log("Message hasn't been sent: " + e.Message);
         }
     }

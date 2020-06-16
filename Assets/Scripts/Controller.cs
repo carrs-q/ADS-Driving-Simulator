@@ -982,13 +982,13 @@ public class Controller : MonoBehaviour
             }
         }
     }
-    private void OnClientReceivedMessage(string message)
+    private void OnClientReceivedMessage(ServerMessage serverMessage)
     {
-        string[] split = message.Split('|');        
+        string[] split = serverMessage.message.Split('|');        
         switch (split[0])
         {
             case STATUSUPDATE:
-                ClientRecieveUpdate(message);
+                ClientRecieveUpdate(serverMessage.message);
                 break;
             case SENDPROJECT:
                 ClientLoadProject(split[1], split[2]);
@@ -1814,6 +1814,8 @@ public class Controller : MonoBehaviour
         ChangeVolume(DefaultSettings.SliderWSDVolume, DefaultSettings.defaultVolumeWSD);
 
     }
+
+    //TODO: client not able to change volume because of calling of Thread not Main
     public void ChangeVolume(string sourceName, int value)
     {
        
