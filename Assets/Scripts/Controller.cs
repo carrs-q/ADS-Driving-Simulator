@@ -991,12 +991,6 @@ public class Controller : MonoBehaviour
             case SENDPROJECT:
                 ClientLoadProject(split[1], split[2]);
                 break;
-            case REQPROJECT:
-                if (split[1] != EMPTYMESSAGE)
-                {
-                    ClientLoadProject(split[1], split[2]);
-                }
-                break;
             case TORMESSAGE:{
                     Debug.Log("TOR received");
                     //Just on mobile device
@@ -1125,39 +1119,48 @@ public class Controller : MonoBehaviour
     //server functions
     private void OnServerReceivedMessage(ServerMessage m)
     {
-        string[] split = m.message.Split('|');
-        int clientID = m.ID;
-        Debug.Log("Server received" + m);
+        ServerMessage copy = m;
+        string[] split = copy.message.Split('|');
+        int clientID = copy.ID;
+        Debug.Log("Server received" + m.message);
         switch (split[0])
         {
             case RESDISPLAY:{
-                server.setClientType(m.ID, int.Parse(split[1]));
-                ServerUpdateDisplay(m.ID, m.type);
-                SendProjectToClient(clientID);
-                //TODO:
-                //SendAudioSettingsToClient(clientID);
-            } break;
-            default:{
-                Debug.Log("Unknown Message received " + m);
-            };break;
+                    server.setClientType(clientID, int.Parse(split[1]));
+                    ServerUpdateDisplay(int.Parse(split[1]));
+                    SendProjectToClient(clientID);
+                    Debug.Log("I get here");
+                    //TODO:
+                    //SendAudioSettingsToClient(clientID);
+                }
+                break;
+            case REQPROJECT:{
+                    Debug.Log("Client requested project " + clientID);
+                    SendProjectToClient(clientID);
+                };break;
+            default:
+                {
+                    Debug.Log("Unknown Message received " + m);
+                }; break;
         }
+       
     }
-    private void ServerUpdateDisplay(int clientID, int displayID)
+
+
+    private void ServerUpdateDisplay(int displayID)
     {
-        if (NodeInformation.type.Equals(MASTERNODE)) {
-           
-            switch (displayID)
-            {
-                case FRONT:{ log.write("Front Screen has been connected"); } break;
-                case LEFT: { log.write("Left Screen has been connected"); } break;
-                case RIGHT: { log.write("Right Screen has been connected"); } break;
-                case NAV: { log.write("Navigation has been connected"); } break;
-                case MIRRORS: { log.write("Mirrors has been connected"); } break;
-                case DASHBOARD: { log.write("Dashboard has been connected"); } break;
-            }
+        switch (displayID)
+        {
+            case FRONT:{ log.write("Front Screen has been connected"); } break;
+            case LEFT: { log.write("Left Screen has been connected"); } break;
+            case RIGHT: { log.write("Right Screen has been connected"); } break;
+            case NAV: { log.write("Navigation has been connected"); } break;
+            case MIRRORS: { log.write("Mirrors has been connected"); } break;
+            case DASHBOARD: { log.write("Dashboard has been connected"); } break;
         }
     }
     private void ServerOnClientDisconnect(ServerClient c){
+
         try{
             switch (c.type){
                 case FRONT: { log.write("Front Screen has been disconncted"); } break;
@@ -1173,22 +1176,7 @@ public class Controller : MonoBehaviour
             log.write("Unknown client has been disconncted");
         }
     }
-
-    private void SendProjectToClient(int conID)
-    {
-
-        string message = REQPROJECT + "|";
-        if (simulationContent.isProjectLoaded())
-        {
-            message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
-            currentTime = getVideoTime();
-            server.Send(conID, message);
-        }
-        else
-        {
-            Debug.Log("No Project loaded");
-        }
-    }
+ 
     private void SendAudioSettingsToClient(int conID)
     {
         string message = VOLUMECONTROL + "|";
@@ -1199,6 +1187,27 @@ public class Controller : MonoBehaviour
         Debug.Log(message);
         currentTime = getVideoTime();
         server.Send(conID, message);
+    }
+    private void SendProjectToClient(int conID)
+    {
+        Debug.Log("client request project " + conID);
+        string message = SENDPROJECT + "|";
+        if (simulationContent.isProjectLoaded())
+        {
+            try
+            {
+                message += simulationContent.getProjectName() + "|" + simulationContent.getProjecturl();
+                server.Send(conID, message);
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Something went here wrong" + e);
+            }
+        }
+        else
+        {
+            Debug.Log("No Project loaded");
+        }
     }
     private void SendProjectToClients(string project)
     {

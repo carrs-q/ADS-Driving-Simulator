@@ -15,6 +15,7 @@ public class ServerClient{
     private DateTime   connectedSince; // Session Time
     public int         ID;             // Connection ID
     public int         type;           // Display Type
+    public byte[] buffer = new byte[Controller.BUFFERSIZE];
 
     //Constructor
     public ServerClient(Socket socket) {
@@ -27,8 +28,17 @@ public class ServerClient{
         this.type = type;
     }
     public bool IsConnected(){
-        try{
-            return socket != null && socket.Connected;
+        try
+        {
+            if (socket != null && socket.Connected)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
         }
         catch{
             return false;
@@ -50,7 +60,7 @@ public class ServerMessage{
         this.message = message;
         this.type = type;
         this.ID = ID;
-        this.videoTime = Controller.currentTime;
+        this.videoTime = Math.Round(Controller.currentTime,3);
     }
 }
 
@@ -79,12 +89,15 @@ public class Server :  MonoBehaviour
     public bool    loopKiller = true;
 
     public bool IsConnected(){
+        return serverStarted;
+        /*
         try{
             return serverSocket != null && serverSocket.Connected;
         }
         catch{
             return false;
         }
+        */
     }
     public bool IsConnected(Socket c){
         try{
@@ -120,12 +133,9 @@ public class Server :  MonoBehaviour
         try{
             while (loopKiller){
                 serverSocket.BeginAccept(new AsyncCallback(AcceptCallback), serverSocket);
-                Debug.Log("I receive");
-                //TODO: Check if Async doesn't work
-                //listener.BeginAccept(SocketListener.AcceptCallback, listener);
 
                 //allDone.WaitOne();
-                Thread.Sleep(10);
+                Thread.Sleep(100);
             }
         }
         catch(Exception e){
@@ -134,26 +144,18 @@ public class Server :  MonoBehaviour
         Debug.Log("Connection closed");
     }
     private void AcceptCallback(IAsyncResult ar){
-
-        //Works
-        //Debug.Log("Client Conencted");
-
+        
         Socket server = (Socket)ar.AsyncState;
-        //Works
-        // Debug.Log(server.LocalEndPoint);
-
         ServerClient handler = new ServerClient(server.EndAccept(ar));
         connectedClients.Add(handler);
         OnClientConnect(handler);
 
-        StateObject clientState = new StateObject();
-        clientState.serverClient = handler;
-
-        handler.socket.BeginReceive(clientState.buffer, 0, clientState.buffer.Length, 0, ReceiveCallback, clientState);
+        handler.socket.BeginReceive(handler.buffer, 0, handler.buffer.Length, 0, ReceiveCallback, handler);
     }
 
     //Server Update
     public void ServerUpdate(){
+        
         foreach (ServerClient sc in connectedClients){
             if (!sc.IsConnected()){
                 Debug.Log("Connected Client disconnected" + sc.ID);
@@ -162,7 +164,6 @@ public class Server :  MonoBehaviour
                 disconnectedClients.Add(sc);
             }
             else{
-                Debug.Log("check for data");
                 CheckForData(sc);
             }
         }
@@ -174,39 +175,35 @@ public class Server :  MonoBehaviour
         disconnectedClients.Clear();
     }
     void CheckForData(ServerClient sc){
-        Byte[] bytes = new Byte[Controller.BUFFERSIZE];
-        sc.socket.BeginReceive(bytes, 0, Controller.BUFFERSIZE, 0, ReceiveCallback, sc);
+        sc.socket.BeginReceive(sc.buffer, 0, Controller.BUFFERSIZE, 0, 
+            new AsyncCallback(ReceiveCallback), sc);
     }
+
     void ReceiveCallback(IAsyncResult ar)
     {
+        ServerClient sc = (ServerClient)ar.AsyncState;
+       
         try
         {
-            Debug.Log("Receive Callback");
-            StateObject clientState = (StateObject)ar.AsyncState;
-            Socket c = clientState.serverClient.socket;
-            int bR = c.EndReceive(ar);
-
+            Socket client = sc.socket;
+            int bR = client.EndReceive(ar);
+            
             if(bR == 0)
             {
-                Debug.Log("No data received");
                 return;
             }
             else if (bR > 0){
-                clientState.sb.Append(Encoding.ASCII.GetString(clientState.buffer, 0, bR));
-
-                OnClientMessage(
-                        new ServerMessage(
-                            clientState.sb.ToString(),
-                            clientState.serverClient.type,
-                            clientState.serverClient.ID));
-
-
-                c.BeginReceive(clientState.buffer, 0, Controller.BUFFERSIZE, 0,
-                    new AsyncCallback(ReceiveCallback), clientState);
+                var data = new byte[bR];
+                Array.Copy(sc.buffer, data, bR);
+                string rawMessage = Encoding.Default.GetString(sc.buffer);
+                OnClientMessage(new ServerMessage(rawMessage, sc.type, sc.ID));
             }
+            Array.Clear(sc.buffer, 0, sc.buffer.Length);
+
         }
         catch (Exception e)
         {
+            Array.Clear(sc.buffer, 0, sc.buffer.Length);
             Console.WriteLine(e.ToString());
         }
     }
@@ -271,9 +268,9 @@ public class Server :  MonoBehaviour
         //TODO: Create Send
     }
     private void Send(ServerClient sc, string message){
+        Debug.Log("Send message: " + message);
         ServerMessage sM = new ServerMessage(message, sc.type, sc.ID);
         byte[] byteMessage = Encoding.ASCII.GetBytes(JsonUtility.ToJson(sM));
-        Debug.Log(byteMessage);
         sc.socket.BeginSend(byteMessage, 0, byteMessage.Length, 0, new AsyncCallback(SendCallback), sc.socket);
     }
     private void SendCallback(IAsyncResult ar){
@@ -285,7 +282,7 @@ public class Server :  MonoBehaviour
         }
         catch (Exception e) {
             // Detect here disconnected client
-            Debug.Log("Message hasn't been sent: " + e.Message);
+            Debug.Log("Message hasn't been sent: " + e);
         }
     }
 
