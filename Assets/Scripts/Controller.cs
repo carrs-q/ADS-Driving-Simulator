@@ -81,6 +81,7 @@ public class Controller : MonoBehaviour
     public const int NAV = 4;
     public const int MIRRORS = 5;
     public const int DASHBOARD = 6;
+    public const int STEERINGWHEEL = 7;
 
     //MessageCodes
     public const int BUFFERSIZE = 1024;
