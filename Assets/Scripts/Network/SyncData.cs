@@ -32,6 +32,18 @@
         this.isGasPedal = isGas;
     }
 
+    public void reset()
+    {
+        simulationState = 0;
+        oldSimState = 9999;
+        speed = 0;
+        gasPedal = 0;
+        brakePedal = 0;
+        steeringWheelRotation = 0;
+        isBrakePedal = false;
+        isGasPedal = false;
+    }
+
     public void setSimState(int state)
     {
         this.simulationState = state;

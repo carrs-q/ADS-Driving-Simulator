@@ -20,6 +20,15 @@ public class Simulation
     private string temperature;
     private string currentTime;
 
+    public void reset()
+    {
+        isRunning = false;
+        wasRunning = false;
+        currentMillis = 0;
+        beginningTime = 0;
+
+    }
+
     public Boolean isStarted()
     {
         if (isRunning)

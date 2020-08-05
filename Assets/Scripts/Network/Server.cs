@@ -55,11 +55,13 @@ public class ServerMessage{
     public int type;
     public int ID;
     public double videoTime;
+    public string participantCode;
 
-    public ServerMessage(string message, int type, int ID){
+    public ServerMessage(string message, int type, int ID, string parCode){
         this.message = message;
         this.type = type;
         this.ID = ID;
+        this.participantCode = parCode;
         this.videoTime = Math.Round(Controller.currentTime,3);
     }
 }
@@ -82,6 +84,7 @@ public class Server :  MonoBehaviour
     private int Port = 8052;
     private byte[] serverBuffer = new byte[Controller.BUFFERSIZE];
     private Socket  serverSocket;
+    public  string participantCode = "";
     private static List<ServerClient> connectedClients = new List<ServerClient>();
     private static List<ServerClient> disconnectedClients = new List<ServerClient>();
 
@@ -196,7 +199,7 @@ public class Server :  MonoBehaviour
                 var data = new byte[bR];
                 Array.Copy(sc.buffer, data, bR);
                 string rawMessage = Encoding.Default.GetString(sc.buffer);
-                OnClientMessage(new ServerMessage(rawMessage, sc.type, sc.ID));
+                OnClientMessage(new ServerMessage(rawMessage, sc.type, sc.ID, participantCode));
             }
             Array.Clear(sc.buffer, 0, sc.buffer.Length);
 
@@ -269,7 +272,7 @@ public class Server :  MonoBehaviour
     }
     private void Send(ServerClient sc, string message){
         Debug.Log("Send message: " + message);
-        ServerMessage sM = new ServerMessage(message, sc.type, sc.ID);
+        ServerMessage sM = new ServerMessage(message, sc.type, sc.ID, participantCode);
         byte[] byteMessage = Encoding.ASCII.GetBytes(JsonUtility.ToJson(sM));
         sc.socket.BeginSend(byteMessage, 0, byteMessage.Length, 0, new AsyncCallback(SendCallback), sc.socket);
     }
@@ -286,6 +289,10 @@ public class Server :  MonoBehaviour
         }
     }
 
+    public void setParticipantCode(string participantCode)
+    {
+        this.participantCode = participantCode;
+    }
     
     // Server Stop
     public void StopServer()

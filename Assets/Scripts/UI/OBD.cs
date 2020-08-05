@@ -18,13 +18,11 @@ public class OBD : MonoBehaviour {
     public Dropdown loadOBDDropdown;
 
     private int obdDataCount;
-    private bool countSet;
 
     // Use this for initialization
     public void Start()
     {
         controller = Controller.GetController();
-        countSet = false;
         AttachList();
     }
     private void AttachList()
@@ -33,25 +31,22 @@ public class OBD : MonoBehaviour {
     }
     public void loadOBDData(int index)
     {
-        if(index!=0 && index < 6)
+        if(index!=0 && index < 7)
         {
             var extensions = new[] {
                 new ExtensionFilter("OBD Data", "csv"),
             };
-            var path = StandaloneFileBrowser.OpenFilePanel ("OBD Data", "", extensions, true);
+            var path = StandaloneFileBrowser.OpenFilePanel("OBD Data", "", extensions, true);
             if (path.Length > 0)
             {
-                string newPath = WWW.UnEscapeURL(path[0].Replace("file://", ""));
-                string fileData;
                 string[] lines;
+                string fileData;
+                string newPath = WWW.UnEscapeURL(path[0].Replace("file://", ""));
+
                 fileData = System.IO.File.ReadAllText(newPath);
                 lines = fileData.Split("\n"[0]);
                 obdDataCount = lines.Length;
-                if (!countSet)
-                {
-                    controller.LoadOBDData(index, bigintOBD(lines), obdDataCount);
-                    countSet = true;
-                }
+                controller.LoadOBDData(index, bigintOBD(lines), obdDataCount);
                 --index;
                 switch (index)
                 {
@@ -59,7 +54,8 @@ public class OBD : MonoBehaviour {
                     case 2:
                         {
                             controller.LoadOBDData(index, floatOBD(lines));
-                        }break;
+                        }
+                        break;
                     case 1:
                         {
                             controller.LoadOBDData(index, boolOBD(lines));
@@ -71,7 +67,13 @@ public class OBD : MonoBehaviour {
                             controller.LoadOBDData(index, intOBD(lines));
                         }
                         break;
-                    default:{
+                    case 5:
+                        {
+                            controller.LoadOBDData(index, intOBD(lines));
+                        }
+                        break;
+                    default:
+                        {
                             controller.WriteError("Index out of bound at OBD");
                         }
                         break;
@@ -81,6 +83,7 @@ public class OBD : MonoBehaviour {
         }
         loadOBDDropdown.value = 0;
     }
+
     private float[] floatOBD(string[] lines)
     {
         float[] obdData = new float[obdDataCount];

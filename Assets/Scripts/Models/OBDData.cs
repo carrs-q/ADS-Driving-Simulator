@@ -64,6 +64,17 @@ public class OBDData {
         lastIterator = 0;
         calcIterrator(time.getMilliseconds());
     }
+    public void resetOBD()
+    {
+        isSteeringWheelAngle = false;
+        isSpeed = false;
+        isGasPedal = false;
+        isBreakPedalBool = false;
+        isBreakPedal = false;
+        obdDataCount = 0;
+        lastIterator = 0;
+        oldIterator = 0;
+    }
 
     public bool calcIterrator(int currentTime)
     {

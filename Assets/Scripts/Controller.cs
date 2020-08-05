@@ -15,24 +15,6 @@ using System.Text;
 using System.Runtime.InteropServices;
 
 
-//TODO
-/*
- *          ✔  Create Mirror All 
- *          #  Create HDMI networkready or Oculus
- *              #HDMI Duplicator
- *          ✔  Request Project after load
- *          ✔  Controlls for WSD (V3 Dyn Controll)
- *          #  Sensors
- *          ✔  Network Message for WSD
- *          ✔  Limit Network requests
- *          ✔  Tinting Network
- *          #  Remote Client force to Screen Change
- *          #  Slider in running Programm
- *          #  Make Programm nice again 
- *          #  Big File Transfer
- *          #  Chroma Shader activate
- */
-
 public class Controller : MonoBehaviour
 {
 
@@ -63,7 +45,7 @@ public class Controller : MonoBehaviour
     public const int START = 1;
     public const int PAUSE = 2;
     public const int RESET = 3;
-    public const int OVERTAKE = 4;
+    public const int TAKEOVER = 4;
 
     //RenderMode
     public const int CAVEMODE = 1;
@@ -84,7 +66,7 @@ public class Controller : MonoBehaviour
     public const int STEERINGWHEEL = 7;
 
     //MessageCodes
-    public const int BUFFERSIZE = 1024;
+    public const int BUFFERSIZE = 8096;
     public const int MAX_CONNECTION = 20;
     public const string REQDISPLAY = "RQD";
     public const string RESDISPLAY = "RSD";
@@ -112,6 +94,7 @@ public class Controller : MonoBehaviour
     private SyncData syncData;
     private Log log;
     private int oldStatus;
+
 
     public static Controller GetController()
     {
@@ -264,6 +247,7 @@ public class Controller : MonoBehaviour
     private string persistentDataPath;
     private bool projectChanged = false;
     public static double currentTime;
+
    
     //public GameObject MultiProjectionCamera;
     private bool threadsAlive;
@@ -479,6 +463,9 @@ public class Controller : MonoBehaviour
             if (server.IsConnected())
             {
                 server.ServerUpdate();
+                currentTime = getVideoTime();
+                SendStatusToClients();
+
             }
             if (client.IsConnected())
             {
@@ -487,18 +474,12 @@ public class Controller : MonoBehaviour
 
             if (projectChanged)
             {
-                LoadSimulatorSetup(NodeInformation.cdn, project);
                 projectChanged = false;
+                obdData.resetOBD();
+                syncData.reset();
+                LoadSimulatorSetup(NodeInformation.cdn, project);
             }
-
-            //TODO distinguish if Master or Slave
-            if (renderMode == MASTER)
-            {
-                //TODO
-                currentTime = getVideoTime();
-                SendStatusToClients();
-
-            }
+            
             if (renderMode == MASTER && syncData.getStatus() == START)
             {
                 UpdateInterface();
@@ -535,7 +516,6 @@ public class Controller : MonoBehaviour
             {
                 if (syncData.doesStatusChanged())
                 {
-                    //TODO
                     StatusChange(syncData.getStatus());
                 }
                 steeringWheel.transform.localEulerAngles = new Vector3(0f, syncData.getSteeringWheelAngle(), 0f);
@@ -932,6 +912,8 @@ public class Controller : MonoBehaviour
         this.project = project;
         cdnProject = true;
         projectChanged = true;
+        torTime = new Timing();
+        torTimeRemaining = "";
         SendProjectToClients(project);
     }
 
@@ -1158,6 +1140,7 @@ public class Controller : MonoBehaviour
             case NAV: { log.write("Navigation has been connected"); } break;
             case MIRRORS: { log.write("Mirrors has been connected"); } break;
             case DASHBOARD: { log.write("Dashboard has been connected"); } break;
+            case STEERINGWHEEL: { log.write("SteeringWheel has been connected"); };break;
         }
     }
     private void ServerOnClientDisconnect(ServerClient c){
@@ -1170,7 +1153,9 @@ public class Controller : MonoBehaviour
                 case NAV: { log.write("Navigation has been disconncted"); } break;
                 case MIRRORS: { log.write("Mirrors has been disconncted"); } break;
                 case DASHBOARD: { log.write("Dashboard has been disconncted"); } break;
-                default: { log.write("Unknown client has been disconncted"); }; break;
+                case STEERINGWHEEL: { log.write("SteeringWheel has been disconncted"); }; break;
+                default: { //RTMaps
+                    }; break;
             }
         }
         catch (Exception e){
@@ -1218,10 +1203,12 @@ public class Controller : MonoBehaviour
     }
     private void SendStatusToClients()
     {
+        
         string msg = STATUSUPDATE + "|" + syncData.getStat();
         if (wsd.isWSDActive())
         {
             msg += wsd.wsdMessageString(obdData.getSteeringWheelAngle());
+            
         }
         if (syncData.doesStatusChanged())
         {
@@ -1236,7 +1223,6 @@ public class Controller : MonoBehaviour
                 lastMessage = msg;
                 currentTime = getVideoTime();
                 server.BroadCastAll(msg);
-
             }
         }
     }
@@ -1251,7 +1237,7 @@ public class Controller : MonoBehaviour
                 if (inputParticipantCode.GetComponent<InputField>().text != "")
                 {
                     log.setParticipantCode(inputParticipantCode.GetComponent<InputField>().text);
-                    Debug.Log(project);
+                    server.setParticipantCode(inputParticipantCode.GetComponent<InputField>().text);
 
                     if (simulationContent.isProjectLoaded())
                     {
@@ -1289,6 +1275,7 @@ public class Controller : MonoBehaviour
             return true;
         }
     }
+    
     public void StartSimulation()
     {
         if (NodeInformation.type.Equals(MASTERNODE)) { 
@@ -1341,7 +1328,7 @@ public class Controller : MonoBehaviour
     }
     public void ResetSimulation()
     {
-        //PlayPauseAudioSources(INIT);
+        
 
         frontWall.Pause();
         leftWall.Pause();
@@ -1358,25 +1345,14 @@ public class Controller : MonoBehaviour
 
         long nTime = seekTime.getTotalSeconds();
 
-
-        if (leftMirrorSound.clip.length > nTime)
-        {
-            leftMirrorSound.time = nTime;
-        }
-        if (rightMirrorSound.clip.length > nTime)
-        {
-            rightMirrorSound.time = nTime;
-        }
-
         Seek(frontWall, nTime);
         Seek(leftWall, nTime);
         Seek(rightWall, nTime);
-        Seek(navigationScreen, nTime);
         Seek(MirrorCameraPlayer, nTime);
+        Seek(navigationScreen, nTime);
         Seek(MirrorStraigt, nTime);
         Seek(MirrorLeft, nTime);
         Seek(MirrorRight, nTime);
-
 
         if (NodeInformation.type.Equals(MASTERNODE))
         {
@@ -1385,6 +1361,45 @@ public class Controller : MonoBehaviour
             buttonStartSimulation.GetComponentInChildren<Text>().text = Labels.startSimulation;
             UpdateInterface();
             torFired = false;
+
+            Seek(frontWall, nTime);
+            Seek(leftWall, nTime);
+            Seek(rightWall, nTime);
+            Seek(navigationScreen, nTime);
+            Seek(MirrorCameraPlayer, nTime);
+            Seek(MirrorStraigt, nTime);
+            Seek(MirrorLeft, nTime);
+            Seek(MirrorRight, nTime);
+            
+
+            if (leftMirrorSound.clip.length > nTime)
+            {
+                leftMirrorSound.time = nTime;
+            }
+            if (rightMirrorSound.clip.length > nTime)
+            {
+                rightMirrorSound.time = nTime;
+            }
+        }
+        else
+        {
+            switch (NodeInformation.screen)
+            {
+                case FRONT:
+                {
+                        Seek(frontWall, nTime);
+                        PlayPauseAudioSources(INIT);
+                        if (leftMirrorSound.clip.length > nTime)
+                        {
+                            leftMirrorSound.time = nTime;
+                        }
+                        if (rightMirrorSound.clip.length > nTime)
+                        {
+                            rightMirrorSound.time = nTime;
+                        }
+                    }
+                break;
+            }
         }
     }
 
@@ -1468,22 +1483,29 @@ public class Controller : MonoBehaviour
                 if (times.Length == 4)
                 {
                     torTime = new Timing(times[0], times[1], times[2], times[3]);
+                    requirements = true;
                 }
                 if (times.Length == 3)
                 {
                     torTime = new Timing(times[0], times[1], times[2]);
+                    requirements = true;
                 }
-                requirements = true;
-                temp.text = torTime.getTiming();
             }
             if (!requirements)
             {
                 checkBoxTOR.GetComponent<Toggle>().isOn = false;
             }
+            else
+            {
+                temp.text = torTime.getTiming();
+            }
         }
         else
         {
             temp.text = torTime.getTiming();
+            torTime = new Timing();
+            torTimeRemaining = "";
+            sendTOR = false;
         }
 
     }
@@ -1834,7 +1856,6 @@ public class Controller : MonoBehaviour
 
     }
 
-    //TODO: client not able to change volume because of calling of Thread not Main
     public void ChangeVolume(string sourceName, int value)
     {
        
@@ -1884,7 +1905,6 @@ public class Controller : MonoBehaviour
         message += sliderWSDVolume.GetComponent<Slider>().value;
         currentTime = getVideoTime();
         server.BroadCastAll(message);
-        //ServerToClientListSend(message, relChannel, clients);
     }
 
     //Video Controll Helping Method for Seeking
@@ -1944,7 +1964,6 @@ public class Controller : MonoBehaviour
         return frontWall.time;
     }
 
-
     //Operation Overloading for Init OBD Data
     public void LoadOBDData(int obdType, Int64[] obdDataCount, int count)
     {
@@ -1996,6 +2015,11 @@ public class Controller : MonoBehaviour
                 break;
         }
     }
+    public void flushODBD()
+    {
+        obdData.resetOBD();
+    }
+
     public bool IsWebcamAttached()
     {
         wsd.initialHDMIWindshield();
@@ -2077,17 +2101,7 @@ public class Controller : MonoBehaviour
     {
         if (NodeInformation.type.Equals(MASTERNODE))
         {
-            //TODO
             syncData.setSimState(marker);
-            /*
-            if (Network.isServer)
-            {
-                if (this.enabledSensorSync)
-                {
-                    this.actualStatus = marker;
-                }
-            }
-            */
         }
     }
     public Config GetConfig()
@@ -2098,7 +2112,7 @@ public class Controller : MonoBehaviour
     {
         if (sendTOR)
         {
-            this.sendTOR = false;
+            sendTOR = false;
             return true;
         }
         else
@@ -2133,7 +2147,7 @@ public class Controller : MonoBehaviour
     }
     public void SetSensorSync(bool state)
     {
-        this.enabledSensorSync = state;
+        enabledSensorSync = state;
         if (enabledSensorSync)
         {
             this.RunNetworkservice();
@@ -2164,7 +2178,6 @@ public class Controller : MonoBehaviour
             t.Start();
             threadList.Add(t);
         }
-
     }
     public static void NetWorkService()
     {
@@ -2250,9 +2263,6 @@ public class Controller : MonoBehaviour
             catch (Exception e)
             {
                 Debug.Log("Error: " + e.Message);
-                //TODO: Write Message and Close Threads
-                // work over boolean
-                //controller.setSensorSync(false);
             }
 
 
@@ -2379,7 +2389,7 @@ public class Controller : MonoBehaviour
     }
     private void UpdateInterface()
     {
-        if (!torFired)
+        if (!torFired && torTime.isSet())
         {
             torTimeRemaining = torTime.getDifference(simulator.getTimeDifference());
             if (torTimeRemaining == Labels.torFired)

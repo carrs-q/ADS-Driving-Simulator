@@ -8,7 +8,7 @@ public class Log {
     private bool newEntry=false;
     private string scenario;
     private string unstoredLog;
-    private string participantcode;
+    private string participantcode = "";
 
     public Text log;
 
@@ -224,5 +224,9 @@ public class Log {
     private void generateLogFileString(string text)
     {
 
+    }
+    private string getParticipantCode()
+    {
+        return participantcode;
     }
 }
